@@ -79,8 +79,6 @@
             display: block;
         }
 
-        /* 移除原本的 .snow-layer 與 @keyframes snowfall */
-
         /* Tab 按鈕樣式 */
         .side-tab-bar {
             position: absolute;
@@ -170,7 +168,20 @@
             z-index: 20;
             top: 0;
             padding-top: env(safe-area-inset-top, 20px);
-}
+        }
+        
+        .slide-down-enter-active,
+        .slide-down-leave-active {
+          transition: all 0.3s ease-out;
+          max-height: 200px; /* Adjust as needed */
+          overflow: hidden;
+        }
+
+        .slide-down-enter-from,
+        .slide-down-leave-to {
+          max-height: 0;
+          opacity: 0;
+        }
     </style>
 </head>
 <body>
@@ -416,40 +427,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white rounded-3xl p-6 card-shadow">
-                    <h3 class="font-bold text-slate-800 mb-4 flex items-center">
-                        <i class="fa-solid fa-receipt mr-2 text-indigo-500"></i> 分帳總覽
-                    </h3>
-                    <ul class="space-y-3">
-                        <li v-for="([name, balance]) in Object.entries(memberBalances)" :key="name" class="flex items-center justify-between p-3 rounded-xl" :class="balance > 0 ? 'bg-green-50' : 'bg-red-50'">
-                            <span class="font-bold text-sm" :class="balance > 0 ? 'text-green-700' : 'text-red-700'">{{ name }}</span>
-                            <div class="text-right">
-                                <span class="font-bold text-lg" :class="balance > 0 ? 'text-green-600' : 'text-red-600'">
-                                    {{ balance > 0 ? '+' : '' }}NT$ {{ formatNumber(Math.round(balance)) }}
-                                </span>
-                                <span class="text-xs ml-1" :class="balance > 0 ? 'text-green-500' : 'text-red-500'">
-                                    {{ balance > 0 ? '應收' : (balance < 0 ? '應付' : '已結清') }}
-                                </span>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-                
-                <div class="bg-white rounded-3xl p-6 card-shadow">
-                    <h3 class="font-bold text-slate-800 mb-4 flex items-center">
-                        <i class="fa-solid fa-handshake-angle mr-2 text-cyan-500"></i> 結算建議
-                    </h3>
-                    <ul v-if="settlementSteps.length > 0" class="space-y-2">
-                        <li v-for="(step, idx) in settlementSteps" :key="idx" class="text-center bg-slate-50 p-3 rounded-lg text-sm text-slate-600">
-                           {{ step }}
-                        </li>
-                    </ul>
-                    <div v-else class="text-center py-4 text-slate-400">
-                        <i class="fa-solid fa-circle-check text-2xl text-green-400 mb-2"></i>
-                        <p>帳務已結清</p>
-                    </div>
-                </div>
-
+                <!-- 1. 我的支出紀錄 (移至最上方) -->
                 <div class="bg-white rounded-3xl p-6 card-shadow">
                     <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-user-pen mr-2 text-deep-sea-blue"></i> 我的支出紀錄</h3>
                     <ul v-if="myExpenses.length > 0" class="space-y-4">
@@ -467,7 +445,7 @@
                             </div>
                             <div class="flex items-center">
                                 <div class="text-right mr-3 cursor-pointer" @click="startEditExpense(getOriginalIndex(exp.id), exp)">
-                                    <p class="font-bold text-deep-sea-blue">{{ exp.currency === 'TWD' ? 'NT$' : '฿' }}{{ formatNumber(exp.amount) }}</p>
+                                    <p class="font-bold text-deep-sea-blue">{{ exp.currency === 'TWD' ? 'NT$' : '฿' }}{{ formatNumber(exp.displayAmount) }}</p>
                                     <p class="text-xs text-slate-400 uppercase">{{ exp.payment }}</p>
                                 </div>
                                 <button @click.stop="removeExpense(getOriginalIndex(exp.id))" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors">
@@ -478,7 +456,63 @@
                     </ul>
                     <div v-else class="text-center py-8 text-slate-400">
                         <i class="fa-solid fa-file-invoice-dollar text-3xl text-slate-300 mb-2"></i>
-                        <p>尚無由您本人支付的款項</p>
+                        <p>尚無由您本人支付或分攤的款項</p>
+                    </div>
+                </div>
+
+                <!-- 2. 分帳總覽 (含展開明細功能) -->
+                <div class="bg-white rounded-3xl p-6 card-shadow">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center justify-between">
+                        <span><i class="fa-solid fa-receipt mr-2 text-indigo-500"></i> 分帳總覽</span>
+                        <span class="text-[10px] text-slate-400 font-normal">點擊成員查看明細</span>
+                    </h3>
+                    <ul class="space-y-3">
+                        <li v-for="([name, balance]) in Object.entries(memberBalances)" :key="name" class="flex flex-col bg-slate-50 rounded-xl overflow-hidden transition-all duration-300 border border-transparent" :class="{'border-indigo-100 shadow-sm': expandedMember === name}">
+                            <div class="flex items-center justify-between p-3 cursor-pointer" @click="toggleMemberDetails(name)" :class="balance > 0 ? 'bg-green-50' : 'bg-red-50'">
+                                <span class="font-bold text-sm flex items-center" :class="balance > 0 ? 'text-green-700' : 'text-red-700'">
+                                    <i class="fa-solid mr-2 text-xs" :class="expandedMember === name ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                                    {{ name }}
+                                </span>
+                                <div class="text-right">
+                                    <span class="font-bold text-lg" :class="balance > 0 ? 'text-green-600' : 'text-red-600'">
+                                        {{ balance > 0 ? '+' : '' }}NT$ {{ formatNumber(Math.round(balance)) }}
+                                    </span>
+                                    <span class="text-xs ml-1" :class="balance > 0 ? 'text-green-500' : 'text-red-500'">
+                                        {{ balance > 0 ? '應收' : (balance < 0 ? '應付' : '已結清') }}
+                                    </span>
+                                </div>
+                            </div>
+                            <!-- 成員明細展開區 -->
+                            <div v-if="expandedMember === name" class="bg-white p-3 border-t border-slate-100 animate-fade-in">
+                                <p class="text-xs text-slate-400 mb-2 font-bold">該成員支付的分帳項目：</p>
+                                <ul class="space-y-2">
+                                    <li v-for="detail in getMemberPaidExpenses(name)" :key="detail.id" class="flex justify-between items-center text-xs text-slate-600 border-b border-slate-50 pb-1 last:border-0 last:pb-0">
+                                        <div class="flex-1 truncate pr-2">
+                                            <span class="block text-slate-800">{{ detail.name }}</span>
+                                            <span class="text-[10px] text-slate-400">{{ detail.date }}</span>
+                                        </div>
+                                        <span class="font-medium whitespace-nowrap">{{ detail.currency === 'TWD' ? 'NT$' : '฿' }} {{ formatNumber(detail.amount) }}</span>
+                                    </li>
+                                    <li v-if="getMemberPaidExpenses(name).length === 0" class="text-center text-slate-300 py-2">無支付紀錄</li>
+                                </ul>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                
+                <!-- 3. 結算建議 (移至最下方) -->
+                <div class="bg-white rounded-3xl p-6 card-shadow">
+                    <h3 class="font-bold text-slate-800 mb-4 flex items-center">
+                        <i class="fa-solid fa-handshake-angle mr-2 text-cyan-500"></i> 結算建議
+                    </h3>
+                    <ul v-if="settlementSteps.length > 0" class="space-y-2">
+                        <li v-for="(step, idx) in settlementSteps" :key="idx" class="text-center bg-slate-50 p-3 rounded-lg text-sm text-slate-600">
+                           {{ step }}
+                        </li>
+                    </ul>
+                    <div v-else class="text-center py-4 text-slate-400">
+                        <i class="fa-solid fa-circle-check text-2xl text-green-400 mb-2"></i>
+                        <p>帳務已結清</p>
                     </div>
                 </div>
             </div>
@@ -645,6 +679,7 @@
                 const showMemberModal = ref(false);
                 const isEditMode = ref(false);
                 const currencyInput = ref(100);
+                const expandedMember = ref(null); // Track expanded member detail
                 
                 // --- 資料模型 ---
                 const dates = ref([
@@ -711,7 +746,42 @@
                 const currencyResult = computed(() => Math.round(currencyInput.value * EXCHANGE_RATE));
                 const currentItinerary = computed(() => itineraryData.value[selectedDateIndex.value] || []);
                 const splitMembers = computed(() => members.value.filter(m => m.active).map(m => m.name));
-                const myExpenses = computed(() => expenses.value.filter(e => e.payer === '我').sort((a,b) => new Date(b.date) - new Date(a.date)));
+                const myExpenses = computed(() => {
+                    return expenses.value.filter(exp => {
+                        // 1. Personal expense paid by me
+                        if (exp.splitMethod === 'personal') return exp.payer === '我';
+                        
+                        // 2. Shared expense (regardless of payer) where I am involved
+                        if (exp.splitMethod === 'equal') return true; // Assuming '我' is always a member
+                        if (exp.splitMethod === 'amount' || exp.splitMethod === 'ratio') {
+                            return exp.splitDetails && Number(exp.splitDetails['我']) > 0;
+                        }
+                        return false;
+                    }).map(exp => {
+                        // Calculate my share for display
+                        let myShare = 0;
+                        const totalAmount = Number(exp.amount) || 0;
+                        
+                        if (exp.splitMethod === 'personal') {
+                            myShare = totalAmount;
+                        } else if (exp.splitMethod === 'equal') {
+                            const activeCount = members.value.filter(m => m.active).length || 1;
+                            myShare = totalAmount / activeCount;
+                        } else if (exp.splitMethod === 'amount') {
+                            myShare = Number(exp.splitDetails['我']) || 0;
+                        } else if (exp.splitMethod === 'ratio') {
+                            const totalRatio = Object.values(exp.splitDetails).reduce((sum, r) => sum + (Number(r) || 0), 0);
+                            const myRatio = Number(exp.splitDetails['我']) || 0;
+                            if (totalRatio > 0) myShare = (totalAmount * myRatio) / totalRatio;
+                        }
+                        
+                        // Return a new object for display (keeping original id for editing)
+                        return {
+                            ...exp,
+                            displayAmount: myShare // New field for the UI
+                        };
+                    }).sort((a,b) => new Date(b.date) - new Date(a.date));
+                });
 
                 const totalTHB = computed(() => expenses.value.filter(e => e.currency === 'THB').reduce((sum, e) => sum + (Number(e.amount) || 0), 0));
                 const totalTWD = computed(() => expenses.value.filter(e => e.currency === 'TWD').reduce((sum, e) => sum + (Number(e.amount) || 0), 0));
@@ -830,6 +900,12 @@
                 };
                 const toggleMemberActive = (member) => member.active = !member.active;
                 const removeMember = (id) => members.value.splice(members.value.findIndex(m => m.id === id), 1);
+                const toggleMemberDetails = (name) => {
+                    expandedMember.value = expandedMember.value === name ? null : name;
+                };
+                const getMemberPaidExpenses = (name) => {
+                    return expenses.value.filter(e => e.payer === name && e.splitMethod !== 'personal');
+                };
 
                 // Expense Actions
                 const startEditExpense = (idx, exp) => {
@@ -874,7 +950,7 @@
 
                 return {
                     // UI State
-                    currentTab, selectedDateIndex, showShoppingModal, showExpenseModal, showItineraryModal, showMemberModal, isEditMode, editingExpenseIndex,
+                    currentTab, selectedDateIndex, showShoppingModal, showExpenseModal, showItineraryModal, showMemberModal, isEditMode, editingExpenseIndex, expandedMember,
                     // Data
                     dates, weatherData, currentItinerary, hotels, shoppingList, expenses, members,
                     // Forms
@@ -884,7 +960,7 @@
                     // Methods - General
                     formatNumber, calculateCurrency, getCategoryIcon, handleAddClick, getOriginalIndex,
                     // Methods - Members
-                    addMember, toggleMemberActive, removeMember,
+                    addMember, toggleMemberActive, removeMember, toggleMemberDetails, getMemberPaidExpenses,
                     // Methods - Expenses
                     startEditExpense, saveExpense, removeExpense, closeExpenseModal,
                     // Methods - Shopping & Itinerary (simplified for brevity)
