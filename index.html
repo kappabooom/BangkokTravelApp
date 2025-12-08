@@ -447,7 +447,37 @@
                 <div class="space-y-3">
                     <input v-model="newExpense.date" type="date" class="w-full bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
                     <input v-model="newExpense.name" type="text" placeholder="項目名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none">
-                    <input v-model.number="newExpense.amount" type="number" placeholder="金額 (THB)" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none">
+                    
+                    <div class="flex space-x-2">
+                        <select v-model="newExpense.currency" class="bg-slate-50 rounded-xl p-3 text-sm outline-none font-bold text-slate-700 w-24">
+                            <option value="THB">฿ THB</option>
+                            <option value="TWD">$ TWD</option>
+                        </select>
+                        <input v-model.number="newExpense.amount" type="number" placeholder="金額" class="flex-1 bg-slate-50 rounded-xl p-3 text-sm outline-none">
+                    </div>
+
+                    <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 mt-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-500"><i class="fa-solid fa-user-group mr-1"></i> 多人分帳</span>
+                            <div class="flex space-x-2 text-[10px] bg-white p-1 rounded-lg border border-slate-200">
+                                <label class="px-2 py-1 cursor-pointer rounded" :class="{'bg-deep-sea-blue text-white': newExpense.splitMethod==='equal'}"><input type="radio" value="equal" v-model="newExpense.splitMethod" class="hidden"> 均分</label>
+                                <label class="px-2 py-1 cursor-pointer rounded" :class="{'bg-deep-sea-blue text-white': newExpense.splitMethod==='ratio'}"><input type="radio" value="ratio" v-model="newExpense.splitMethod" class="hidden"> 比例</label>
+                                <label class="px-2 py-1 cursor-pointer rounded" :class="{'bg-deep-sea-blue text-white': newExpense.splitMethod==='amount'}"><input type="radio" value="amount" v-model="newExpense.splitMethod" class="hidden"> 金額</label>
+                            </div>
+                        </div>
+                        <input v-model="newExpense.members" placeholder="成員 (例: 我, 旅伴)" class="w-full bg-white rounded-lg p-2 text-xs mb-3 border border-slate-200">
+
+                        <div v-if="newExpense.splitMethod !== 'equal'" class="space-y-2 max-h-32 overflow-y-auto pr-1">
+                            <div v-for="(member, idx) in splitMembers" :key="idx" class="flex items-center justify-between">
+                                <span class="text-xs text-slate-600 truncate max-w-[40%]">{{ member }}</span>
+                                <input v-model="newExpense.splitDetails[member]" type="number" :placeholder="newExpense.splitMethod === 'ratio' ? '比例' : '金額'" class="w-1/2 bg-white p-1.5 rounded border border-slate-200 text-xs text-right outline-none">
+                            </div>
+                        </div>
+                        <div v-else class="text-[10px] text-slate-400 text-right">
+                            每人負擔約 {{ newExpense.currency === 'THB' ? '฿' : '$' }}{{ (newExpense.amount / (splitMembers.length || 1)).toFixed(0) }}
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-2 gap-3">
                         <select v-model="newExpense.category" class="bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
                             <option value="food">飲食</option>
