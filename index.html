@@ -416,9 +416,10 @@
                                 </div>
                             </div>
                             <div class="text-right">
-                                <p class="font-bold text-deep-sea-blue">฿{{ formatNumber(exp.amount) }}</p>
+                                <p class="font-bold text-deep-sea-blue">{{ exp.currency === "TWD" ? "NT$" : "฿" }}{{ formatNumber(exp.amount) }}</p>
                                 <p class="text-xs text-slate-400 uppercase">{{ exp.payment }}</p>
                             </div>
+                            <button @click.stop="removeExpense(idx)" class="ml-4 w-8 h-8 flex items-center justify-center rounded-full text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors"><i class="fa-solid fa-trash-can"></i></button>
                         </li>
                     </ul>
                 </div>
@@ -577,7 +578,10 @@
 
                 // 表單模型
                 const newShoppingItem = ref({ name: '', checked: false });
-                const newExpense = ref({ name: '', amount: null, category: 'food', date: '2026-01-16', payment: 'cash' });
+                const newExpense = ref({ name: '', amount: null, category: 'food', date: '2026-01-16', payment: 'cash', currency: 'THB', splitMethod: 'equal', members: '我, 旅伴', splitDetails: {} });
+                const splitMembers = computed(() => {
+                    return newExpense.value.members ? newExpense.value.members.split(/[,，]/).map(m => m.trim()).filter(m => m) : [];
+                });
                 const newItinerary = ref({ id: null, category: 'sightseeing', name: '', startTime: '', address: '', note: '', hours: '', price: '', transportType: 'car', isNoteExpanded: false });
 
                 // Computed
@@ -589,7 +593,15 @@
                 });
 
                 const totalExpensesJPY = computed(() => expenses.value.reduce((sum, item) => sum + item.amount, 0));
-                const totalExpensesTWD = computed(() => Math.round(totalExpensesJPY.value * EXCHANGE_RATE));
+                const totalExpensesTWD = computed(() => {
+                    return expenses.value.reduce((sum, item) => {
+                        let amt = parseFloat(item.amount) || 0;
+                        if (item.currency === 'THB' || !item.currency) {
+                            return sum + (amt * EXCHANGE_RATE);
+                        }
+                        return sum + amt;
+                    }, 0).toFixed(0);
+                });
 
                 // Methods - Helpers
                 const CATEGORY_MAP = {
@@ -655,8 +667,14 @@
                 const addExpense = () => {
                     if (newExpense.value.name && newExpense.value.amount) {
                         expenses.value.push({ ...newExpense.value });
-                        newExpense.value = { name: '', amount: null, category: 'food', date: '2026-01-16', payment: 'cash' };
+                        newExpense.value = { name: '', amount: null, category: 'food', date: '2026-01-16', payment: 'cash', currency: 'THB', splitMethod: 'equal', members: newExpense.value.members, splitDetails: {} };
                         showExpenseModal.value = false;
+                    }
+                };
+
+                const removeExpense = (idx) => {
+                    if(confirm('確定要刪除此筆紀錄？')) {
+                        expenses.value.splice(idx, 1);
                     }
                 };
 
@@ -706,6 +724,7 @@
                 };
 
                 return {
+                    removeExpense, splitMembers,
                     currentTab, selectedDateIndex, dates, weatherData, currentItinerary, hotels,
                     shoppingList, expenses, totalExpensesJPY, totalExpensesTWD,
                     showShoppingModal, showExpenseModal, showItineraryModal, isEditMode,
