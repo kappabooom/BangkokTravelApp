@@ -313,7 +313,7 @@
                             </div>
                         </div>
                     </div>
-                    <p class="text-[10px] text-orange-200 mt-3 text-right relative z-10">匯率基準: 0.92</p>
+                    <p class="text-[10px] text-orange-200 mt-3 text-right relative z-10">匯率基準: 1 THB = {{ EXCHANGE_RATE.toFixed(4) }} TWD</p>
                 </div>
 
                 <div class="bg-white rounded-3xl p-5 card-shadow">
@@ -408,7 +408,7 @@
                 <div class="expenses-banner text-white rounded-3xl p-6 relative overflow-hidden">
                     <div class="absolute -right-10 -top-10 bg-white/10 w-48 h-48 rounded-full blur-3xl"></div>
                     <div class="absolute -left-10 -bottom-10 bg-white/20 w-40 h-40 rounded-full blur-2xl"></div>
-                    <p class="text-sm text-orange-100 mb-2 relative z-10">旅行總支出 (已換算為新台幣)</p>
+                    <p class="text-sm text-orange-100 mb-2 relative z-10">我的個人總支出 (已換算為新台幣)</p>
                     <h2 class="text-4xl font-bold relative z-10 tracking-tight">
                       NT$ {{ formatNumber(finalTotalTWD) }}
                     </h2>
@@ -422,7 +422,7 @@
                             <span class="font-semibold">NT$ {{ formatNumber(totalTWD) }}</span>
                         </div>
                         <div class="mt-2 pt-2 border-t border-white/20 text-right text-[10px]">
-                            匯率基準: 1 THB = {{ EXCHANGE_RATE }} TWD
+                            匯率基準: 1 THB = {{ EXCHANGE_RATE.toFixed(4) }} TWD
                         </div>
                     </div>
                 </div>
@@ -431,7 +431,9 @@
                 <div class="bg-white rounded-3xl p-6 card-shadow">
                     <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-user-pen mr-2 text-deep-sea-blue"></i> 我的支出紀錄</h3>
                     <ul v-if="myExpenses.length > 0" class="space-y-4">
-                        <li v-for="(exp, idx) in myExpenses" :key="idx" class="flex items-center justify-between border-b border-slate-50 last:border-0 pb-3 last:pb-0 hover:bg-slate-50 transition-colors rounded-lg px-2 -mx-2">
+                        <li v-for="(exp, idx) in myExpenses" :key="idx" 
+                            class="flex items-center justify-between border-b border-slate-50 last:border-0 pb-3 last:pb-0 transition-colors rounded-lg px-2 -mx-2"
+                            :class="exp.payer === '我' ? 'hover:bg-slate-50' : 'bg-orange-50 hover:bg-orange-100'">
                             <div class="flex items-center cursor-pointer flex-1" @click="startEditExpense(getOriginalIndex(exp.id), exp)">
                                 <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mr-3 text-slate-500">
                                     <i :class="getCategoryIcon(exp.category)"></i>
@@ -440,6 +442,7 @@
                                     <p class="font-bold text-slate-700 text-sm">{{ exp.name }}</p>
                                     <p class="text-xs text-slate-400">{{ exp.date }}
                                         <span v-if="exp.splitMethod!=='personal'" class="ml-1 px-1.5 py-0.5 rounded-full bg-slate-200 text-[9px] font-medium text-slate-600">分帳</span>
+                                        <span v-if="exp.payer !== '我'" class="ml-1 px-1.5 py-0.5 rounded-full bg-orange-200 text-[9px] font-bold text-orange-800">{{ exp.payer }}先付</span>
                                     </p>
                                 </div>
                             </div>
@@ -663,12 +666,12 @@
     </div>
 
     <script>
-        const { createApp, ref, computed } = Vue
+        const { createApp, ref, computed, onMounted } = Vue
 
         createApp({
             setup() {
                 // --- 常數與設定 ---
-                const EXCHANGE_RATE = 0.92; // THB to TWD
+                const EXCHANGE_RATE = ref(0.92); // THB to TWD default
 
                 // --- UI 狀態 ---
                 const currentTab = ref('expenses');
@@ -742,8 +745,22 @@
                     };
                 };
 
+                const fetchExchangeRate = async () => {
+                    try {
+                        const resp = await fetch('https://api.exchangerate.host/latest?base=THB&symbols=TWD');
+                        const data = await resp.json();
+                        if (data && data.rates && data.rates.TWD) {
+                            EXCHANGE_RATE.value = Number(data.rates.TWD);
+                        }
+                    } catch (e) {
+                        console.error('取得匯率失敗，使用預設匯率 0.92', e);
+                    }
+                };
+
+                onMounted(fetchExchangeRate);
+
                 // --- Computed: 核心計算 ---
-                const currencyResult = computed(() => Math.round(currencyInput.value * EXCHANGE_RATE));
+                const currencyResult = computed(() => Math.round(currencyInput.value * EXCHANGE_RATE.value));
                 const currentItinerary = computed(() => itineraryData.value[selectedDateIndex.value] || []);
                 const splitMembers = computed(() => members.value.filter(m => m.active).map(m => m.name));
                 const myExpenses = computed(() => {
@@ -783,16 +800,22 @@
                     }).sort((a,b) => new Date(b.date) - new Date(a.date));
                 });
 
-                const totalTHB = computed(() => expenses.value.filter(e => e.currency === 'THB').reduce((sum, e) => sum + (Number(e.amount) || 0), 0));
-                const totalTWD = computed(() => expenses.value.filter(e => e.currency === 'TWD').reduce((sum, e) => sum + (Number(e.amount) || 0), 0));
-                const finalTotalTWD = computed(() => totalTWD.value + Math.round(totalTHB.value * EXCHANGE_RATE));
+                const totalTHB = computed(() => myExpenses.value.filter(e => e.currency === 'THB').reduce((sum, e) => sum + (Number(e.displayAmount) || 0), 0));
+                const totalTWD = computed(() => myExpenses.value.filter(e => e.currency === 'TWD').reduce((sum, e) => sum + (Number(e.displayAmount) || 0), 0));
+                const finalTotalTWD = computed(() => {
+                    return myExpenses.value.reduce((sum, exp) => {
+                        const amount = Number(exp.displayAmount) || 0;
+                        const valInTWD = exp.currency === 'TWD' ? amount : amount * EXCHANGE_RATE.value;
+                        return sum + valInTWD;
+                    }, 0);
+                });
 
                 const memberBalances = computed(() => {
                     const balances = {};
                     members.value.forEach(m => { balances[m.name] = 0; });
 
                     expenses.value.forEach(exp => {
-                        const amountInTWD = exp.currency === 'TWD' ? (Number(exp.amount) || 0) : (Number(exp.amount) || 0) * EXCHANGE_RATE;
+                        const amountInTWD = exp.currency === 'TWD' ? (Number(exp.amount) || 0) : (Number(exp.amount) || 0) * EXCHANGE_RATE.value;
                         if (balances[exp.payer] !== undefined) {
                             balances[exp.payer] += amountInTWD;
                         }
@@ -817,7 +840,7 @@
 
                             case 'amount':
                                 for(const name in exp.splitDetails) {
-                                    const debtInTWD = exp.currency === 'TWD' ? (Number(exp.splitDetails[name]) || 0) : (Number(exp.splitDetails[name]) || 0) * EXCHANGE_RATE;
+                                    const debtInTWD = exp.currency === 'TWD' ? (Number(exp.splitDetails[name]) || 0) : (Number(exp.splitDetails[name]) || 0) * EXCHANGE_RATE.value;
                                     if (balances[name] !== undefined) balances[name] -= debtInTWD;
                                 }
                                 break;
@@ -873,7 +896,7 @@
                 };
                 const getCategoryIcon = (cat) => CATEGORY_MAP[cat]?.icon || CATEGORY_MAP.other.icon;
                 const formatNumber = (num) => num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '0';
-                const calculateCurrency = () => currencyResult.value = Math.round(currencyInput.value * EXCHANGE_RATE);
+                const calculateCurrency = () => currencyResult.value = Math.round(currencyInput.value * EXCHANGE_RATE.value);
                 const getOriginalIndex = (id) => expenses.value.findIndex(e => e.id === id);
                 
                 // --- Methods: Actions ---
@@ -956,7 +979,7 @@
                     // Forms
                     newShoppingItem, newExpense, newItinerary, newMemberName,
                     // Computed
-                    currencyResult, splitMembers, myExpenses, totalTHB, totalTWD, finalTotalTWD, memberBalances, settlementSteps,
+                    currencyResult, splitMembers, myExpenses, totalTHB, totalTWD, finalTotalTWD, memberBalances, settlementSteps, EXCHANGE_RATE,
                     // Methods - General
                     formatNumber, calculateCurrency, getCategoryIcon, handleAddClick, getOriginalIndex,
                     // Methods - Members
