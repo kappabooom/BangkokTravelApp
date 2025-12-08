@@ -397,29 +397,37 @@
                 <div class="expenses-banner text-white rounded-3xl p-8 mb-6 relative overflow-hidden">
                     <div class="absolute -right-10 -top-10 bg-white/10 w-48 h-48 rounded-full blur-3xl"></div>
                     <div class="absolute -left-10 -bottom-10 bg-white/20 w-40 h-40 rounded-full blur-2xl"></div>
-                    <p class="text-sm text-orange-100 mb-2 relative z-10">目前總花費 (THB)</p>
-                    <h2 class="text-5xl font-bold relative z-10 tracking-tight">฿ {{ formatNumber(totalExpensesJPY) }}</h2>
-                    <p class="text-sm text-right mt-2 opacity-80 relative z-10">約 NT$ {{ formatNumber(totalExpensesTWD) }}</p>
+                    <p class="text-sm text-orange-100 mb-2 relative z-10">目前總花費 (已換算新台幣)</p>
+                    <h2 class="text-4xl font-bold relative z-10 tracking-tight">NT$ {{ formatNumber(finalTotalTWD) }}</h2>
+                    <div class="text-xs mt-3 opacity-90 leading-relaxed relative z-10 bg-white/10 p-2 rounded-lg">
+                        <div class="flex justify-between"><span>THB 小計：</span><span class="font-bold">฿ {{ formatNumber(totalTHB) }}</span></div>
+                        <div class="flex justify-between"><span>TWD 小計：</span><span class="font-bold">NT$ {{ formatNumber(totalTWD) }}</span></div>
+                        <div class="mt-1 pt-1 border-t border-white/20 text-right text-[10px]">匯率: {{ EXCHANGE_RATE }}</div>
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-3xl p-6 card-shadow">
                     <h3 class="font-bold text-slate-800 mb-4">最近支出</h3>
                     <ul class="space-y-4">
-                        <li v-for="(exp, idx) in expenses" :key="idx" class="flex items-center justify-between border-b border-slate-50 last:border-0 pb-3 last:pb-0">
-                            <div class="flex items-center">
+                        <li v-for="(exp, idx) in expenses" :key="idx" class="flex items-center justify-between border-b border-slate-50 last:border-0 pb-3 last:pb-0 hover:bg-slate-50 transition-colors rounded-lg px-2 -mx-2">
+                            <div class="flex items-center cursor-pointer flex-1" @click="startEditExpense(idx, exp)">
                                 <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mr-3 text-slate-500">
                                     <i :class="getCategoryIcon(exp.category)"></i>
                                 </div>
                                 <div>
                                     <p class="font-bold text-slate-700 text-sm">{{ exp.name }}</p>
-                                    <p class="text-xs text-slate-400">{{ exp.date }}</p>
+                                    <p class="text-xs text-slate-400">{{ exp.date }} <span v-if="exp.splitMethod!=='equal'" class="ml-1 px-1 rounded bg-slate-100 text-[10px]">分帳</span></p>
                                 </div>
                             </div>
-                            <div class="text-right">
-                                <p class="font-bold text-deep-sea-blue">{{ exp.currency === "TWD" ? "NT$" : "฿" }}{{ formatNumber(exp.amount) }}</p>
-                                <p class="text-xs text-slate-400 uppercase">{{ exp.payment }}</p>
+                            <div class="flex items-center">
+                                <div class="text-right mr-3" @click="startEditExpense(idx, exp)">
+                                    <p class="font-bold text-deep-sea-blue">{{ exp.currency === 'TWD' ? 'NT$' : '฿' }}{{ formatNumber(exp.amount) }}</p>
+                                    <p class="text-xs text-slate-400 uppercase">{{ exp.payment }}</p>
+                                </div>
+                                <button @click.stop="removeExpense(idx)" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
                             </div>
-                            <button @click.stop="removeExpense(idx)" class="ml-4 w-8 h-8 flex items-center justify-center rounded-full text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors"><i class="fa-solid fa-trash-can"></i></button>
                         </li>
                     </ul>
                 </div>
@@ -443,42 +451,59 @@
 
         <div v-if="showExpenseModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
             <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
-                <h3 class="font-bold text-lg mb-5 text-center text-slate-800">記一筆 (THB)</h3>
+                <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ editingExpenseIndex === null ? "記一筆" : "編輯支出" }}</h3>
                 <div class="space-y-3">
+                    
                     <input v-model="newExpense.date" type="date" class="w-full bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
                     <input v-model="newExpense.name" type="text" placeholder="項目名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none">
-                    
+
                     <div class="flex space-x-2">
                         <select v-model="newExpense.currency" class="bg-slate-50 rounded-xl p-3 text-sm outline-none font-bold text-slate-700 w-24">
                             <option value="THB">฿ THB</option>
                             <option value="TWD">$ TWD</option>
                         </select>
-                        <input v-model.number="newExpense.amount" type="number" placeholder="金額" class="flex-1 bg-slate-50 rounded-xl p-3 text-sm outline-none">
+                        <input v-model="newExpense.amount" type="number" placeholder="金額" class="flex-1 bg-slate-50 rounded-xl p-3 text-sm outline-none">
                     </div>
 
-                    <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 mt-3">
-                        <div class="flex items-center justify-between mb-2">
+                    <!-- Split Section -->
+                    <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 mt-2">
+                        <div class="flex items-center justify-between mb-3">
                             <span class="text-xs font-bold text-slate-500"><i class="fa-solid fa-user-group mr-1"></i> 多人分帳</span>
-                            <div class="flex space-x-2 text-[10px] bg-white p-1 rounded-lg border border-slate-200">
-                                <label class="px-2 py-1 cursor-pointer rounded" :class="{'bg-deep-sea-blue text-white': newExpense.splitMethod==='equal'}"><input type="radio" value="equal" v-model="newExpense.splitMethod" class="hidden"> 均分</label>
-                                <label class="px-2 py-1 cursor-pointer rounded" :class="{'bg-deep-sea-blue text-white': newExpense.splitMethod==='ratio'}"><input type="radio" value="ratio" v-model="newExpense.splitMethod" class="hidden"> 比例</label>
-                                <label class="px-2 py-1 cursor-pointer rounded" :class="{'bg-deep-sea-blue text-white': newExpense.splitMethod==='amount'}"><input type="radio" value="amount" v-model="newExpense.splitMethod" class="hidden"> 金額</label>
+                            <div class="flex space-x-2">
+                                <button @click="showMemberModal = true" class="text-[10px] px-2 py-1 rounded bg-white border border-slate-200 text-deep-sea-blue font-medium shadow-sm">
+                                    <i class="fa-solid fa-gear mr-1"></i>成員
+                                </button>
                             </div>
                         </div>
-                        <input v-model="newExpense.members" placeholder="成員 (例: 我, 旅伴)" class="w-full bg-white rounded-lg p-2 text-xs mb-3 border border-slate-200">
 
-                        <div v-if="newExpense.splitMethod !== 'equal'" class="space-y-2 max-h-32 overflow-y-auto pr-1">
-                            <div v-for="(member, idx) in splitMembers" :key="idx" class="flex items-center justify-between">
-                                <span class="text-xs text-slate-600 truncate max-w-[40%]">{{ member }}</span>
-                                <input v-model="newExpense.splitDetails[member]" type="number" :placeholder="newExpense.splitMethod === 'ratio' ? '比例' : '金額'" class="w-1/2 bg-white p-1.5 rounded border border-slate-200 text-xs text-right outline-none">
-                            </div>
+                        <div class="flex space-x-1 mb-3 bg-white p-1 rounded-lg border border-slate-200">
+                            <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod==='equal' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod='equal'">均分</button>
+                            <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod==='ratio' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod='ratio'">比例</button>
+                            <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod==='amount' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod='amount'">金額</button>
                         </div>
-                        <div v-else class="text-[10px] text-slate-400 text-right">
-                            每人負擔約 {{ newExpense.currency === 'THB' ? '฿' : '$' }}{{ (newExpense.amount / (splitMembers.length || 1)).toFixed(0) }}
+
+                        <div v-if="splitMembers.length > 0" class="space-y-2 max-h-32 overflow-y-auto pr-1">
+                             <div v-if="newExpense.splitMethod === 'equal'" class="text-xs text-slate-500 p-2 text-center bg-white rounded border border-slate-100">
+                                參與成員：{{ splitMembers.join(', ') }}<br>
+                                每人約 {{ newExpense.currency === 'THB' ? '฿' : '$' }}{{ (newExpense.amount / (splitMembers.length || 1)).toFixed(0) }}
+                             </div>
+                             <div v-else>
+                                <div v-for="member in splitMembers" :key="member" class="flex items-center justify-between mb-2 last:mb-0">
+                                    <span class="text-xs text-slate-600 truncate w-20">{{ member }}</span>
+                                    <input v-model="newExpense.splitDetails[member]" type="number" 
+                                           :placeholder="newExpense.splitMethod === 'ratio' ? '比例 (1)' : '金額'" 
+                                           class="flex-1 bg-white p-1.5 rounded border border-slate-200 text-xs text-right outline-none focus:border-deep-sea-blue">
+                                </div>
+                             </div>
+                        </div>
+                        <div v-else class="text-xs text-slate-400 text-center py-2">
+                            沒有啟用的成員，請點擊「成員」設定
                         </div>
                     </div>
 
                     <div class="grid grid-cols-2 gap-3">
+
+<div class="grid grid-cols-2 gap-3">
                         <select v-model="newExpense.category" class="bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
                             <option value="food">飲食</option>
                             <option value="shopping">購物</option>
@@ -495,7 +520,7 @@
                 </div>
                 <div class="flex space-x-3 mt-6">
                     <button @click="showExpenseModal = false" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
-                    <button @click="addExpense" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30">儲存</button>
+                    <button @click="saveExpense" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30">{{ editingExpenseIndex === null ? "儲存" : "更新" }}</button>
                 </div>
             </div>
         </div>
@@ -534,6 +559,26 @@
                 </div>
             </div>
         </div>
+
+        <div v-if="showMemberModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[60] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+            <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
+                <h3 class="font-bold text-lg mb-4 text-center text-slate-800">分帳成員管理</h3>
+                <div class="space-y-2 max-h-60 overflow-y-auto mb-4 min-h-[100px]">
+                    <div v-for="m in members" :key="m.id" class="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-3 border border-slate-100">
+                        <span class="text-sm font-medium" :class="m.active ? 'text-slate-700' : 'text-slate-400 line-through'">{{ m.name }}</span>
+                        <div class="flex items-center space-x-2">
+                            <button @click="toggleMemberActive(m)" class="px-2 py-1 rounded-lg text-[10px] font-bold transition-colors" :class="m.active ? 'bg-green-100 text-green-600' : 'bg-slate-200 text-slate-500'">{{ m.active ? '參與' : '停用' }}</button>
+                            <button @click="removeMember(m.id)" class="w-6 h-6 rounded-full bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"><i class="fa-solid fa-times text-xs"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex space-x-2 mb-4">
+                    <input v-model="newMemberName" placeholder="新成員名稱" class="flex-1 bg-slate-50 rounded-xl p-3 text-sm outline-none border border-transparent focus:border-deep-sea-blue">
+                    <button @click="addMember" class="px-4 rounded-xl bg-deep-sea-blue text-white text-sm font-bold shadow-lg shadow-deep-sea-blue/20">新增</button>
+                </div>
+                <button @click="showMemberModal = false" class="w-full py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm hover:bg-slate-200 transition-colors">完成</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -542,7 +587,16 @@
         createApp({
             setup() {
                 // 常數與設定
-                const EXCHANGE_RATE = 0.92; // THB to TWD
+                const EXCHANGE_RATE = 0.92;
+                // --- Phase 2: Members & Editing State ---
+                const showMemberModal = ref(false);
+                const newMemberName = ref('');
+                const members = ref([
+                    { id: 1, name: '我', active: true },
+                    { id: 2, name: '旅伴', active: true }
+                ]);
+                const editingExpenseIndex = ref(null);
+ // THB to TWD
 
                 // UI 狀態
                 const currentTab = ref('itinerary');
@@ -608,10 +662,19 @@
 
                 // 表單模型
                 const newShoppingItem = ref({ name: '', checked: false });
-                const newExpense = ref({ name: '', amount: null, category: 'food', date: '2026-01-16', payment: 'cash', currency: 'THB', splitMethod: 'equal', members: '我, 旅伴', splitDetails: {} });
-                const splitMembers = computed(() => {
-                    return newExpense.value.members ? newExpense.value.members.split(/[,，]/).map(m => m.trim()).filter(m => m) : [];
-                });
+                const newExpense = ref({ name: '', amount: null, category: 'food', date: '2026-01-16', payment: 'cash', currency: 'THB', splitMethod: 'equal', members: [], splitDetails: {} });
+                // Computed: Members & Totals
+                const splitMembers = computed(() => members.value.filter(m => m.active).map(m => m.name));
+
+                const totalTHB = computed(() => expenses.value.filter(e => e.currency === 'THB' || !e.currency).reduce((sum, e) => sum + (Number(e.amount) || 0), 0));
+                const totalTWD = computed(() => expenses.value.filter(e => e.currency === 'TWD').reduce((sum, e) => sum + (Number(e.amount) || 0), 0));
+                const totalTHBtoTWD = computed(() => Math.round(totalTHB.value * EXCHANGE_RATE));
+                const finalTotalTWD = computed(() => totalTWD.value + totalTHBtoTWD.value);
+
+                // Keep compatible for template just in case, but we will update template
+                const totalExpensesJPY = totalTHB; 
+                const totalExpensesTWD = finalTotalTWD;
+
                 const newItinerary = ref({ id: null, category: 'sightseeing', name: '', startTime: '', address: '', note: '', hours: '', price: '', transportType: 'car', isNoteExpanded: false });
 
                 // Computed
@@ -620,17 +683,6 @@
                         itineraryData.value[selectedDateIndex.value] = [];
                     }
                     return itineraryData.value[selectedDateIndex.value];
-                });
-
-                const totalExpensesJPY = computed(() => expenses.value.reduce((sum, item) => sum + item.amount, 0));
-                const totalExpensesTWD = computed(() => {
-                    return expenses.value.reduce((sum, item) => {
-                        let amt = parseFloat(item.amount) || 0;
-                        if (item.currency === 'THB' || !item.currency) {
-                            return sum + (amt * EXCHANGE_RATE);
-                        }
-                        return sum + amt;
-                    }, 0).toFixed(0);
                 });
 
                 // Methods - Helpers
@@ -694,19 +746,68 @@
                 };
                 const removeShoppingItem = (idx) => shoppingList.value.splice(idx, 1);
 
-                const addExpense = () => {
+                
+                // Methods: Member Management
+                const addMember = () => {
+                    if (!newMemberName.value.trim()) return;
+                    members.value.push({ id: Date.now(), name: newMemberName.value.trim(), active: true });
+                    newMemberName.value = '';
+                };
+                const toggleMemberActive = (member) => { member.active = !member.active; };
+                const removeMember = (id) => {
+                    if (!confirm('確定刪除此成員？')) return;
+                    const idx = members.value.findIndex(m => m.id === id);
+                    if (idx !== -1) members.value.splice(idx, 1);
+                };
+
+                const startEditExpense = (idx, exp) => {
+                    editingExpenseIndex.value = idx;
+                    // Deep copy
+                    newExpense.value = JSON.parse(JSON.stringify(exp));
+                    // Ensure members is array (backward compatibility if needed)
+                    if (typeof newExpense.value.members === 'string') {
+                         // Convert string to array just in case legacy data
+                         newExpense.value.members = []; 
+                    }
+                    showExpenseModal.value = true;
+                };
+
+                const saveExpense = () => {
                     if (newExpense.value.name && newExpense.value.amount) {
-                        expenses.value.push({ ...newExpense.value });
-                        newExpense.value = { name: '', amount: null, category: 'food', date: '2026-01-16', payment: 'cash', currency: 'THB', splitMethod: 'equal', members: newExpense.value.members, splitDetails: {} };
+                        // Snapshot current active members for the record if not already set? 
+                        // Actually, for a new record, we should probably save WHO was involved.
+                        // But UI uses `splitMembers` (computed) to show fields. 
+                        // Let's just save the record.
+
+                        const record = { ...newExpense.value };
+                        // If splitMethod is not equal, we rely on splitDetails. 
+                        // If equal, we might want to store who was involved? 
+                        // For simplicity, we just store what's in newExpense.
+
+                        if (editingExpenseIndex.value === null) {
+                            expenses.value.push(record);
+                        } else {
+                            expenses.value[editingExpenseIndex.value] = record;
+                        }
+
+                        // Reset
+                        editingExpenseIndex.value = null;
+                        newExpense.value = { 
+                            name: '', amount: null, category: 'food', date: '2026-01-16', 
+                            payment: 'cash', currency: 'THB', splitMethod: 'equal', 
+                            members: [], splitDetails: {} 
+                        };
                         showExpenseModal.value = false;
                     }
                 };
 
+                // Alias addExpense for any legacy calls (though we will update template)
+                const addExpense = saveExpense;
+
                 const removeExpense = (idx) => {
-                    if(confirm('確定要刪除此筆紀錄？')) {
-                        expenses.value.splice(idx, 1);
-                    }
+                    if(confirm('確定要刪除此筆紀錄？')) expenses.value.splice(idx, 1);
                 };
+
 
                 const editItem = (item) => {
                     isEditMode.value = true;
@@ -754,7 +855,8 @@
                 };
 
                 return {
-                    removeExpense, splitMembers,
+                    members, showMemberModal, newMemberName, editingExpenseIndex, totalTHB, totalTWD, totalTHBtoTWD, finalTotalTWD, splitMembers,
+                    addMember, toggleMemberActive, removeMember, startEditExpense, saveExpense, removeExpense,
                     currentTab, selectedDateIndex, dates, weatherData, currentItinerary, hotels,
                     shoppingList, expenses, totalExpensesJPY, totalExpensesTWD,
                     showShoppingModal, showExpenseModal, showItineraryModal, isEditMode,
