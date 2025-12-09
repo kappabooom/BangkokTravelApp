@@ -167,7 +167,6 @@
             padding-top: env(safe-area-inset-top, 20px);
         }
         
-        /* Input placeholder color fix for white background inputs */
         .placeholder-white::placeholder {
             color: rgba(255, 255, 255, 0.6);
         }
@@ -292,7 +291,6 @@
                     <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-10 -mb-10 blur-2xl"></div>
                     <h3 class="font-bold text-lg mb-4 flex items-center relative z-10"><i class="fa-solid fa-calculator mr-2"></i> 匯率換算</h3>
                     
-                    <!-- 3. 優化：雙向匯率換算 UI -->
                     <div class="flex items-center justify-between space-x-3 relative z-10">
                         <div class="flex-1">
                             <label class="text-[10px] text-orange-200 block mb-1 uppercase tracking-wider">THB (泰銖)</label>
@@ -301,7 +299,6 @@
                         <i class="fa-solid fa-arrow-right-arrow-left text-orange-300 mt-5"></i>
                         <div class="flex-1">
                             <label class="text-[10px] text-orange-200 block mb-1 uppercase tracking-wider">TWD (台幣)</label>
-                            <!-- 雙向綁定：輸入台幣觸發 updateTHB -->
                             <input type="number" v-model.number="inputTWD" @input="updateTHB" class="w-full bg-white/10 border border-white/30 rounded-xl px-3 py-2.5 text-white placeholder-white focus:outline-none focus:bg-white/20 text-lg font-bold placeholder-white" placeholder="輸入台幣">
                         </div>
                     </div>
@@ -391,7 +388,6 @@
                     <div class="absolute -right-10 -top-10 bg-white/10 w-48 h-48 rounded-full blur-3xl"></div>
                     <div class="absolute -left-10 -bottom-10 bg-white/20 w-40 h-40 rounded-full blur-2xl"></div>
                     <p class="text-sm text-orange-100 mb-2 relative z-10">我的個人總支出 (已換算為新台幣)</p>
-                    <!-- 1. 優化：加入「約」字樣，並確保金額四捨五入 -->
                     <h2 class="text-4xl font-bold relative z-10 tracking-tight">
                       約 NT$ {{ formatNumber(finalTotalTWD) }}
                     </h2>
@@ -416,7 +412,6 @@
                     <ul v-if="myExpenses.length > 0" class="space-y-4">
                         <li v-for="(exp, idx) in myExpenses" :key="idx" 
                             class="flex items-center justify-between border-b border-slate-50 last:border-0 pb-3 last:pb-0 transition-colors rounded-lg px-2 -mx-2 hover:bg-slate-50">
-                            <!-- 2. 優化：移除旅伴支付的底色判斷，僅保留 hover:bg-slate-50 -->
                             <div class="flex items-center cursor-pointer flex-1" @click="startEditExpense(getOriginalIndex(exp.id), exp)">
                                 <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mr-3 text-slate-500 flex-shrink-0 self-center">
                                     <i :class="getCategoryIcon(exp.category)"></i>
@@ -644,7 +639,8 @@
                 const EXCHANGE_RATE = ref(0.92); // 預設值
 
                 // --- UI 狀態 ---
-                const currentTab = ref('expenses');
+                // 1. 修改：首頁預設為行程頁
+                const currentTab = ref('itinerary');
                 const selectedDateIndex = ref(0);
                 const showShoppingModal = ref(false);
                 const showExpenseModal = ref(false);
@@ -690,12 +686,8 @@
                     { name: '泰式奶茶包', checked: false }, { name: 'Pocky 芒果口味', checked: false }
                 ]);
 
-                const expenses = ref([
-                    { id: 1729000000001, name: '機票', amount: 12000, category: 'ticket', date: '2025-10-15', payment: 'card', currency: 'TWD', payer: '我', splitMethod: 'equal', splitDetails: {} },
-                    { id: 1729000000002, name: '預付住宿', amount: 8000, category: 'stay', date: '2025-11-20', payment: 'card', currency: 'TWD', payer: '我', splitMethod: 'equal', splitDetails: {} },
-                    { id: 1729000000003, name: '計程車到飯店', amount: 500, category: 'transport', date: '2026-01-16', payment: 'cash', currency: 'THB', payer: '旅伴', splitMethod: 'equal', splitDetails: {} },
-                    { id: 1729000000004, name: '晚餐', amount: 850, category: 'food', date: '2026-01-16', payment: 'cash', currency: 'THB', payer: '我', splitMethod: 'equal', splitDetails: {} }
-                ]);
+                // 2. 修改：清空預設支出
+                const expenses = ref([]);
 
                 const members = ref([
                     { id: 1, name: '我', active: true },
@@ -748,7 +740,6 @@
                     inputTHB.value = Math.round(inputTWD.value / EXCHANGE_RATE.value);
                 };
                 
-                // 當匯率變動時更新 TWD 顯示
                 watch(EXCHANGE_RATE, (newRate) => {
                      if(inputTHB.value) inputTWD.value = Math.round(inputTHB.value * newRate);
                 });
@@ -789,7 +780,6 @@
                 const totalTHB = computed(() => myExpenses.value.filter(e => e.currency === 'THB').reduce((sum, e) => sum + (Number(e.displayAmount) || 0), 0));
                 const totalTWD = computed(() => myExpenses.value.filter(e => e.currency === 'TWD').reduce((sum, e) => sum + (Number(e.displayAmount) || 0), 0));
                 
-                // 1. 優化：總金額強制四捨五入
                 const finalTotalTWD = computed(() => {
                     const sum = myExpenses.value.reduce((acc, exp) => {
                         const amount = Number(exp.displayAmount) || 0;
