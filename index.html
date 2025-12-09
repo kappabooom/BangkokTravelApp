@@ -5,15 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>2026曼谷旅行</title>
 
-    <!-- 1. 載入 Tailwind 與 FontAwesome -->
+    <!-- 1. Apple Touch Icon 設定 (已修復) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="apple-touch-icon.png">
+
+    <!-- 2. 載入必要的函式庫 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- 2. 載入 Vue 3 (Global) -->
+    <!-- Vue 3 Global Build -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 
-    <!-- 3. 載入 Firebase 8 (Compat Version - 最穩定) -->
-    <!-- 使用 Firebase 8 的 compat 版本可以直接在瀏覽器全域使用 firebase 物件，避免模組載入錯誤 -->
+    <!-- Firebase 8 Compat Build (最穩定版本) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-analytics.js"></script>
@@ -87,7 +92,7 @@
                     </div>
                 </div>
 
-                <!-- 天氣區塊 -->
+                <!-- 天氣區塊 (已修復) -->
                 <div v-if="weatherData[selectedDateIndex] && !isPastDate" class="mb-4 bg-snow-white border border-ice-blue rounded-2xl p-4 flex justify-between items-center shadow-md animate-fade-in">
                     <div class="flex items-start text-deep-sea-blue space-x-4">
                         <i :class="getWeatherIcon(weatherData[selectedDateIndex].condition)" class="text-5xl text-accent-yellow"></i>
@@ -179,6 +184,26 @@
                             <div class="flex justify-between text-xs text-slate-500"><span>14:05</span><span>CI0832 (1/20)</span><span>18:40</span></div>
                         </div>
                     </div>
+                </div>
+
+                <!-- 住宿資訊 (已修復) -->
+                <div class="bg-white rounded-3xl p-6 card-shadow">
+                    <h3 class="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-3"><i class="fa-solid fa-hotel text-indigo-500 mr-2"></i> 住宿資訊</h3>
+                    <ul class="space-y-5">
+                        <li v-for="hotel in hotels" class="border-b last:border-0 pb-4 last:pb-0">
+                            <div class="flex justify-between items-start group">
+                                <div class="flex-1">
+                                    <span class="font-bold block text-slate-700 text-lg">{{ hotel.name }}</span>
+                                    <span class="text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full inline-block mt-1">{{ hotel.date }}</span>
+                                </div>
+                                <button @click="openMap(hotel.name)" class="w-8 h-8 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center group-hover:bg-indigo-500 group-hover:text-white transition-all"><i class="fa-solid fa-location-arrow text-xs"></i></button>
+                            </div>
+                            <div class="text-sm text-slate-500 mt-2 space-y-1">
+                                <p class="flex items-center"><i class="fa-solid fa-phone w-5 text-center mr-1 text-slate-300"></i> {{ hotel.phone }}</p>
+                                <p class="flex items-start"><i class="fa-solid fa-map-pin w-5 text-center mr-1 mt-1 text-slate-300"></i> {{ hotel.address }}</p>
+                            </div>
+                        </li>
+                    </ul>
                 </div>
                 
                  <!-- 身份切換區 -->
@@ -441,7 +466,10 @@
 
                 let db;
                 try {
-                    firebase.initializeApp(firebaseConfig);
+                    // 確保只初始化一次
+                    if (!firebase.apps.length) {
+                        firebase.initializeApp(firebaseConfig);
+                    }
                     firebase.analytics();
                     db = firebase.database();
                 } catch(e) {
@@ -471,7 +499,10 @@
                 ]);
                 const weatherData = ref([]);
                 const itineraryData = ref([[], [], [], [], []]);
-                const hotels = ref([{ name: '曼谷市區飯店 (範例)', date: '1/16 - 1/20 (4晚)', phone: '+66-2-123-4567', address: 'Bangkok, Thailand' }]);
+                // 已修復住宿資訊
+                const hotels = ref([
+                    { name: '曼谷市區飯店 (範例)', date: '1/16 - 1/20 (4晚)', phone: '+66-2-123-4567', address: 'Bangkok, Thailand' }
+                ]);
                 const DEFAULT_MEMBERS = ['kappabooom', 'beibei1029', 'hsiannnnng', 'shinbinwei', 'aylwen4444', 'wunsin', 'rtrtr1', 'blackblacknu'];
                 const members = ref(DEFAULT_MEMBERS.map((name, i) => ({ id: `default_${i}`, name, active: true })));
                 const shoppingList = ref([]);
@@ -517,7 +548,6 @@
                     fetchWeather();
                 });
 
-                // --- Business Logic (Same as before) ---
                 const fetchExchangeRate = async () => {
                     try {
                         const r = await fetch('https://open.er-api.com/v6/latest/THB');
@@ -526,21 +556,81 @@
                     } catch(e) { console.error('匯率失敗', e); }
                 };
 
+                // 已修復天氣資訊讀取 (含 API 與 Fallback)
                 const fetchWeather = async () => {
-                   // Simplified weather fetch logic for brevity, you can paste full logic if needed
-                   // Using Fallback for now to ensure no runtime errors blocking UI
-                   const FALLBACK = [
-                        { condition: 'sunny', temp: '32/24', feel: '35', isFallback: true, sourceDate: 'N/A' },
-                        { condition: 'cloudy', temp: '31/25', feel: '34', isFallback: true, sourceDate: 'N/A' },
-                        { condition: 'sunny', temp: '33/24', feel: '36', isFallback: true, sourceDate: 'N/A' },
-                        { condition: 'rain',  temp: '30/24', feel: '32', isFallback: true, sourceDate: 'N/A' },
-                        { condition: 'sunny', temp: '32/25', feel: '35', isFallback: true, sourceDate: 'N/A' }
-                   ];
-                   weatherData.value = FALLBACK;
+                    try {
+                        const url = `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(WEATHER_CITY + ',' + WEATHER_COUNTRY)}&appid=${WEATHER_API_KEY}&units=metric&lang=zh_tw`;
+                        const resp = await fetch(url);
+                        const data = await resp.json();
+
+                        if (!data.list || !Array.isArray(data.list)) throw new Error('No forecast list');
+
+                        const groupedByDate = new Map();
+                        data.list.forEach(item => {
+                            const date = new Date(item.dt * 1000);
+                            const key = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+                            const displayLabel = `${date.getMonth() + 1}/${date.getDate()}`;
+                            if (!groupedByDate.has(key)) groupedByDate.set(key, { items: [], dateObj: date, label: displayLabel });
+                            groupedByDate.get(key).items.push(item);
+                        });
+
+                        const dailyArray = Array.from(groupedByDate.values()).sort((a, b) => a.dateObj - b.dateObj).slice(0, 5);
+                        
+                        const mapCondition = (m) => {
+                            if (!m) return 'sunny';
+                            if (['Rain', 'Drizzle', 'Thunderstorm'].includes(m)) return 'rain';
+                            if (m === 'Clouds') return 'cloudy';
+                            return 'sunny';
+                        };
+
+                        const processedDaily = dailyArray.map(day => {
+                            const temps = day.items.map(i => i.main.temp);
+                            const feels = day.items.map(i => i.main.feels_like);
+                            const mains = day.items.map(i => i.weather?.[0]?.main).filter(Boolean);
+                            const maxTemp = Math.max(...temps);
+                            const minTemp = Math.min(...temps);
+                            const avgFeel = feels.reduce((a, b) => a + b, 0) / feels.length;
+                            
+                            // 找出出現最多次的天氣
+                            const mainCount = mains.reduce((acc, m) => { acc[m] = (acc[m] || 0) + 1; return acc; }, {});
+                            const mainKey = Object.keys(mainCount).reduce((a, b) => mainCount[a] > mainCount[b] ? a : b);
+
+                            return {
+                                condition: mapCondition(mainKey),
+                                temp: `${Math.round(maxTemp)}/${Math.round(minTemp)}`,
+                                feel: Math.round(avgFeel),
+                                sourceDate: day.label
+                            };
+                        });
+
+                        weatherData.value = dates.value.map((d, idx) => {
+                            const exact = processedDaily.find(day => day.sourceDate === d.date);
+                            if (exact) return { ...exact, isFallback: false };
+                            return { ...processedDaily[idx % processedDaily.length], isFallback: true };
+                        });
+                    } catch (err) {
+                        console.error('API 失敗，使用備用資料', err);
+                        const FALLBACK = [
+                            { condition: 'sunny', temp: '32/24', feel: '35', isFallback: true, sourceDate: 'N/A' },
+                            { condition: 'cloudy', temp: '31/25', feel: '34', isFallback: true, sourceDate: 'N/A' },
+                            { condition: 'sunny', temp: '33/24', feel: '36', isFallback: true, sourceDate: 'N/A' },
+                            { condition: 'rain',  temp: '30/24', feel: '32', isFallback: true, sourceDate: 'N/A' },
+                            { condition: 'sunny', temp: '32/25', feel: '35', isFallback: true, sourceDate: 'N/A' }
+                        ];
+                        weatherData.value = FALLBACK;
+                    }
                 };
 
                 // Computeds
-                const isPastDate = computed(() => false); // Simplified
+                const isPastDate = computed(() => {
+                    const currentSelected = dates.value[selectedDateIndex.value];
+                    if (!currentSelected) return false;
+                    const [m, d] = currentSelected.date.split('/');
+                    const tripDate = new Date(TRIP_YEAR, parseInt(m) - 1, parseInt(d));
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    return tripDate < today;
+                });
                 const currentItinerary = computed(() => itineraryData.value[selectedDateIndex.value] || []);
                 const splitMembers = computed(() => members.value.filter(m => m.active).map(m => m.name));
                 
@@ -635,11 +725,14 @@
                     }
                 };
 
+                // 已修復儲存支出功能
                 const saveExpense = async () => {
                     if (!newExpense.value.name || !newExpense.value.amount) return alert('請輸入名稱與金額');
                     const data = JSON.parse(JSON.stringify(newExpense.value));
+                    
                     try {
                         if (editingExpenseId.value === null) {
+                            // 使用 push 返回 Promise，並處理錯誤
                             await db.ref('expenses').push(data);
                             alert('✅ 支出新增成功！');
                         } else {
@@ -649,8 +742,13 @@
                         showExpenseModal.value = false;
                         editingExpenseId.value = null;
                     } catch (e) {
-                        console.error(e);
-                        alert('❌ 儲存失敗：' + e.message);
+                        console.error('Save failed:', e);
+                        // 如果錯誤是因為權限，明確告知
+                        if (e.code === 'PERMISSION_DENIED') {
+                            alert('❌ 儲存失敗：沒有寫入權限。請檢查 Firebase Rules 設定。');
+                        } else {
+                            alert('❌ 儲存失敗：' + e.message);
+                        }
                     }
                 };
 
