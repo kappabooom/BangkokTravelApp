@@ -206,7 +206,7 @@
                     </div>
                 </div>
 
-                <!-- 天氣區塊 (新增 v-if 邏輯：只在非過去日期顯示) -->
+                <!-- 天氣區塊 -->
                 <div v-if="weatherData[selectedDateIndex] && !isPastDate" class="mb-4 bg-snow-white border border-ice-blue rounded-2xl p-4 flex justify-between items-center shadow-md animate-fade-in">
                     <div class="flex items-start text-deep-sea-blue space-x-4">
                         <i :class="getWeatherIcon(weatherData[selectedDateIndex].condition)" class="text-5xl text-accent-yellow"></i>
@@ -221,10 +221,12 @@
                         
                         <!-- 預計 / 非預計日期註記 -->
                         <span v-if="weatherData[selectedDateIndex].isFallback" class="block text-[11px] text-orange-500 mt-1">
-                            非預計日期天氣 (使用 {{ weatherData[selectedDateIndex].sourceDate }} 預報)
+                            非預計日期<br>
+                            (顯示 {{ weatherData[selectedDateIndex].sourceDate }} 天氣)
                         </span>
                         <span v-else class="block text-[11px] text-emerald-600 mt-1">
-                            預計日期天氣 ({{ weatherData[selectedDateIndex].sourceDate }})
+                            預計日期天氣<br>
+                            ({{ weatherData[selectedDateIndex].sourceDate }})
                         </span>
 
                         <span v-if="dates[selectedDateIndex].hasCar" class="mt-1 block text-deep-sea-blue font-bold">
@@ -233,7 +235,7 @@
                         <span v-else class="mt-1 block text-slate-400">本日步行/大眾運輸</span>
                     </div>
                 </div>
-                <!-- 當天氣被隱藏時的提示 (可選，目前留白或保持整潔) -->
+                <!-- 當天氣被隱藏時的提示 (可選) -->
                 
                 <div class="space-y-4">
                     <div v-for="(item, idx) in currentItinerary" :key="item.id" class="relative group">
