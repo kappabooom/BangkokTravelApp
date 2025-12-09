@@ -166,6 +166,11 @@
             top: 0;
             padding-top: env(safe-area-inset-top, 20px);
         }
+        
+        /* Input placeholder color fix for white background inputs */
+        .placeholder-white::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
     </style>
 </head>
 <body>
@@ -286,18 +291,18 @@
                     <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
                     <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-10 -mb-10 blur-2xl"></div>
                     <h3 class="font-bold text-lg mb-4 flex items-center relative z-10"><i class="fa-solid fa-calculator mr-2"></i> 匯率換算</h3>
+                    
+                    <!-- 3. 優化：雙向匯率換算 UI -->
                     <div class="flex items-center justify-between space-x-3 relative z-10">
                         <div class="flex-1">
                             <label class="text-[10px] text-orange-200 block mb-1 uppercase tracking-wider">THB (泰銖)</label>
-                            <!-- 優化：改用 v-model.number 綁定，無需事件驅動 -->
-                            <input type="number" v-model.number="currencyInput" class="w-full bg-white/20 border border-white/30 rounded-xl px-3 py-2.5 text-white placeholder-white/50 focus:outline-none focus:bg-white/30 text-lg font-bold" placeholder=" ">
+                            <input type="number" v-model.number="inputTHB" @input="updateTWD" class="w-full bg-white/20 border border-white/30 rounded-xl px-3 py-2.5 text-white placeholder-white focus:outline-none focus:bg-white/30 text-lg font-bold placeholder-white" placeholder="輸入泰銖">
                         </div>
                         <i class="fa-solid fa-arrow-right-arrow-left text-orange-300 mt-5"></i>
                         <div class="flex-1">
                             <label class="text-[10px] text-orange-200 block mb-1 uppercase tracking-wider">TWD (台幣)</label>
-                            <div class="w-full bg-white/10 rounded-xl px-3 py-2.5 text-white text-lg font-bold border border-transparent">
-                                $ {{ currencyResult }}
-                            </div>
+                            <!-- 雙向綁定：輸入台幣觸發 updateTHB -->
+                            <input type="number" v-model.number="inputTWD" @input="updateTHB" class="w-full bg-white/10 border border-white/30 rounded-xl px-3 py-2.5 text-white placeholder-white focus:outline-none focus:bg-white/20 text-lg font-bold placeholder-white" placeholder="輸入台幣">
                         </div>
                     </div>
                     <p class="text-[10px] text-orange-200 mt-3 text-right relative z-10">匯率基準: 1 THB = {{ EXCHANGE_RATE.toFixed(4) }} TWD</p>
@@ -386,8 +391,9 @@
                     <div class="absolute -right-10 -top-10 bg-white/10 w-48 h-48 rounded-full blur-3xl"></div>
                     <div class="absolute -left-10 -bottom-10 bg-white/20 w-40 h-40 rounded-full blur-2xl"></div>
                     <p class="text-sm text-orange-100 mb-2 relative z-10">我的個人總支出 (已換算為新台幣)</p>
+                    <!-- 1. 優化：加入「約」字樣，並確保金額四捨五入 -->
                     <h2 class="text-4xl font-bold relative z-10 tracking-tight">
-                      NT$ {{ formatNumber(finalTotalTWD) }}
+                      約 NT$ {{ formatNumber(finalTotalTWD) }}
                     </h2>
                     <div class="text-xs mt-3 opacity-90 leading-relaxed relative z-10 bg-white/10 p-3 rounded-lg border border-white/20">
                         <div class="flex justify-between">
@@ -409,11 +415,9 @@
                     <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-user-pen mr-2 text-deep-sea-blue"></i> 我的支出紀錄</h3>
                     <ul v-if="myExpenses.length > 0" class="space-y-4">
                         <li v-for="(exp, idx) in myExpenses" :key="idx" 
-                            class="flex items-center justify-between border-b border-slate-50 last:border-0 pb-3 last:pb-0 transition-colors rounded-lg px-2 -mx-2"
-                            :class="exp.payer === '我' ? 'hover:bg-slate-50' : 'bg-orange-50 hover:bg-orange-100'">
-                            <!-- 優化：加入 items-center 確保垂直置中 -->
+                            class="flex items-center justify-between border-b border-slate-50 last:border-0 pb-3 last:pb-0 transition-colors rounded-lg px-2 -mx-2 hover:bg-slate-50">
+                            <!-- 2. 優化：移除旅伴支付的底色判斷，僅保留 hover:bg-slate-50 -->
                             <div class="flex items-center cursor-pointer flex-1" @click="startEditExpense(getOriginalIndex(exp.id), exp)">
-                                <!-- Icon 區塊：加入 self-center 雙重確保 -->
                                 <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mr-3 text-slate-500 flex-shrink-0 self-center">
                                     <i :class="getCategoryIcon(exp.category)"></i>
                                 </div>
@@ -456,7 +460,6 @@
                                     {{ name }}
                                 </span>
                                 <div class="text-right">
-                                    <!-- 分帳結果強制為整數 -->
                                     <span class="font-bold text-lg" :class="balance > 0 ? 'text-green-600' : 'text-red-600'">
                                         {{ balance > 0 ? '+' : '' }}NT$ {{ formatNumber(Math.round(balance)) }}
                                     </span>
@@ -500,13 +503,11 @@
             </div>
         </main>
 
-        <!-- Floating Action Button -->
         <button v-if="currentTab !== 'info'" @click="handleAddClick" class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-40">
             <i class="fa-solid fa-plus"></i>
         </button>
 
-        <!-- Modals (Shopping, Expense, Itinerary, Member) ... 省略部分代碼與之前相同，僅更新邏輯 ... -->
-        
+        <!-- Modals 省略不變的部分... -->
         <!-- Shopping Modal -->
         <div v-if="showShoppingModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
             <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
@@ -542,7 +543,6 @@
                         </select>
                         <input v-model.number="newExpense.amount" type="number" placeholder="金額" class="flex-1 bg-slate-50 rounded-xl p-3 text-sm outline-none">
                     </div>
-                    <!-- Split Section -->
                     <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 mt-2">
                         <div class="flex items-center justify-between mb-3">
                             <span class="text-xs font-bold text-slate-500"><i class="fa-solid fa-user-group mr-1"></i> 多人分帳</span>
@@ -636,7 +636,7 @@
     </div>
 
     <script>
-        const { createApp, ref, computed, onMounted } = Vue
+        const { createApp, ref, computed, onMounted, watch } = Vue
 
         createApp({
             setup() {
@@ -651,7 +651,11 @@
                 const showItineraryModal = ref(false);
                 const showMemberModal = ref(false);
                 const isEditMode = ref(false);
-                const currencyInput = ref(100);
+                
+                // 雙向綁定用的變數
+                const inputTHB = ref(100);
+                const inputTWD = ref(92);
+
                 const expandedMember = ref(null);
                 
                 // --- 資料模型 ---
@@ -713,7 +717,6 @@
                     };
                 };
 
-                // 優化：API 改用 open.er-api.com
                 const fetchExchangeRate = async () => {
                     try {
                         const resp = await fetch('https://open.er-api.com/v6/latest/THB');
@@ -728,8 +731,28 @@
 
                 onMounted(fetchExchangeRate);
 
-                // 優化：直接計算屬性，無需額外方法
-                const currencyResult = computed(() => Math.round((currencyInput.value || 0) * EXCHANGE_RATE.value));
+                // --- 雙向匯率更新邏輯 ---
+                const updateTWD = () => {
+                    if (inputTHB.value === '' || inputTHB.value === null) {
+                        inputTWD.value = '';
+                        return;
+                    }
+                    inputTWD.value = Math.round(inputTHB.value * EXCHANGE_RATE.value);
+                };
+
+                const updateTHB = () => {
+                    if (inputTWD.value === '' || inputTWD.value === null) {
+                        inputTHB.value = '';
+                        return;
+                    }
+                    inputTHB.value = Math.round(inputTWD.value / EXCHANGE_RATE.value);
+                };
+                
+                // 當匯率變動時更新 TWD 顯示
+                watch(EXCHANGE_RATE, (newRate) => {
+                     if(inputTHB.value) inputTWD.value = Math.round(inputTHB.value * newRate);
+                });
+
                 
                 const currentItinerary = computed(() => itineraryData.value[selectedDateIndex.value] || []);
                 const splitMembers = computed(() => members.value.filter(m => m.active).map(m => m.name));
@@ -750,7 +773,6 @@
                             myShare = totalAmount;
                         } else if (exp.splitMethod === 'equal') {
                             const activeCount = members.value.filter(m => m.active).length || 1;
-                            // 這裡只是顯示用，所以稍微簡化，精確計算在 memberBalances
                             myShare = Math.round(totalAmount / activeCount); 
                         } else if (exp.splitMethod === 'amount') {
                             myShare = Number(exp.splitDetails['我']) || 0;
@@ -766,15 +788,17 @@
 
                 const totalTHB = computed(() => myExpenses.value.filter(e => e.currency === 'THB').reduce((sum, e) => sum + (Number(e.displayAmount) || 0), 0));
                 const totalTWD = computed(() => myExpenses.value.filter(e => e.currency === 'TWD').reduce((sum, e) => sum + (Number(e.displayAmount) || 0), 0));
+                
+                // 1. 優化：總金額強制四捨五入
                 const finalTotalTWD = computed(() => {
-                    return myExpenses.value.reduce((sum, exp) => {
+                    const sum = myExpenses.value.reduce((acc, exp) => {
                         const amount = Number(exp.displayAmount) || 0;
                         const valInTWD = exp.currency === 'TWD' ? amount : amount * EXCHANGE_RATE.value;
-                        return sum + valInTWD;
+                        return acc + valInTWD;
                     }, 0);
+                    return Math.round(sum); 
                 });
 
-                // 優化：分帳整數算法與隨機餘數分配
                 const memberBalances = computed(() => {
                     const balances = {};
                     members.value.forEach(m => { balances[m.name] = 0; });
@@ -792,20 +816,13 @@
                                 participants = members.value.filter(m => m.active).map(m => m.name);
                                 const count = participants.length;
                                 if (count > 0) {
-                                    // 1. 總額取整，避免小數點困擾
                                     const totalInt = Math.round(amountInTWD);
-                                    // 2. 計算每人基本額與餘數
                                     const baseShare = Math.floor(totalInt / count);
                                     let remainder = totalInt % count;
-                                    
-                                    // 3. 餘數分配 (使用 ID 做偽隨機，確保穩定性)
-                                    // 邏輯：從 (id % count) 的那個人開始發餘數，每人1塊直到發完
                                     const startIdx = (exp.id % count);
                                     
                                     participants.forEach((name, idx) => {
                                         let share = baseShare;
-                                        // 判斷是否分配到餘數 (Circular distribution)
-                                        // 簡單做法：如果 (idx - startIdx + count) % count < remainder，則分配
                                         if (remainder > 0) {
                                             const relativeIdx = (idx - startIdx + count) % count;
                                             if (relativeIdx < remainder) {
@@ -845,7 +862,7 @@
                 
                 const settlementSteps = computed(() => {
                     const balances = JSON.parse(JSON.stringify(memberBalances.value));
-                    const debtors = Object.entries(balances).filter(([,b]) => b < -1).sort((a,b) => a[1] - b[1]); // 寬容度設為1
+                    const debtors = Object.entries(balances).filter(([,b]) => b < -1).sort((a,b) => a[1] - b[1]); 
                     const creditors = Object.entries(balances).filter(([,b]) => b > 1).sort((a,b) => b[1] - a[1]);
                     const steps = [];
 
@@ -973,7 +990,6 @@
                     }
                 };
                 
-                // 省略重複的 Map 方法... 
                 const openMap = (q) => { if(q) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); };
                 const openMapDirections = (start, end) => {
                     const o = start.address || start.name;
@@ -986,7 +1002,6 @@
                     showItineraryModal.value = true;
                 };
                 
-                // Helper for weather/transport icon (Re-declare to be safe or use previous logic)
                 const getWeatherIcon = (cond) => {
                     const map = { sunny: 'fa-solid fa-sun', cloudy: 'fa-solid fa-cloud-sun', rain: 'fa-solid fa-cloud-showers-heavy' };
                     return map[cond] || 'fa-solid fa-sun';
@@ -1004,7 +1019,8 @@
                     currentTab, selectedDateIndex, showShoppingModal, showExpenseModal, showItineraryModal, showMemberModal, isEditMode, editingExpenseIndex, expandedMember,
                     dates, weatherData, currentItinerary, hotels, shoppingList, expenses, members,
                     newShoppingItem, newExpense, newItinerary, newMemberName,
-                    currencyResult, splitMembers, myExpenses, totalTHB, totalTWD, finalTotalTWD, memberBalances, settlementSteps, EXCHANGE_RATE, currencyInput,
+                    splitMembers, myExpenses, totalTHB, totalTWD, finalTotalTWD, memberBalances, settlementSteps, EXCHANGE_RATE, 
+                    inputTHB, inputTWD, updateTHB, updateTWD,
                     formatNumber, getCategoryIcon, handleAddClick, getOriginalIndex,
                     addMember, toggleMemberActive, removeMember, toggleMemberDetails, getMemberPaidExpenses,
                     startEditExpense, saveExpense, removeExpense, closeExpenseModal,
