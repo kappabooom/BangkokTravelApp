@@ -12,15 +12,6 @@
     <title>2026曼谷旅行</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
-        // 為了讓 Vue 存取 Firebase，掛載到 window
-        window.firebaseModules = { initializeApp, getDatabase, ref, set, push, onValue, remove, update };
-    </script>
     
     <script>
         tailwind.config = {
@@ -671,8 +662,11 @@
         </div>
     </div>
 
-    <script>
-        const { createApp, ref, computed, onMounted, watch } = Vue
+    <script type="module">
+        // 改為 ES Module 載入，解決全域變數未就緒的問題
+        import { createApp, ref, computed, onMounted, watch } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref as dbRef, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         createApp({
             setup() {
@@ -686,9 +680,6 @@
                 const WEATHER_COUNTRY = 'TH'; // 泰國
                 
                 // --- Firebase 初始化 ---
-                // 從 window 物件中取出 Firebase 模組
-                const { initializeApp, getDatabase, ref: dbRef, set, push, onValue, remove, update } = window.firebaseModules;
-
                 const firebaseConfig = {
                     apiKey: "AIzaSyCyYCSGWQ0Wdf13AE62UG7W8WiwpqCHs_0",
                     authDomain: "bankoktrip2026.firebaseapp.com",
