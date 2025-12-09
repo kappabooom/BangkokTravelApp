@@ -286,6 +286,20 @@
 
             <!-- 2. 資訊 Tab -->
             <div v-if="currentTab === 'info'" class="space-y-5 animate-fade-in">
+                <!-- 身份切換區 (新增) -->
+                <div class="bg-white rounded-3xl p-5 card-shadow border border-deep-sea-blue/10">
+                    <h3 class="font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2 flex items-center">
+                        <i class="fa-solid fa-user-gear text-deep-sea-blue mr-2"></i> 使用者設定
+                    </h3>
+                    <div>
+                        <label class="text-xs text-slate-500 mb-1 block font-bold">我是誰？(切換身份)</label>
+                        <select v-model="currentUser" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none font-bold text-deep-sea-blue">
+                            <option v-for="m in members" :key="m.id" :value="m.name">{{ m.name }}</option>
+                        </select>
+                        <p class="text-[10px] text-slate-400 mt-2">切換後，花費頁面將只顯示該成員的支出紀錄。</p>
+                    </div>
+                </div>
+
                 <div class="bg-gradient-to-r from-deep-sea-blue to-orange-700 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
                     <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-10 -mb-10 blur-2xl"></div>
@@ -387,7 +401,12 @@
                 <div class="expenses-banner text-white rounded-3xl p-6 relative overflow-hidden">
                     <div class="absolute -right-10 -top-10 bg-white/10 w-48 h-48 rounded-full blur-3xl"></div>
                     <div class="absolute -left-10 -bottom-10 bg-white/20 w-40 h-40 rounded-full blur-2xl"></div>
-                    <p class="text-sm text-orange-100 mb-2 relative z-10">我的個人總支出 (已換算為新台幣)</p>
+                    
+                    <!-- 顯示當前使用者的總支出 -->
+                    <p class="text-sm text-orange-100 mb-2 relative z-10 flex items-center">
+                        <i class="fa-solid fa-user-circle mr-1"></i> {{ currentUser }} 的個人總支出
+                    </p>
+                    
                     <h2 class="text-4xl font-bold relative z-10 tracking-tight">
                       約 NT$ {{ formatNumber(finalTotalTWD) }}
                     </h2>
@@ -408,7 +427,9 @@
 
                 <!-- 我的支出紀錄 -->
                 <div class="bg-white rounded-3xl p-6 card-shadow">
-                    <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-user-pen mr-2 text-deep-sea-blue"></i> 我的支出紀錄</h3>
+                    <h3 class="font-bold text-slate-800 mb-4">
+                        <i class="fa-solid fa-user-pen mr-2 text-deep-sea-blue"></i> {{ currentUser }} 的支出紀錄
+                    </h3>
                     <ul v-if="myExpenses.length > 0" class="space-y-4">
                         <li v-for="(exp, idx) in myExpenses" :key="idx" 
                             class="flex items-center justify-between border-b border-slate-50 last:border-0 pb-3 last:pb-0 transition-colors rounded-lg px-2 -mx-2 hover:bg-slate-50">
@@ -420,7 +441,8 @@
                                     <p class="font-bold text-slate-700 text-sm leading-tight">{{ exp.name }}</p>
                                     <p class="text-xs text-slate-400 mt-0.5">{{ exp.date }}
                                         <span v-if="exp.splitMethod!=='personal'" class="ml-1 px-1.5 py-0.5 rounded-full bg-slate-200 text-[9px] font-medium text-slate-600">分帳</span>
-                                        <span v-if="exp.payer !== '我'" class="ml-1 px-1.5 py-0.5 rounded-full bg-orange-200 text-[9px] font-bold text-orange-800">{{ exp.payer }}先付</span>
+                                        <!-- 判斷 Payer 是否為當前使用者 -->
+                                        <span v-if="exp.payer !== currentUser" class="ml-1 px-1.5 py-0.5 rounded-full bg-orange-200 text-[9px] font-bold text-orange-800">{{ exp.payer }}先付</span>
                                     </p>
                                 </div>
                             </div>
@@ -437,7 +459,7 @@
                     </ul>
                     <div v-else class="text-center py-8 text-slate-400">
                         <i class="fa-solid fa-file-invoice-dollar text-3xl text-slate-300 mb-2"></i>
-                        <p>尚無由您本人支付或分攤的款項</p>
+                        <p>尚無由 {{ currentUser }} 支付或分攤的款項</p>
                     </div>
                 </div>
 
@@ -639,7 +661,6 @@
                 const EXCHANGE_RATE = ref(0.92); // 預設值
 
                 // --- UI 狀態 ---
-                // 1. 修改：首頁預設為行程頁
                 const currentTab = ref('itinerary');
                 const selectedDateIndex = ref(0);
                 const showShoppingModal = ref(false);
@@ -682,18 +703,18 @@
                     { name: '曼谷市區飯店 (範例)', date: '1/16 - 1/20 (4晚)', phone: '+66-2-123-4567', address: 'Bangkok, Thailand' }
                 ]);
 
-                const shoppingList = ref([
-                    { name: '泰式奶茶包', checked: false }, { name: 'Pocky 芒果口味', checked: false }
-                ]);
+                // 3. 修改：清空購物清單
+                const shoppingList = ref([]);
 
-                // 2. 修改：清空預設支出
                 const expenses = ref([]);
 
-                const members = ref([
-                    { id: 1, name: '我', active: true },
-                    { id: 2, name: '旅伴', active: true }
-                ]);
+                // 1. 修改：更新預設團員名單
+                const rawMembers = ['kappabooom', 'beibei1029', 'hsiannnnng', 'shinbinwei', 'aylwen4444', 'wunsin', 'rtrtr1', 'blackblacknu'];
+                const members = ref(rawMembers.map((name, i) => ({ id: i + 1, name, active: true })));
                 const newMemberName = ref('');
+
+                // 2. 新增：當前使用者狀態
+                const currentUser = ref(rawMembers[0]);
 
                 const editingExpenseIndex = ref(null);
                 const newShoppingItem = ref({ name: '', checked: false });
@@ -704,7 +725,8 @@
                     newExpense.value = { 
                         id: Date.now(),
                         name: '', amount: null, category: 'food', date: '2026-01-16', 
-                        payment: 'cash', currency: 'THB', payer: '我', 
+                        payment: 'cash', currency: 'THB', 
+                        payer: currentUser.value, // 預設支付者為當前使用者
                         splitMethod: 'personal', splitDetails: {} 
                     };
                 };
@@ -748,12 +770,18 @@
                 const currentItinerary = computed(() => itineraryData.value[selectedDateIndex.value] || []);
                 const splitMembers = computed(() => members.value.filter(m => m.active).map(m => m.name));
                 
+                // 修改：根據 currentUser 過濾支出
                 const myExpenses = computed(() => {
                     return expenses.value.filter(exp => {
-                        if (exp.splitMethod === 'personal') return exp.payer === '我';
-                        if (exp.splitMethod === 'equal') return true;
+                        // 1. 個人支出：如果付款人是 currentUser
+                        if (exp.splitMethod === 'personal') return exp.payer === currentUser.value;
+                        
+                        // 2. 均分：假設只要是啟用的團員都有份
+                        if (exp.splitMethod === 'equal') return true; 
+                        
+                        // 3. 指定金額或比例：檢查 currentUser 是否在名單中且大於 0
                         if (exp.splitMethod === 'amount' || exp.splitMethod === 'ratio') {
-                            return exp.splitDetails && Number(exp.splitDetails['我']) > 0;
+                            return exp.splitDetails && Number(exp.splitDetails[currentUser.value]) > 0;
                         }
                         return false;
                     }).map(exp => {
@@ -766,10 +794,10 @@
                             const activeCount = members.value.filter(m => m.active).length || 1;
                             myShare = Math.round(totalAmount / activeCount); 
                         } else if (exp.splitMethod === 'amount') {
-                            myShare = Number(exp.splitDetails['我']) || 0;
+                            myShare = Number(exp.splitDetails[currentUser.value]) || 0;
                         } else if (exp.splitMethod === 'ratio') {
                             const totalRatio = Object.values(exp.splitDetails).reduce((sum, r) => sum + (Number(r) || 0), 0);
-                            const myRatio = Number(exp.splitDetails['我']) || 0;
+                            const myRatio = Number(exp.splitDetails[currentUser.value]) || 0;
                             if (totalRatio > 0) myShare = (totalAmount * myRatio) / totalRatio;
                         }
                         
@@ -1016,7 +1044,7 @@
                     startEditExpense, saveExpense, removeExpense, closeExpenseModal,
                     addShoppingItem, removeShoppingItem,
                     saveItineraryItem, removeItineraryItem, moveItinerary, openMap, openMapDirections, editItem,
-                    getWeatherIcon, getWeatherDescription, getTransportIcon, getCategoryColor
+                    getWeatherIcon, getWeatherDescription, getTransportIcon, getCategoryColor, currentUser
                 };
             }
         }).mount('#app');
