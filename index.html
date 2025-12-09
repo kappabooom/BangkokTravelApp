@@ -664,8 +664,11 @@
 
     <script type="module">
         import { createApp, ref, computed, onMounted, watch } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref as dbRef, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        
+        // --- 根據您的要求，更新為 Firebase v12.6.0 ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-analytics.js";
+        import { getDatabase, ref as dbRef, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-database.js";
 
         createApp({
             setup() {
@@ -677,7 +680,7 @@
                 const WEATHER_CITY = 'Bangkok';
                 const WEATHER_COUNTRY = 'TH'; 
                 
-                // --- Firebase 初始化 ---
+                // --- Firebase 初始化 (更新設定) ---
                 const firebaseConfig = {
                     apiKey: "AIzaSyCyYCSGWQ0Wdf13AE62UG7W8WiwpqCHs_0",
                     authDomain: "bankoktrip2026.firebaseapp.com",
@@ -689,6 +692,7 @@
                 };
 
                 const app = initializeApp(firebaseConfig);
+                const analytics = getAnalytics(app); // 初始化 Analytics
                 const db = getDatabase(app);
                 
                 // --- UI 狀態 ---
