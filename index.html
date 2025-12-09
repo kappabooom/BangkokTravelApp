@@ -19,13 +19,12 @@
             theme: {
                 extend: {
                     colors: {
-                        // 修改為暖色調/度假風格
-                        'snow-white': '#FFFDE7',       // 暖象牙白 (原雪白)
-                        'ice-blue': '#4DB6AC',         // 海洋綠 (原冰川藍)
-                        'light-snow-blue': '#FFF3E0',  // 溫暖淺橘底色 (原淺藍底色)
-                        'deep-sea-blue': '#E65100',    // 夕陽深橘 (原深海藍 - 文字/強調)
-                        'accent-yellow': '#FFB300',    // 熱帶金黃 (原溫暖黃)
-                        'soft-gray': '#FAFAFA'         // 背景灰
+                        'snow-white': '#FFFDE7',
+                        'ice-blue': '#4DB6AC',
+                        'light-snow-blue': '#FFF3E0',
+                        'deep-sea-blue': '#E65100',
+                        'accent-yellow': '#FFB300',
+                        'soft-gray': '#FAFAFA'
                     }
                 }
             }
@@ -36,7 +35,7 @@
         @import url('https://fonts.googleapis.com/css?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
 
         body {
-            background-color: #FFF3E0; /* 暖色背景 */
+            background-color: #FFF3E0;
             -webkit-tap-highlight-color: transparent;
             font-family: 'Noto Sans TC', sans-serif;
             color: #334155;
@@ -79,7 +78,6 @@
             display: block;
         }
 
-        /* Tab 按鈕樣式 */
         .side-tab-bar {
             position: absolute;
             bottom:  15px;
@@ -105,7 +103,7 @@
         }
 
         .tab-button.active {
-            background-color: #E65100; /* deep-sea-blue (orange) */
+            background-color: #E65100;
             color: #ffffff;
             box-shadow: 0 6px 15px rgba(230, 81, 0, 0.4);
             transform: scale(1.05);
@@ -113,7 +111,7 @@
 
         .tab-button:not(.active) {
             background-color: #ffffff;
-            color: #4DB6AC; /* ice-blue (teal) */
+            color: #4DB6AC;
         }
 
         .app-main {
@@ -131,7 +129,7 @@
         }
 
         .card-shadow {
-            box-shadow: 0 4px 20px rgba(230, 81, 0, 0.1); /* 調整陰影顏色 */
+            box-shadow: 0 4px 20px rgba(230, 81, 0, 0.1);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
@@ -157,7 +155,6 @@
             max-height: 500px;
         }
 
-        /* 支出頁 Banner 改為熱帶夕陽漸層 */
         .expenses-banner {
             background: linear-gradient(135deg, #FF7043 0%, #AB47BC 100%);
         }
@@ -168,19 +165,6 @@
             z-index: 20;
             top: 0;
             padding-top: env(safe-area-inset-top, 20px);
-        }
-        
-        .slide-down-enter-active,
-        .slide-down-leave-active {
-          transition: all 0.3s ease-out;
-          max-height: 200px; /* Adjust as needed */
-          overflow: hidden;
-        }
-
-        .slide-down-enter-from,
-        .slide-down-leave-to {
-          max-height: 0;
-          opacity: 0;
         }
     </style>
 </head>
@@ -207,6 +191,7 @@
         </div>
 
         <main class="p-4 app-main">
+            <!-- 1. 行程 Tab -->
             <div v-if="currentTab === 'itinerary'" class="animate-fade-in">
                 <div class="flex overflow-x-auto hide-scrollbar space-x-3 pb-4 mb-2 snap-x px-1 sticky date-selector-sticky pt-1 -mx-4 px-4">
                     <div v-for="(day, index) in dates" :key="index" @click="selectedDateIndex = index"
@@ -295,6 +280,7 @@
                 </div>
             </div>
 
+            <!-- 2. 資訊 Tab -->
             <div v-if="currentTab === 'info'" class="space-y-5 animate-fade-in">
                 <div class="bg-gradient-to-r from-deep-sea-blue to-orange-700 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
@@ -303,7 +289,8 @@
                     <div class="flex items-center justify-between space-x-3 relative z-10">
                         <div class="flex-1">
                             <label class="text-[10px] text-orange-200 block mb-1 uppercase tracking-wider">THB (泰銖)</label>
-                            <input type="number" v-model="currencyInput" @input="calculateCurrency" class="w-full bg-white/20 border border-white/30 rounded-xl px-3 py-2.5 text-white placeholder-white/50 focus:outline-none focus:bg-white/30 text-lg font-bold" placeholder=" ">
+                            <!-- 優化：改用 v-model.number 綁定，無需事件驅動 -->
+                            <input type="number" v-model.number="currencyInput" class="w-full bg-white/20 border border-white/30 rounded-xl px-3 py-2.5 text-white placeholder-white/50 focus:outline-none focus:bg-white/30 text-lg font-bold" placeholder=" ">
                         </div>
                         <i class="fa-solid fa-arrow-right-arrow-left text-orange-300 mt-5"></i>
                         <div class="flex-1">
@@ -364,20 +351,9 @@
                         </li>
                     </ul>
                 </div>
-
-                <div class="bg-red-50 rounded-3xl p-6 border border-red-100">
-                    <h3 class="font-bold text-red-800 mb-4"><i class="fa-solid fa-kit-medical mr-2"></i> 緊急聯絡</h3>
-                    <div class="grid grid-cols-2 gap-4 text-center">
-                        <a href="tel:191" class="bg-white py-3 rounded-xl shadow-sm text-red-600 font-bold block border border-red-100 hover:bg-red-600 hover:text-white transition-all">
-                            <i class="fa-solid fa-user-shield mr-1"></i> 警察 191
-                        </a>
-                        <a href="tel:1669" class="bg-white py-3 rounded-xl shadow-sm text-red-600 font-bold block border border-red-100 hover:bg-red-600 hover:text-white transition-all">
-                            <i class="fa-solid fa-truck-medical mr-1"></i> 救護 1669
-                        </a>
-                    </div>
-                </div>
             </div>
 
+            <!-- 3. 購物 Tab -->
             <div v-if="currentTab === 'shopping'" class="animate-fade-in">
                 <div class="bg-white rounded-3xl p-6 card-shadow min-h-[60vh]">
                     <h3 class="font-bold text-slate-800 mb-4 flex items-center justify-between">
@@ -404,6 +380,7 @@
                 </div>
             </div>
 
+            <!-- 4. 花費 Tab (核心功能區) -->
             <div v-if="currentTab === 'expenses'" class="animate-fade-in space-y-6">
                 <div class="expenses-banner text-white rounded-3xl p-6 relative overflow-hidden">
                     <div class="absolute -right-10 -top-10 bg-white/10 w-48 h-48 rounded-full blur-3xl"></div>
@@ -427,20 +404,22 @@
                     </div>
                 </div>
 
-                <!-- 1. 我的支出紀錄 (移至最上方) -->
+                <!-- 我的支出紀錄 -->
                 <div class="bg-white rounded-3xl p-6 card-shadow">
                     <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-user-pen mr-2 text-deep-sea-blue"></i> 我的支出紀錄</h3>
                     <ul v-if="myExpenses.length > 0" class="space-y-4">
                         <li v-for="(exp, idx) in myExpenses" :key="idx" 
                             class="flex items-center justify-between border-b border-slate-50 last:border-0 pb-3 last:pb-0 transition-colors rounded-lg px-2 -mx-2"
                             :class="exp.payer === '我' ? 'hover:bg-slate-50' : 'bg-orange-50 hover:bg-orange-100'">
+                            <!-- 優化：加入 items-center 確保垂直置中 -->
                             <div class="flex items-center cursor-pointer flex-1" @click="startEditExpense(getOriginalIndex(exp.id), exp)">
-                                <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mr-3 text-slate-500">
+                                <!-- Icon 區塊：加入 self-center 雙重確保 -->
+                                <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mr-3 text-slate-500 flex-shrink-0 self-center">
                                     <i :class="getCategoryIcon(exp.category)"></i>
                                 </div>
-                                <div>
-                                    <p class="font-bold text-slate-700 text-sm">{{ exp.name }}</p>
-                                    <p class="text-xs text-slate-400">{{ exp.date }}
+                                <div class="flex-1">
+                                    <p class="font-bold text-slate-700 text-sm leading-tight">{{ exp.name }}</p>
+                                    <p class="text-xs text-slate-400 mt-0.5">{{ exp.date }}
                                         <span v-if="exp.splitMethod!=='personal'" class="ml-1 px-1.5 py-0.5 rounded-full bg-slate-200 text-[9px] font-medium text-slate-600">分帳</span>
                                         <span v-if="exp.payer !== '我'" class="ml-1 px-1.5 py-0.5 rounded-full bg-orange-200 text-[9px] font-bold text-orange-800">{{ exp.payer }}先付</span>
                                     </p>
@@ -463,7 +442,7 @@
                     </div>
                 </div>
 
-                <!-- 2. 分帳總覽 (含展開明細功能) -->
+                <!-- 分帳總覽 -->
                 <div class="bg-white rounded-3xl p-6 card-shadow">
                     <h3 class="font-bold text-slate-800 mb-4 flex items-center justify-between">
                         <span><i class="fa-solid fa-receipt mr-2 text-indigo-500"></i> 分帳總覽</span>
@@ -477,6 +456,7 @@
                                     {{ name }}
                                 </span>
                                 <div class="text-right">
+                                    <!-- 分帳結果強制為整數 -->
                                     <span class="font-bold text-lg" :class="balance > 0 ? 'text-green-600' : 'text-red-600'">
                                         {{ balance > 0 ? '+' : '' }}NT$ {{ formatNumber(Math.round(balance)) }}
                                     </span>
@@ -485,7 +465,6 @@
                                     </span>
                                 </div>
                             </div>
-                            <!-- 成員明細展開區 -->
                             <div v-if="expandedMember === name" class="bg-white p-3 border-t border-slate-100 animate-fade-in">
                                 <p class="text-xs text-slate-400 mb-2 font-bold">該成員支付的分帳項目：</p>
                                 <ul class="space-y-2">
@@ -503,7 +482,7 @@
                     </ul>
                 </div>
                 
-                <!-- 3. 結算建議 (移至最下方) -->
+                <!-- 結算建議 -->
                 <div class="bg-white rounded-3xl p-6 card-shadow">
                     <h3 class="font-bold text-slate-800 mb-4 flex items-center">
                         <i class="fa-solid fa-handshake-angle mr-2 text-cyan-500"></i> 結算建議
@@ -521,10 +500,14 @@
             </div>
         </main>
 
+        <!-- Floating Action Button -->
         <button v-if="currentTab !== 'info'" @click="handleAddClick" class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-40">
             <i class="fa-solid fa-plus"></i>
         </button>
 
+        <!-- Modals (Shopping, Expense, Itinerary, Member) ... 省略部分代碼與之前相同，僅更新邏輯 ... -->
+        
+        <!-- Shopping Modal -->
         <div v-if="showShoppingModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
             <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
                 <h3 class="font-bold text-lg mb-5 text-center text-slate-800">新增購物清單</h3>
@@ -536,14 +519,13 @@
             </div>
         </div>
 
+        <!-- Expense Modal -->
         <div v-if="showExpenseModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
             <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                 <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ editingExpenseIndex === null ? "記一筆" : "編輯支出" }}</h3>
                 <div class="space-y-3">
-                    
                     <input v-model="newExpense.date" type="date" class="w-full bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
                     <input v-model="newExpense.name" type="text" placeholder="項目名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none">
-                    
                     <div class="grid grid-cols-2 gap-3">
                         <select v-model="newExpense.payer" class="bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
                             <option v-for="member in members" :key="member.id" :value="member.name">{{ member.name }} (支付)</option>
@@ -553,7 +535,6 @@
                             <option value="card">信用卡</option>
                         </select>
                     </div>
-
                     <div class="flex space-x-2">
                         <select v-model="newExpense.currency" class="bg-slate-50 rounded-xl p-3 text-sm outline-none font-bold text-slate-700 w-24">
                             <option value="THB">฿ THB</option>
@@ -561,31 +542,25 @@
                         </select>
                         <input v-model.number="newExpense.amount" type="number" placeholder="金額" class="flex-1 bg-slate-50 rounded-xl p-3 text-sm outline-none">
                     </div>
-
                     <!-- Split Section -->
                     <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 mt-2">
                         <div class="flex items-center justify-between mb-3">
                             <span class="text-xs font-bold text-slate-500"><i class="fa-solid fa-user-group mr-1"></i> 多人分帳</span>
-                            <button @click="showMemberModal = true" class="text-[10px] px-2 py-1 rounded-lg bg-white border border-slate-200 text-deep-sea-blue font-medium shadow-sm">
-                                <i class="fa-solid fa-users-gear mr-1"></i>管理成員
-                            </button>
+                            <button @click="showMemberModal = true" class="text-[10px] px-2 py-1 rounded-lg bg-white border border-slate-200 text-deep-sea-blue font-medium shadow-sm"><i class="fa-solid fa-users-gear mr-1"></i>管理成員</button>
                         </div>
-                        
                         <div class="flex space-x-1 mb-3 bg-white p-1 rounded-lg border border-slate-200">
                             <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod==='personal' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod='personal'">個人</button>
                             <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod==='equal' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod='equal'">均分</button>
                             <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod==='ratio' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod='ratio'">比例</button>
                             <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod==='amount' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod='amount'">金額</button>
                         </div>
-
                         <div v-if="newExpense.splitMethod !== 'personal'">
                             <div v-if="splitMembers.length > 0" class="space-y-2 max-h-32 overflow-y-auto pr-1">
                                  <div v-if="newExpense.splitMethod === 'equal'" class="text-xs text-slate-500 p-2 text-center bg-white rounded border border-slate-100">
-                                    將由 {{ splitMembers.length }} 位啟用成員均分：<br>
-                                    <span class="font-medium text-slate-600">{{ splitMembers.join(', ') }}</span>
+                                    將由 {{ splitMembers.length }} 位啟用成員均分<br><span class="text-[10px] text-orange-400">(除不盡的餘額將隨機分配)</span>
                                  </div>
                                  <div v-else>
-                                    <p class="text-xs text-slate-400 mb-2">請為參與成員輸入分帳{{ newExpense.splitMethod === 'ratio' ? '比例' : '金額' }}：</p>
+                                    <p class="text-xs text-slate-400 mb-2">請輸入分帳{{ newExpense.splitMethod === 'ratio' ? '比例' : '金額' }}：</p>
                                     <div v-for="member in splitMembers" :key="member" class="flex items-center justify-between mb-2 last:mb-0">
                                         <span class="text-xs text-slate-600 truncate w-20">{{ member }}</span>
                                         <input v-model="newExpense.splitDetails[member]" type="number" 
@@ -594,13 +569,9 @@
                                     </div>
                                  </div>
                             </div>
-                            <div v-else class="text-xs text-slate-400 text-center py-2">
-                                沒有啟用的分帳成員<br>請至「管理成員」啟用
-                            </div>
+                            <div v-else class="text-xs text-slate-400 text-center py-2">沒有啟用的分帳成員</div>
                         </div>
-                        <div v-else class="text-xs text-slate-400 text-center py-2 bg-white rounded border border-slate-100">
-                            此筆為個人支出，不計入分帳
-                        </div>
+                        <div v-else class="text-xs text-slate-400 text-center py-2 bg-white rounded border border-slate-100">此筆為個人支出</div>
                     </div>
                 </div>
                 <div class="flex space-x-3 mt-6">
@@ -610,6 +581,7 @@
             </div>
         </div>
 
+        <!-- Itinerary Modal -->
         <div v-if="showItineraryModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
             <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                 <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ isEditMode ? '編輯行程' : '新增行程' }}</h3>
@@ -624,26 +596,24 @@
                         <option value="flight">航班</option>
                         <option value="other">其他</option>
                     </select>
-                    <input v-model="newItinerary.startTime" type="text" placeholder="時間 (例如 09:30)" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none">
+                    <input v-model="newItinerary.startTime" type="text" placeholder="時間" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none">
                     <input v-model="newItinerary.name" type="text" placeholder="行程名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none">
-                    <input v-model="newItinerary.address" type="text" placeholder="地址/位置 (供導航用)" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none">
-                    <textarea v-model="newItinerary.note" rows="3" placeholder="備註 (選填)" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none"></textarea>
-                    
+                    <input v-model="newItinerary.address" type="text" placeholder="地址" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none">
+                    <textarea v-model="newItinerary.note" rows="3" placeholder="備註" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none"></textarea>
                     <div class="grid grid-cols-2 gap-3">
                         <input v-model="newItinerary.hours" type="text" placeholder="營業時間" class="bg-slate-50 rounded-xl p-3 text-sm outline-none">
-                        <input v-model="newItinerary.price" type="text" placeholder="預算/門票" class="bg-slate-50 rounded-xl p-3 text-sm outline-none">
+                        <input v-model="newItinerary.price" type="text" placeholder="預算" class="bg-slate-50 rounded-xl p-3 text-sm outline-none">
                     </div>
                 </div>
-                
                 <div class="flex space-x-3 mt-6">
                     <button @click="showItineraryModal = false; isEditMode = false" :class="isEditMode ? 'w-1/3' : 'flex-1'" class="py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
-                    <button v-if="isEditMode" @click="removeItineraryItem(newItinerary.id)" class="w-1/3 py-3 rounded-xl bg-red-100 text-red-600 font-bold text-sm hover:bg-red-200 transition-colors">
-                        <i class="fa-solid fa-trash-can mr-1"></i> 刪除
-                    </button>
+                    <button v-if="isEditMode" @click="removeItineraryItem(newItinerary.id)" class="w-1/3 py-3 rounded-xl bg-red-100 text-red-600 font-bold text-sm hover:bg-red-200 transition-colors"><i class="fa-solid fa-trash-can mr-1"></i> 刪除</button>
                     <button @click="saveItineraryItem" :class="isEditMode ? 'w-1/3' : 'flex-1'" class="py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30">{{ isEditMode ? '儲存' : '新增' }}</button>
                 </div>
             </div>
         </div>
+
+        <!-- Member Modal -->
         <div v-if="showMemberModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[60] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
             <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
                 <h3 class="font-bold text-lg mb-4 text-center text-slate-800">分帳成員管理</h3>
@@ -671,7 +641,7 @@
         createApp({
             setup() {
                 // --- 常數與設定 ---
-                const EXCHANGE_RATE = ref(0.92); // THB to TWD default
+                const EXCHANGE_RATE = ref(0.92); // 預設值
 
                 // --- UI 狀態 ---
                 const currentTab = ref('expenses');
@@ -682,7 +652,7 @@
                 const showMemberModal = ref(false);
                 const isEditMode = ref(false);
                 const currencyInput = ref(100);
-                const expandedMember = ref(null); // Track expanded member detail
+                const expandedMember = ref(null);
                 
                 // --- 資料模型 ---
                 const dates = ref([
@@ -717,20 +687,18 @@
                 ]);
 
                 const expenses = ref([
-                    { id: Date.now() + 1, name: '機票', amount: 12000, category: 'ticket', date: '2025-10-15', payment: 'card', currency: 'TWD', payer: '我', splitMethod: 'equal', splitDetails: {} },
-                    { id: Date.now() + 2, name: '預付住宿', amount: 8000, category: 'stay', date: '2025-11-20', payment: 'card', currency: 'TWD', payer: '我', splitMethod: 'equal', splitDetails: {} },
-                    { id: Date.now() + 3, name: '計程車到飯店', amount: 500, category: 'transport', date: '2026-01-16', payment: 'cash', currency: 'THB', payer: '旅伴', splitMethod: 'equal', splitDetails: {} },
-                    { id: Date.now() + 4, name: '晚餐', amount: 850, category: 'food', date: '2026-01-16', payment: 'cash', currency: 'THB', payer: '我', splitMethod: 'equal', splitDetails: {} }
+                    { id: 1729000000001, name: '機票', amount: 12000, category: 'ticket', date: '2025-10-15', payment: 'card', currency: 'TWD', payer: '我', splitMethod: 'equal', splitDetails: {} },
+                    { id: 1729000000002, name: '預付住宿', amount: 8000, category: 'stay', date: '2025-11-20', payment: 'card', currency: 'TWD', payer: '我', splitMethod: 'equal', splitDetails: {} },
+                    { id: 1729000000003, name: '計程車到飯店', amount: 500, category: 'transport', date: '2026-01-16', payment: 'cash', currency: 'THB', payer: '旅伴', splitMethod: 'equal', splitDetails: {} },
+                    { id: 1729000000004, name: '晚餐', amount: 850, category: 'food', date: '2026-01-16', payment: 'cash', currency: 'THB', payer: '我', splitMethod: 'equal', splitDetails: {} }
                 ]);
 
-                // --- 成員管理 ---
                 const members = ref([
                     { id: 1, name: '我', active: true },
                     { id: 2, name: '旅伴', active: true }
                 ]);
                 const newMemberName = ref('');
 
-                // --- 表單模型 ---
                 const editingExpenseIndex = ref(null);
                 const newShoppingItem = ref({ name: '', checked: false });
                 const newItinerary = ref({});
@@ -745,9 +713,10 @@
                     };
                 };
 
+                // 優化：API 改用 open.er-api.com
                 const fetchExchangeRate = async () => {
                     try {
-                        const resp = await fetch('https://api.exchangerate.host/latest?base=THB&symbols=TWD');
+                        const resp = await fetch('https://open.er-api.com/v6/latest/THB');
                         const data = await resp.json();
                         if (data && data.rates && data.rates.TWD) {
                             EXCHANGE_RATE.value = Number(data.rates.TWD);
@@ -759,23 +728,21 @@
 
                 onMounted(fetchExchangeRate);
 
-                // --- Computed: 核心計算 ---
-                const currencyResult = computed(() => Math.round(currencyInput.value * EXCHANGE_RATE.value));
+                // 優化：直接計算屬性，無需額外方法
+                const currencyResult = computed(() => Math.round((currencyInput.value || 0) * EXCHANGE_RATE.value));
+                
                 const currentItinerary = computed(() => itineraryData.value[selectedDateIndex.value] || []);
                 const splitMembers = computed(() => members.value.filter(m => m.active).map(m => m.name));
+                
                 const myExpenses = computed(() => {
                     return expenses.value.filter(exp => {
-                        // 1. Personal expense paid by me
                         if (exp.splitMethod === 'personal') return exp.payer === '我';
-                        
-                        // 2. Shared expense (regardless of payer) where I am involved
-                        if (exp.splitMethod === 'equal') return true; // Assuming '我' is always a member
+                        if (exp.splitMethod === 'equal') return true;
                         if (exp.splitMethod === 'amount' || exp.splitMethod === 'ratio') {
                             return exp.splitDetails && Number(exp.splitDetails['我']) > 0;
                         }
                         return false;
                     }).map(exp => {
-                        // Calculate my share for display
                         let myShare = 0;
                         const totalAmount = Number(exp.amount) || 0;
                         
@@ -783,7 +750,8 @@
                             myShare = totalAmount;
                         } else if (exp.splitMethod === 'equal') {
                             const activeCount = members.value.filter(m => m.active).length || 1;
-                            myShare = totalAmount / activeCount;
+                            // 這裡只是顯示用，所以稍微簡化，精確計算在 memberBalances
+                            myShare = Math.round(totalAmount / activeCount); 
                         } else if (exp.splitMethod === 'amount') {
                             myShare = Number(exp.splitDetails['我']) || 0;
                         } else if (exp.splitMethod === 'ratio') {
@@ -792,11 +760,7 @@
                             if (totalRatio > 0) myShare = (totalAmount * myRatio) / totalRatio;
                         }
                         
-                        // Return a new object for display (keeping original id for editing)
-                        return {
-                            ...exp,
-                            displayAmount: myShare // New field for the UI
-                        };
+                        return { ...exp, displayAmount: myShare };
                     }).sort((a,b) => new Date(b.date) - new Date(a.date));
                 });
 
@@ -810,6 +774,7 @@
                     }, 0);
                 });
 
+                // 優化：分帳整數算法與隨機餘數分配
                 const memberBalances = computed(() => {
                     const balances = {};
                     members.value.forEach(m => { balances[m.name] = 0; });
@@ -821,14 +786,32 @@
                         }
 
                         let participants = [];
-                        let totalCost = 0;
 
                         switch (exp.splitMethod) {
                             case 'equal':
                                 participants = members.value.filter(m => m.active).map(m => m.name);
-                                if (participants.length > 0) {
-                                    const share = amountInTWD / participants.length;
-                                    participants.forEach(name => {
+                                const count = participants.length;
+                                if (count > 0) {
+                                    // 1. 總額取整，避免小數點困擾
+                                    const totalInt = Math.round(amountInTWD);
+                                    // 2. 計算每人基本額與餘數
+                                    const baseShare = Math.floor(totalInt / count);
+                                    let remainder = totalInt % count;
+                                    
+                                    // 3. 餘數分配 (使用 ID 做偽隨機，確保穩定性)
+                                    // 邏輯：從 (id % count) 的那個人開始發餘數，每人1塊直到發完
+                                    const startIdx = (exp.id % count);
+                                    
+                                    participants.forEach((name, idx) => {
+                                        let share = baseShare;
+                                        // 判斷是否分配到餘數 (Circular distribution)
+                                        // 簡單做法：如果 (idx - startIdx + count) % count < remainder，則分配
+                                        if (remainder > 0) {
+                                            const relativeIdx = (idx - startIdx + count) % count;
+                                            if (relativeIdx < remainder) {
+                                                share += 1;
+                                            }
+                                        }
                                         if (balances[name] !== undefined) balances[name] -= share;
                                     });
                                 }
@@ -862,8 +845,8 @@
                 
                 const settlementSteps = computed(() => {
                     const balances = JSON.parse(JSON.stringify(memberBalances.value));
-                    const debtors = Object.entries(balances).filter(([,b]) => b < -0.01).sort((a,b) => a[1] - b[1]);
-                    const creditors = Object.entries(balances).filter(([,b]) => b > 0.01).sort((a,b) => b[1] - a[1]);
+                    const debtors = Object.entries(balances).filter(([,b]) => b < -1).sort((a,b) => a[1] - b[1]); // 寬容度設為1
+                    const creditors = Object.entries(balances).filter(([,b]) => b > 1).sort((a,b) => b[1] - a[1]);
                     const steps = [];
 
                     let i = 0, j = 0;
@@ -880,13 +863,12 @@
                         debtors[i][1] += amountToSettle;
                         creditors[j][1] -= amountToSettle;
 
-                        if (Math.abs(debtors[i][1]) < 0.01) i++;
-                        if (Math.abs(creditors[j][1]) < 0.01) j++;
+                        if (Math.abs(debtors[i][1]) < 1) i++;
+                        if (Math.abs(creditors[j][1]) < 1) j++;
                     }
                     return steps;
                 });
 
-                // --- Methods: Helpers ---
                 const CATEGORY_MAP = {
                     sightseeing: { icon: 'fa-solid fa-camera' }, food: { icon: 'fa-solid fa-utensils' },
                     shopping: { icon: 'fa-solid fa-bag-shopping' }, accommodation: { icon: 'fa-solid fa-bed' },
@@ -896,10 +878,8 @@
                 };
                 const getCategoryIcon = (cat) => CATEGORY_MAP[cat]?.icon || CATEGORY_MAP.other.icon;
                 const formatNumber = (num) => num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '0';
-                const calculateCurrency = () => currencyResult.value = Math.round(currencyInput.value * EXCHANGE_RATE.value);
                 const getOriginalIndex = (id) => expenses.value.findIndex(e => e.id === id);
                 
-                // --- Methods: Actions ---
                 const handleAddClick = () => {
                     if (currentTab.value === 'shopping') showShoppingModal.value = true;
                     else if (currentTab.value === 'expenses') {
@@ -914,7 +894,6 @@
                     }
                 };
                 
-                // Member Actions
                 const addMember = () => {
                     const name = newMemberName.value.trim();
                     if (!name || members.value.find(m => m.name === name)) return;
@@ -930,7 +909,6 @@
                     return expenses.value.filter(e => e.payer === name && e.splitMethod !== 'personal');
                 };
 
-                // Expense Actions
                 const startEditExpense = (idx, exp) => {
                     editingExpenseIndex.value = idx;
                     newExpense.value = JSON.parse(JSON.stringify(exp));
@@ -957,8 +935,6 @@
                     editingExpenseIndex.value = null;
                 }
 
-                // --- Legacy / Other Actions ---
-                // (shopping, itinerary, etc.)
                 const addShoppingItem = () => {
                     if (newShoppingItem.value.name) {
                         shoppingList.value.push({ ...newShoppingItem.value });
@@ -967,27 +943,74 @@
                     }
                 };
                 const removeShoppingItem = (idx) => shoppingList.value.splice(idx, 1);
-                // Assume other methods like editItem, saveItineraryItem are here
+                
+                const saveItineraryItem = () => {
+                    if (!newItinerary.value.name) return alert('請輸入名稱');
+                    const list = currentItinerary.value;
+                    if (isEditMode.value) {
+                        const idx = list.findIndex(i => i.id === newItinerary.value.id);
+                        if (idx !== -1) list[idx] = { ...newItinerary.value };
+                    } else {
+                        list.push({ ...newItinerary.value });
+                    }
+                    showItineraryModal.value = false;
+                };
 
-                resetNewExpense(); // Initialize on setup
+                const removeItineraryItem = (id) => {
+                    const idx = currentItinerary.value.findIndex(i => i.id === id);
+                    if (idx !== -1) currentItinerary.value.splice(idx, 1);
+                    showItineraryModal.value = false;
+                };
+
+                const moveItinerary = (id, direction) => {
+                    const list = currentItinerary.value;
+                    const idx = list.findIndex(i => i.id === id);
+                    if (idx === -1) return;
+                    const newIdx = idx + direction;
+                    if (newIdx >= 0 && newIdx < list.length) {
+                        const item = list.splice(idx, 1)[0];
+                        list.splice(newIdx, 0, item);
+                    }
+                };
+                
+                // 省略重複的 Map 方法... 
+                const openMap = (q) => { if(q) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); };
+                const openMapDirections = (start, end) => {
+                    const o = start.address || start.name;
+                    const d = end.address || end.name;
+                    if(o && d) window.open(`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(o)}&destination=${encodeURIComponent(d)}`, '_blank');
+                };
+                const editItem = (item) => {
+                    isEditMode.value = true;
+                    newItinerary.value = JSON.parse(JSON.stringify(item));
+                    showItineraryModal.value = true;
+                };
+                
+                // Helper for weather/transport icon (Re-declare to be safe or use previous logic)
+                const getWeatherIcon = (cond) => {
+                    const map = { sunny: 'fa-solid fa-sun', cloudy: 'fa-solid fa-cloud-sun', rain: 'fa-solid fa-cloud-showers-heavy' };
+                    return map[cond] || 'fa-solid fa-sun';
+                };
+                const getWeatherDescription = (cond) => ({ sunny: '晴朗炎熱', cloudy: '多雲偶晴', rain: '午後雷陣雨' }[cond] || '晴朗');
+                const getTransportIcon = (type) => ({ car: 'fa-solid fa-car', walk: 'fa-solid fa-person-walking', public: 'fa-solid fa-train-subway' }[type] || 'fa-solid fa-arrow-right');
+                const getCategoryColor = (cat) => ({
+                    sightseeing: '#FF7043', food: '#FFA726', shopping: '#EC407A', accommodation: '#5C6BC0', 
+                    transport: '#78909C', ticket: '#8D6E63', flight: '#29B6F6', other: '#BDBDBD'
+                }[cat] || '#BDBDBD');
+
+                resetNewExpense();
 
                 return {
-                    // UI State
                     currentTab, selectedDateIndex, showShoppingModal, showExpenseModal, showItineraryModal, showMemberModal, isEditMode, editingExpenseIndex, expandedMember,
-                    // Data
                     dates, weatherData, currentItinerary, hotels, shoppingList, expenses, members,
-                    // Forms
                     newShoppingItem, newExpense, newItinerary, newMemberName,
-                    // Computed
-                    currencyResult, splitMembers, myExpenses, totalTHB, totalTWD, finalTotalTWD, memberBalances, settlementSteps, EXCHANGE_RATE,
-                    // Methods - General
-                    formatNumber, calculateCurrency, getCategoryIcon, handleAddClick, getOriginalIndex,
-                    // Methods - Members
+                    currencyResult, splitMembers, myExpenses, totalTHB, totalTWD, finalTotalTWD, memberBalances, settlementSteps, EXCHANGE_RATE, currencyInput,
+                    formatNumber, getCategoryIcon, handleAddClick, getOriginalIndex,
                     addMember, toggleMemberActive, removeMember, toggleMemberDetails, getMemberPaidExpenses,
-                    // Methods - Expenses
                     startEditExpense, saveExpense, removeExpense, closeExpenseModal,
-                    // Methods - Shopping & Itinerary (simplified for brevity)
-                    addShoppingItem, removeShoppingItem
+                    addShoppingItem, removeShoppingItem,
+                    saveItineraryItem, removeItineraryItem, moveItinerary, openMap, openMapDirections, editItem,
+                    getWeatherIcon, getWeatherDescription, getTransportIcon, getCategoryColor
                 };
             }
         }).mount('#app');
