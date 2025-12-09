@@ -286,20 +286,6 @@
 
             <!-- 2. 資訊 Tab -->
             <div v-if="currentTab === 'info'" class="space-y-5 animate-fade-in">
-                <!-- 身份切換區 (新增) -->
-                <div class="bg-white rounded-3xl p-5 card-shadow border border-deep-sea-blue/10">
-                    <h3 class="font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2 flex items-center">
-                        <i class="fa-solid fa-user-gear text-deep-sea-blue mr-2"></i> 使用者設定
-                    </h3>
-                    <div>
-                        <label class="text-xs text-slate-500 mb-1 block font-bold">我是誰？(切換身份)</label>
-                        <select v-model="currentUser" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none font-bold text-deep-sea-blue">
-                            <option v-for="m in members" :key="m.id" :value="m.name">{{ m.name }}</option>
-                        </select>
-                        <p class="text-[10px] text-slate-400 mt-2">切換後，花費頁面將只顯示該成員的支出紀錄。</p>
-                    </div>
-                </div>
-
                 <div class="bg-gradient-to-r from-deep-sea-blue to-orange-700 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
                     <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
                     <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-10 -mb-10 blur-2xl"></div>
@@ -366,6 +352,20 @@
                             </div>
                         </li>
                     </ul>
+                </div>
+                
+                <!-- 身份切換區 (移動至此) -->
+                <div class="bg-white rounded-3xl p-5 card-shadow border border-deep-sea-blue/10">
+                    <h3 class="font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2 flex items-center">
+                        <i class="fa-solid fa-user-gear text-deep-sea-blue mr-2"></i> 使用者設定
+                    </h3>
+                    <div>
+                        <label class="text-xs text-slate-500 mb-1 block font-bold">我是誰？(切換身份)</label>
+                        <select v-model="currentUser" class="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm outline-none font-bold text-deep-sea-blue">
+                            <option v-for="m in members" :key="m.id" :value="m.name">{{ m.name }}</option>
+                        </select>
+                        <p class="text-[10px] text-slate-400 mt-2">切換後，花費頁面將只顯示該成員的支出紀錄。</p>
+                    </div>
                 </div>
             </div>
 
@@ -441,7 +441,6 @@
                                     <p class="font-bold text-slate-700 text-sm leading-tight">{{ exp.name }}</p>
                                     <p class="text-xs text-slate-400 mt-0.5">{{ exp.date }}
                                         <span v-if="exp.splitMethod!=='personal'" class="ml-1 px-1.5 py-0.5 rounded-full bg-slate-200 text-[9px] font-medium text-slate-600">分帳</span>
-                                        <!-- 判斷 Payer 是否為當前使用者 -->
                                         <span v-if="exp.payer !== currentUser" class="ml-1 px-1.5 py-0.5 rounded-full bg-orange-200 text-[9px] font-bold text-orange-800">{{ exp.payer }}先付</span>
                                     </p>
                                 </div>
