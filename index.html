@@ -206,7 +206,8 @@
                     </div>
                 </div>
 
-                <div v-if="weatherData[selectedDateIndex]" class="mb-4 bg-snow-white border border-ice-blue rounded-2xl p-4 flex justify-between items-center shadow-md">
+                <!-- 天氣區塊 (新增 v-if 邏輯：只在非過去日期顯示) -->
+                <div v-if="weatherData[selectedDateIndex] && !isPastDate" class="mb-4 bg-snow-white border border-ice-blue rounded-2xl p-4 flex justify-between items-center shadow-md animate-fade-in">
                     <div class="flex items-start text-deep-sea-blue space-x-4">
                         <i :class="getWeatherIcon(weatherData[selectedDateIndex].condition)" class="text-5xl text-accent-yellow"></i>
                         <div class="pt-1">
@@ -217,13 +218,23 @@
                     </div>
                     <div class="text-right text-xs text-slate-600 pl-3">
                         <span class="font-bold block text-slate-700">{{ getWeatherDescription(weatherData[selectedDateIndex].condition) }}</span>
+                        
+                        <!-- 預計 / 非預計日期註記 -->
+                        <span v-if="weatherData[selectedDateIndex].isFallback" class="block text-[11px] text-orange-500 mt-1">
+                            非預計日期天氣 (使用 {{ weatherData[selectedDateIndex].sourceDate }} 預報)
+                        </span>
+                        <span v-else class="block text-[11px] text-emerald-600 mt-1">
+                            預計日期天氣 ({{ weatherData[selectedDateIndex].sourceDate }})
+                        </span>
+
                         <span v-if="dates[selectedDateIndex].hasCar" class="mt-1 block text-deep-sea-blue font-bold">
                             <i class="fa-solid fa-car-side mr-1 text-accent-yellow"></i> 租車日
                         </span>
                         <span v-else class="mt-1 block text-slate-400">本日步行/大眾運輸</span>
                     </div>
                 </div>
-
+                <!-- 當天氣被隱藏時的提示 (可選，目前留白或保持整潔) -->
+                
                 <div class="space-y-4">
                     <div v-for="(item, idx) in currentItinerary" :key="item.id" class="relative group">
                         <div v-if="idx > 0" class="pl-8 pb-2 flex items-center text-xs text-slate-400">
@@ -657,7 +668,13 @@
         createApp({
             setup() {
                 // --- 常數與設定 ---
+                const TRIP_YEAR = 2026; // 定義旅程年份，方便未來修改或測試
                 const EXCHANGE_RATE = ref(0.92); // 預設值
+                
+                // OpenWeatherMap 設定
+                const WEATHER_API_KEY = 'e5e727b85066927db1d248be29dfa632'; // 使用者提供的 API Key
+                const WEATHER_CITY = 'Bangkok';
+                const WEATHER_COUNTRY = 'TH'; // 泰國
 
                 // --- UI 狀態 ---
                 const currentTab = ref('itinerary');
@@ -683,13 +700,17 @@
                     { date: '1/20', weekday: '一', hasCar: false },
                 ]);
 
-                const weatherData = ref([
-                    { condition: 'sunny', temp: '32/24', feel: '35' },
-                    { condition: 'cloudy', temp: '31/25', feel: '34' },
-                    { condition: 'sunny', temp: '33/24', feel: '36' },
-                    { condition: 'rain', temp: '30/24', feel: '32' },
-                    { condition: 'sunny', temp: '32/25', feel: '35' },
-                ]);
+                // 動態天氣資料，依行程日期索引填入
+                const weatherData = ref([]);
+
+                // API 失敗時的備用靜態資料
+                const FALLBACK_WEATHER = [
+                    { condition: 'sunny', temp: '32/24', feel: '35', isFallback: true, sourceDate: 'N/A' },
+                    { condition: 'cloudy', temp: '31/25', feel: '34', isFallback: true, sourceDate: 'N/A' },
+                    { condition: 'sunny', temp: '33/24', feel: '36', isFallback: true, sourceDate: 'N/A' },
+                    { condition: 'rain',  temp: '30/24', feel: '32', isFallback: true, sourceDate: 'N/A' },
+                    { condition: 'sunny', temp: '32/25', feel: '35', isFallback: true, sourceDate: 'N/A' }
+                ];
 
                 const itineraryData = ref([
                     [
@@ -742,7 +763,118 @@
                     }
                 };
 
-                onMounted(fetchExchangeRate);
+                // 將 OpenWeatherMap 的 weather.main 映射到現有的 condition 型別
+                const mapCondition = (main) => {
+                    if (!main) return 'sunny';
+                    if (main === 'Clear') return 'sunny';
+                    if (['Rain', 'Drizzle', 'Thunderstorm'].includes(main)) return 'rain';
+                    return 'cloudy'; // 其他一律視為多雲
+                };
+
+                // 取得並整理曼谷未來 5 天的天氣
+                const fetchWeather = async () => {
+                    try {
+                        const url =
+                        `https://api.openweathermap.org/data/2.5/forecast` +
+                        `?q=${encodeURIComponent(WEATHER_CITY + ',' + WEATHER_COUNTRY)}` +
+                        `&appid=${WEATHER_API_KEY}` +
+                        `&units=metric&lang=zh_tw`;
+
+                        const resp = await fetch(url);
+                        const data = await resp.json();
+
+                        if (!data.list || !Array.isArray(data.list)) {
+                            throw new Error('No forecast list from API');
+                        }
+
+                        // 1. 以「日」為單位分組 (只取未來幾天)
+                        const groupedByDate = new Map();
+
+                        data.list.forEach(item => {
+                            const date = new Date(item.dt * 1000);
+                            // 只看日期，不含時間
+                            const key = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+                            const displayLabel = `${date.getMonth() + 1}/${date.getDate()}`;
+
+                            if (!groupedByDate.has(key)) {
+                                groupedByDate.set(key, {
+                                    items: [],
+                                    dateObj: date,
+                                    label: displayLabel
+                                });
+                            }
+                            groupedByDate.get(key).items.push(item);
+                        });
+
+                        // 2. 轉成陣列並依日期排序，只留前 5 天
+                        const dailyArray = Array.from(groupedByDate.values())
+                        .sort((a, b) => a.dateObj - b.dateObj)
+                        .slice(0, 5);
+
+                        if (dailyArray.length === 0) {
+                            throw new Error('No daily forecast groups');
+                        }
+
+                        // 3. 將每一天壓成 {condition,temp,feel,sourceDate}
+                        const processedDaily = dailyArray.map(day => {
+                            const temps = day.items.map(i => i.main.temp);
+                            const feels = day.items.map(i => i.main.feels_like);
+                            const mains = day.items.map(i => i.weather && i.weather[0] && i.weather[0].main).filter(Boolean);
+
+                            const maxTemp = Math.max(...temps);
+                            const minTemp = Math.min(...temps);
+                            const avgFeel = feels.reduce((a, b) => a + b, 0) / feels.length;
+
+                            // 取出出現次數最多的 main 當作代表天氣
+                            const mainCount = mains.reduce((acc, m) => {
+                                acc[m] = (acc[m] || 0) + 1;
+                                return acc;
+                            }, {});
+                            const mainKey = Object.entries(mainCount).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Clear';
+
+                            return {
+                                condition: mapCondition(mainKey),
+                                temp: `${Math.round(maxTemp)}/${Math.round(minTemp)}`,
+                                feel: Math.round(avgFeel),
+                                sourceDate: day.label    // 真實預報日期 (M/D)
+                            };
+                        });
+
+                        // 4. 依照你的行程日期 (dates.value) 填入 weatherData：
+                        //    先嘗試找「同月日」的預報，找不到就用 processedDaily 的對應索引，並標記 isFallback
+                        weatherData.value = dates.value.map((d, idx) => {
+                            const plannedLabel = d.date; // e.g. "1/16"
+
+                            // 嘗試找與行程相同 M/D 的那天
+                            const exact = processedDaily.find(day => day.sourceDate === plannedLabel);
+
+                            if (exact) {
+                                return {
+                                    ...exact,
+                                    isFallback: false     // 有對應到預計日期
+                                };
+                            }
+
+                            // 沒找到就用「未來 5 天中第 idx 天」，超出長度就循環使用
+                            const fallbackDay = processedDaily[idx % processedDaily.length];
+
+                            return {
+                                ...fallbackDay,
+                                isFallback: true       // 非預計日期，使用近期預報
+                            };
+                        });
+
+                    } catch (err) {
+                        console.error('取得天氣失敗，改用備用靜態資料', err);
+                        // API 失敗時至少有畫面
+                        weatherData.value = FALLBACK_WEATHER;
+                    }
+                };
+
+                onMounted(() => {
+                    fetchExchangeRate();
+                    fetchWeather();
+                });
 
                 // --- 雙向匯率更新邏輯 ---
                 const updateTWD = () => {
@@ -763,6 +895,26 @@
                 
                 watch(EXCHANGE_RATE, (newRate) => {
                      if(inputTHB.value) inputTWD.value = Math.round(inputTHB.value * newRate);
+                });
+
+                // --- 檢查是否為過去日期的邏輯 ---
+                const isPastDate = computed(() => {
+                    const currentSelected = dates.value[selectedDateIndex.value];
+                    if (!currentSelected) return false;
+
+                    // 解析日期 "1/16"
+                    const [m, d] = currentSelected.date.split('/');
+                    
+                    // 建立行程日期的 Date 物件 (使用設定的 TRIP_YEAR)
+                    // 注意月份在 JS 中是 0-11
+                    const tripDate = new Date(TRIP_YEAR, parseInt(m) - 1, parseInt(d));
+                    
+                    // 取得系統今天日期，並將時間歸零以進行純日期比較
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    // 如果行程日期 < 今天，表示已是過去式
+                    return tripDate < today;
                 });
 
                 
@@ -1037,7 +1189,7 @@
                     dates, weatherData, currentItinerary, hotels, shoppingList, expenses, members,
                     newShoppingItem, newExpense, newItinerary, newMemberName,
                     splitMembers, myExpenses, totalTHB, totalTWD, finalTotalTWD, memberBalances, settlementSteps, EXCHANGE_RATE, 
-                    inputTHB, inputTWD, updateTHB, updateTWD,
+                    inputTHB, inputTWD, updateTHB, updateTWD, isPastDate,
                     formatNumber, getCategoryIcon, handleAddClick, getOriginalIndex,
                     addMember, toggleMemberActive, removeMember, toggleMemberDetails, getMemberPaidExpenses,
                     startEditExpense, saveExpense, removeExpense, closeExpenseModal,
