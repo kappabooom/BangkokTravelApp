@@ -733,10 +733,8 @@
                     { name: '曼谷市區飯店 (範例)', date: '1/16 - 1/20 (4晚)', phone: '+66-2-123-4567', address: 'Bangkok, Thailand' }
                 ]);
 
-                // 定義預設名單
                 const DEFAULT_MEMBERS = ['kappabooom', 'beibei1029', 'hsiannnnng', 'shinbinwei', 'aylwen4444', 'wunsin', 'rtrtr1', 'blackblacknu'];
                 
-                // 初始化時直接填入預設值，解決畫面空白問題
                 const members = ref(DEFAULT_MEMBERS.map((name, i) => ({ id: `default_${i}`, name, active: true })));
                 
                 const shoppingList = ref([]);
@@ -778,19 +776,15 @@
                     onValue(membersRef, (snapshot) => {
                         const data = snapshot.val();
                         if (data && Object.keys(data).length > 0) {
-                             // 如果 Firebase 有資料，更新本地名單
                              members.value = Object.entries(data).map(([key, value]) => ({
                                 id: key,
                                 ...value
                             }));
                             
-                            // 確保 currentUser 有效
                             if (!members.value.find(m => m.name === currentUser.value)) {
                                 currentUser.value = members.value[0].name;
                             }
                         } else {
-                            // 如果 Firebase 是空的，則寫入預設名單
-                            // 注意：這裡只寫入，不需要清空 members.value，因為我們已經在上面初始化過了
                             DEFAULT_MEMBERS.forEach(name => {
                                 push(membersRef, { name, active: true });
                             });
@@ -942,17 +936,26 @@
                 
                 const myExpenses = computed(() => {
                     return expenses.value.filter(exp => {
-                        if (exp.splitMethod === 'personal') return exp.payer === currentUser.value;
+                        // 1. 如果我是付款人，我一定要看到這筆（無論有沒有分攤）
+                        if (exp.payer === currentUser.value) return true;
+
+                        // 2. 如果我不是付款人，但我有參與分攤，我也要看到
                         if (exp.splitMethod === 'equal') return true; 
+                        
                         if (exp.splitMethod === 'amount' || exp.splitMethod === 'ratio') {
                             return exp.splitDetails && Number(exp.splitDetails[currentUser.value]) > 0;
                         }
+                        
+                        // 3. 純個人支出且不是我付的 -> 不顯示
+                        if (exp.splitMethod === 'personal') return false; 
+                        
                         return false;
                     }).map(exp => {
                         let myShare = 0;
                         const totalAmount = Number(exp.amount) || 0;
                         
                         if (exp.splitMethod === 'personal') {
+                            // 如果是個人支出，份額就是全部
                             myShare = totalAmount;
                         } else if (exp.splitMethod === 'equal') {
                             const activeCount = members.value.filter(m => m.active).length || 1;
@@ -964,6 +967,8 @@
                             const myRatio = Number(exp.splitDetails[currentUser.value]) || 0;
                             if (totalRatio > 0) myShare = (totalAmount * myRatio) / totalRatio;
                         }
+                        
+                        // 如果我是付款人，但我的分攤額是 0 (例如請客)，這裡顯示 0 是正確的，但上面的 filter 保證了我能看到這筆紀錄
                         return { ...exp, displayAmount: myShare };
                     }).sort((a,b) => new Date(b.date) - new Date(a.date));
                 });
@@ -1134,17 +1139,29 @@
                     showExpenseModal.value = true;
                 };
 
-                const saveExpense = () => {
-                    if (!newExpense.value.name || !newExpense.value.amount) return;
-                    
-                    if (editingExpenseId.value === null) {
-                        const expensesRef = dbRef(db, 'expenses');
-                        push(expensesRef, newExpense.value);
-                    } else {
-                        const expenseRef = dbRef(db, `expenses/${editingExpenseId.value}`);
-                        set(expenseRef, newExpense.value);
+                const saveExpense = async () => {
+                    if (!newExpense.value.name || !newExpense.value.amount) {
+                         alert('請輸入名稱與金額');
+                         return;
                     }
-                    closeExpenseModal();
+                    
+                    const expenseToSave = JSON.parse(JSON.stringify(newExpense.value));
+
+                    try {
+                        if (editingExpenseId.value === null) {
+                            const expensesRef = dbRef(db, 'expenses');
+                            await push(expensesRef, expenseToSave);
+                            alert('✅ 支出新增成功！');
+                        } else {
+                            const expenseRef = dbRef(db, `expenses/${editingExpenseId.value}`);
+                            await set(expenseRef, expenseToSave);
+                            alert('✅ 支出更新成功！');
+                        }
+                        closeExpenseModal();
+                    } catch (e) {
+                        console.error(e);
+                        alert('❌ 儲存失敗，請檢查網路連線或稍後再試。\n錯誤訊息：' + e.message);
+                    }
                 };
 
                 const removeExpense = (id) => {
