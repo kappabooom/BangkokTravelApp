@@ -733,11 +733,16 @@
                     { name: '曼谷市區飯店 (範例)', date: '1/16 - 1/20 (4晚)', phone: '+66-2-123-4567', address: 'Bangkok, Thailand' }
                 ]);
 
+                // 定義預設名單
+                const DEFAULT_MEMBERS = ['kappabooom', 'beibei1029', 'hsiannnnng', 'shinbinwei', 'aylwen4444', 'wunsin', 'rtrtr1', 'blackblacknu'];
+                
+                // 初始化時直接填入預設值，解決畫面空白問題
+                const members = ref(DEFAULT_MEMBERS.map((name, i) => ({ id: `default_${i}`, name, active: true })));
+                
                 const shoppingList = ref([]);
                 const expenses = ref([]);
-                const members = ref([]);
                 const newMemberName = ref('');
-                const currentUser = ref('');
+                const currentUser = ref(DEFAULT_MEMBERS[0]); // 預設使用者
                 const editingExpenseId = ref(null);
                 const newShoppingItem = ref({ name: '', checked: false });
                 const newItinerary = ref({});
@@ -772,23 +777,21 @@
                     const membersRef = dbRef(db, 'members');
                     onValue(membersRef, (snapshot) => {
                         const data = snapshot.val();
-                        if (data) {
+                        if (data && Object.keys(data).length > 0) {
+                             // 如果 Firebase 有資料，更新本地名單
                              members.value = Object.entries(data).map(([key, value]) => ({
                                 id: key,
                                 ...value
                             }));
                             
-                            // 如果當前沒有使用者，預設選第一個
-                            if (!currentUser.value && members.value.length > 0) {
+                            // 確保 currentUser 有效
+                            if (!members.value.find(m => m.name === currentUser.value)) {
                                 currentUser.value = members.value[0].name;
                             }
                         } else {
-                            // **修正重點**：如果資料庫是空的，自動寫入預設成員
-                            const defaultMembers = ['kappabooom', 'beibei1029', 'hsiannnnng', 'shinbinwei', 'aylwen4444', 'wunsin', 'rtrtr1', 'blackblacknu'];
-                            
-                            // 為了避免重複寫入造成的迴圈，這裡可以先用 set
-                            // 這裡示範逐筆 push 確保資料結構一致
-                            defaultMembers.forEach(name => {
+                            // 如果 Firebase 是空的，則寫入預設名單
+                            // 注意：這裡只寫入，不需要清空 members.value，因為我們已經在上面初始化過了
+                            DEFAULT_MEMBERS.forEach(name => {
                                 push(membersRef, { name, active: true });
                             });
                         }
