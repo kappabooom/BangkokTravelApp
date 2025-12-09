@@ -14,6 +14,14 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        // 為了讓 Vue 存取 Firebase，掛載到 window
+        window.firebaseModules = { initializeApp, getDatabase, ref, set, push, onValue, remove, update };
+    </script>
+    
     <script>
         tailwind.config = {
             theme: {
@@ -235,7 +243,6 @@
                         <span v-else class="mt-1 block text-slate-400">本日步行/大眾運輸</span>
                     </div>
                 </div>
-                <!-- 當天氣被隱藏時的提示 (可選) -->
                 
                 <div class="space-y-4">
                     <div v-for="(item, idx) in currentItinerary" :key="item.id" class="relative group">
@@ -446,7 +453,7 @@
                     <ul v-if="myExpenses.length > 0" class="space-y-4">
                         <li v-for="(exp, idx) in myExpenses" :key="idx" 
                             class="flex items-center justify-between border-b border-slate-50 last:border-0 pb-3 last:pb-0 transition-colors rounded-lg px-2 -mx-2 hover:bg-slate-50">
-                            <div class="flex items-center cursor-pointer flex-1" @click="startEditExpense(getOriginalIndex(exp.id), exp)">
+                            <div class="flex items-center cursor-pointer flex-1" @click="startEditExpense(exp.id, exp)">
                                 <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mr-3 text-slate-500 flex-shrink-0 self-center">
                                     <i :class="getCategoryIcon(exp.category)"></i>
                                 </div>
@@ -459,11 +466,11 @@
                                 </div>
                             </div>
                             <div class="flex items-center">
-                                <div class="text-right mr-3 cursor-pointer" @click="startEditExpense(getOriginalIndex(exp.id), exp)">
+                                <div class="text-right mr-3 cursor-pointer" @click="startEditExpense(exp.id, exp)">
                                     <p class="font-bold text-deep-sea-blue">{{ exp.currency === 'TWD' ? 'NT$' : '฿' }}{{ formatNumber(exp.displayAmount) }}</p>
                                     <p class="text-xs text-slate-400 uppercase">{{ exp.payment }}</p>
                                 </div>
-                                <button @click.stop="removeExpense(getOriginalIndex(exp.id))" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors">
+                                <button @click.stop="removeExpense(exp.id)" class="w-8 h-8 flex items-center justify-center rounded-full text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors">
                                     <i class="fa-solid fa-trash-can"></i>
                                 </button>
                             </div>
@@ -552,7 +559,7 @@
         <!-- Expense Modal -->
         <div v-if="showExpenseModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
             <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-                <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ editingExpenseIndex === null ? "記一筆" : "編輯支出" }}</h3>
+                <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ editingExpenseId === null ? "記一筆" : "編輯支出" }}</h3>
                 <div class="space-y-3">
                     <input v-model="newExpense.date" type="date" class="w-full bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
                     <input v-model="newExpense.name" type="text" placeholder="項目名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none">
@@ -605,7 +612,7 @@
                 </div>
                 <div class="flex space-x-3 mt-6">
                     <button @click="closeExpenseModal" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
-                    <button @click="saveExpense" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30">{{ editingExpenseIndex === null ? "儲存" : "更新" }}</button>
+                    <button @click="saveExpense" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30">{{ editingExpenseId === null ? "儲存" : "更新" }}</button>
                 </div>
             </div>
         </div>
@@ -664,35 +671,38 @@
         </div>
     </div>
 
-    <script type="module">
-        import { createApp, ref, computed, onMounted, watch } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
-
-        // Import Firebase SDKs
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
-        import { 
-            getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp 
-        } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-        // Firebase Configuration
-        const firebaseConfig = {
-          apiKey: "AIzaSyCyYCSGWQ0Wdf13AE62UG7W8WiwpqCHs_0",
-          authDomain: "bankoktrip2026.firebaseapp.com",
-          projectId: "bankoktrip2026",
-          storageBucket: "bankoktrip2026.firebasestorage.app",
-          messagingSenderId: "347622663908",
-          appId: "1:347622663908:web:6a514d1761f215a2ae6ef1",
-          measurementId: "G-ENHVD5XKF8"
-        };
-
-        // Initialize Firebase
-        const firebaseApp = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(firebaseApp);
-        const db = getFirestore(firebaseApp);
-        const DB_NAME = 'expenses_2026';
+    <script>
+        const { createApp, ref, computed, onMounted, watch } = Vue
 
         createApp({
             setup() {
+                // --- 常數與設定 ---
+                const TRIP_YEAR = 2026; // 定義旅程年份，方便未來修改或測試
+                const EXCHANGE_RATE = ref(0.92); // 預設值
+                
+                // OpenWeatherMap 設定
+                const WEATHER_API_KEY = 'e5e727b85066927db1d248be29dfa632'; // 使用者提供的 API Key
+                const WEATHER_CITY = 'Bangkok';
+                const WEATHER_COUNTRY = 'TH'; // 泰國
+                
+                // --- Firebase 初始化 ---
+                // 從 window 物件中取出 Firebase 模組
+                const { initializeApp, getDatabase, ref: dbRef, set, push, onValue, remove, update } = window.firebaseModules;
+
+                const firebaseConfig = {
+                    apiKey: "AIzaSyCyYCSGWQ0Wdf13AE62UG7W8WiwpqCHs_0",
+                    authDomain: "bankoktrip2026.firebaseapp.com",
+                    projectId: "bankoktrip2026",
+                    storageBucket: "bankoktrip2026.firebasestorage.app",
+                    messagingSenderId: "347622663908",
+                    appId: "1:347622663908:web:6a514d1761f215a2ae6ef1",
+                    measurementId: "G-ENHVD5XKF8"
+                };
+
+                const app = initializeApp(firebaseConfig);
+                const db = getDatabase(app);
+                
+                // --- UI 狀態 ---
                 const currentTab = ref('itinerary');
                 const selectedDateIndex = ref(0);
                 const showShoppingModal = ref(false);
@@ -700,394 +710,520 @@
                 const showItineraryModal = ref(false);
                 const showMemberModal = ref(false);
                 const isEditMode = ref(false);
-                const editingExpenseIndex = ref(null);
-                const expandedMember = ref(null);
-                const currentUser = ref('kappabooom'); // Default current user
-                const isSyncing = ref(true); // Loading state for Firebase
+                
+                // 雙向綁定用的變數
+                const inputTHB = ref(100);
+                const inputTWD = ref(92);
 
+                const expandedMember = ref(null);
+                
+                // --- 資料模型 ---
                 const dates = ref([
-                    { day: 'Thu', date: '16', full: '2025-01-16' },
-                    { day: 'Fri', date: '17', full: '2025-01-17' },
-                    { day: 'Sat', date: '18', full: '2025-01-18' },
-                    { day: 'Sun', date: '19', full: '2025-01-19' },
-                    { day: 'Mon', date: '20', full: '2025-01-20' }
+                    { date: '1/16', weekday: '四', hasCar: false },
+                    { date: '1/17', weekday: '五', hasCar: false },
+                    { date: '1/18', weekday: '六', hasCar: false },
+                    { date: '1/19', weekday: '日', hasCar: false },
+                    { date: '1/20', weekday: '一', hasCar: false },
                 ]);
 
-                // Weather Logic
+                // 動態天氣資料，依行程日期索引填入
                 const weatherData = ref([]);
-                const WEATHER_API_KEY = 'e5e727b85066927db1d248be29dfa632'; // User's key from previous context
+
+                // API 失敗時的備用靜態資料
                 const FALLBACK_WEATHER = [
-                    { condition: 'sunny', temp: '32/24', feel: '35', isFallback: true },
-                    { condition: 'cloudy', temp: '31/25', feel: '34', isFallback: true },
-                    { condition: 'sunny', temp: '33/24', feel: '36', isFallback: true },
-                    { condition: 'rain', temp: '30/24', feel: '32', isFallback: true },
-                    { condition: 'sunny', temp: '32/25', feel: '35', isFallback: true }
+                    { condition: 'sunny', temp: '32/24', feel: '35', isFallback: true, sourceDate: 'N/A' },
+                    { condition: 'cloudy', temp: '31/25', feel: '34', isFallback: true, sourceDate: 'N/A' },
+                    { condition: 'sunny', temp: '33/24', feel: '36', isFallback: true, sourceDate: 'N/A' },
+                    { condition: 'rain',  temp: '30/24', feel: '32', isFallback: true, sourceDate: 'N/A' },
+                    { condition: 'sunny', temp: '32/25', feel: '35', isFallback: true, sourceDate: 'N/A' }
                 ];
 
+                const itineraryData = ref([
+                    [
+                        { id: 101, name: '抵達曼谷 BKK 機場', category: 'flight', startTime: '13:05', note: '入境審查、領取行李、換匯' },
+                        { id: 102, name: '飯店 Check-in', category: 'accommodation', startTime: '15:00', note: '休息一下' }
+                    ], [], [], [], []
+                ]);
+
+                const hotels = ref([
+                    { name: '曼谷市區飯店 (範例)', date: '1/16 - 1/20 (4晚)', phone: '+66-2-123-4567', address: 'Bangkok, Thailand' }
+                ]);
+
+                // 3. 修改：清空購物清單
+                const shoppingList = ref([]);
+
+                // 改用 Firebase 同步的 expenses
+                const expenses = ref([]);
+
+                // 1. 修改：更新預設團員名單 (從 Firebase 同步)
+                const members = ref([]);
+                const newMemberName = ref('');
+
+                // 2. 新增：當前使用者狀態 (預設為第一個，後續可優化為記憶選取)
+                const currentUser = ref('');
+
+                // 修改：使用 ID 編輯而非 Index
+                const editingExpenseId = ref(null);
+                const newShoppingItem = ref({ name: '', checked: false });
+                const newItinerary = ref({});
+                const newExpense = ref({});
+                
+                const resetNewExpense = () => {
+                    newExpense.value = { 
+                        name: '', amount: null, category: 'food', date: '2026-01-16', 
+                        payment: 'cash', currency: 'THB', 
+                        payer: currentUser.value, // 預設支付者為當前使用者
+                        splitMethod: 'personal', splitDetails: {} 
+                    };
+                };
+
+                // --- Firebase 資料監聽 ---
+                const initFirebaseListeners = () => {
+                    // 監聽支出紀錄
+                    const expensesRef = dbRef(db, 'expenses');
+                    onValue(expensesRef, (snapshot) => {
+                        const data = snapshot.val();
+                        if (data) {
+                            // 轉為陣列並保留 key 作為 id
+                            expenses.value = Object.entries(data).map(([key, value]) => ({
+                                id: key,
+                                ...value
+                            }));
+                        } else {
+                            expenses.value = [];
+                        }
+                    });
+
+                    // 監聽成員名單
+                    const membersRef = dbRef(db, 'members');
+                    onValue(membersRef, (snapshot) => {
+                        const data = snapshot.val();
+                        if (data) {
+                             members.value = Object.entries(data).map(([key, value]) => ({
+                                id: key,
+                                ...value
+                            }));
+                            
+                            // 如果當前沒有使用者，預設選第一個
+                            if (!currentUser.value && members.value.length > 0) {
+                                currentUser.value = members.value[0].name;
+                            }
+                        } else {
+                            // 預設成員 (如果資料庫是空的)
+                            const defaultMembers = ['kappabooom', 'beibei1029', 'hsiannnnng', 'shinbinwei', 'aylwen4444', 'wunsin', 'rtrtr1', 'blackblacknu'];
+                            defaultMembers.forEach(name => {
+                                push(membersRef, { name, active: true });
+                            });
+                        }
+                    });
+                };
+
+
+                const fetchExchangeRate = async () => {
+                    try {
+                        const resp = await fetch('https://open.er-api.com/v6/latest/THB');
+                        const data = await resp.json();
+                        if (data && data.rates && data.rates.TWD) {
+                            EXCHANGE_RATE.value = Number(data.rates.TWD);
+                        }
+                    } catch (e) {
+                        console.error('取得匯率失敗，使用預設匯率 0.92', e);
+                    }
+                };
+
+                // 將 OpenWeatherMap 的 weather.main 映射到現有的 condition 型別
+                const mapCondition = (main) => {
+                    if (!main) return 'sunny';
+                    if (main === 'Clear') return 'sunny';
+                    if (['Rain', 'Drizzle', 'Thunderstorm'].includes(main)) return 'rain';
+                    return 'cloudy'; // 其他一律視為多雲
+                };
+
+                // 取得並整理曼谷未來 5 天的天氣
                 const fetchWeather = async () => {
                     try {
-                        const response = await fetch(`https://api.openweathermap.org/data/2.5/forecast?q=Bangkok,th&units=metric&lang=zh_tw&appid=${WEATHER_API_KEY}`);
-                        if (!response.ok) throw new Error('Weather API Error');
-                        const data = await response.json();
+                        const url =
+                        `https://api.openweathermap.org/data/2.5/forecast` +
+                        `?q=${encodeURIComponent(WEATHER_CITY + ',' + WEATHER_COUNTRY)}` +
+                        `&appid=${WEATHER_API_KEY}` +
+                        `&units=metric&lang=zh_tw`;
 
-                        const dailyForecasts = {};
+                        const resp = await fetch(url);
+                        const data = await resp.json();
+
+                        if (!data.list || !Array.isArray(data.list)) {
+                            throw new Error('No forecast list from API');
+                        }
+
+                        // 1. 以「日」為單位分組 (只取未來幾天)
+                        const groupedByDate = new Map();
+
                         data.list.forEach(item => {
-                            const dateStr = item.dt_txt.split(' ')[0];
-                            if (!dailyForecasts[dateStr] && item.dt_txt.includes('12:00:00')) {
-                                dailyForecasts[dateStr] = item;
+                            const date = new Date(item.dt * 1000);
+                            // 只看日期，不含時間
+                            const key = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`;
+                            const displayLabel = `${date.getMonth() + 1}/${date.getDate()}`;
+
+                            if (!groupedByDate.has(key)) {
+                                groupedByDate.set(key, {
+                                    items: [],
+                                    dateObj: date,
+                                    label: displayLabel
+                                });
                             }
+                            groupedByDate.get(key).items.push(item);
                         });
 
-                        // Fill weather data matching dates
-                        weatherData.value = dates.value.map((d, i) => {
-                             // Simple matching logic or fallback
-                             const forecast = dailyForecasts[d.full];
-                             if(forecast) {
-                                 return {
-                                     condition: forecast.weather[0].main.toLowerCase().includes('rain') ? 'rain' : (forecast.weather[0].main.toLowerCase().includes('cloud') ? 'cloudy' : 'sunny'),
-                                     temp: `${Math.round(forecast.main.temp_max)}/${Math.round(forecast.main.temp_min)}`,
-                                     feel: Math.round(forecast.main.feels_like),
-                                     desc: forecast.weather[0].description,
-                                     isReal: true
-                                 };
-                             }
-                             return FALLBACK_WEATHER[i];
+                        // 2. 轉成陣列並依日期排序，只留前 5 天
+                        const dailyArray = Array.from(groupedByDate.values())
+                        .sort((a, b) => a.dateObj - b.dateObj)
+                        .slice(0, 5);
+
+                        if (dailyArray.length === 0) {
+                            throw new Error('No daily forecast groups');
+                        }
+
+                        // 3. 將每一天壓成 {condition,temp,feel,sourceDate}
+                        const processedDaily = dailyArray.map(day => {
+                            const temps = day.items.map(i => i.main.temp);
+                            const feels = day.items.map(i => i.main.feels_like);
+                            const mains = day.items.map(i => i.weather && i.weather[0] && i.weather[0].main).filter(Boolean);
+
+                            const maxTemp = Math.max(...temps);
+                            const minTemp = Math.min(...temps);
+                            const avgFeel = feels.reduce((a, b) => a + b, 0) / feels.length;
+
+                            // 取出出現次數最多的 main 當作代表天氣
+                            const mainCount = mains.reduce((acc, m) => {
+                                acc[m] = (acc[m] || 0) + 1;
+                                return acc;
+                            }, {});
+                            const mainKey = Object.entries(mainCount).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Clear';
+
+                            return {
+                                condition: mapCondition(mainKey),
+                                temp: `${Math.round(maxTemp)}/${Math.round(minTemp)}`,
+                                feel: Math.round(avgFeel),
+                                sourceDate: day.label    // 真實預報日期 (M/D)
+                            };
                         });
 
-                    } catch (e) {
-                        console.error('Weather fetch failed', e);
+                        // 4. 依照你的行程日期 (dates.value) 填入 weatherData：
+                        //    先嘗試找「同月日」的預報，找不到就用 processedDaily 的對應索引，並標記 isFallback
+                        weatherData.value = dates.value.map((d, idx) => {
+                            const plannedLabel = d.date; // e.g. "1/16"
+
+                            // 嘗試找與行程相同 M/D 的那天
+                            const exact = processedDaily.find(day => day.sourceDate === plannedLabel);
+
+                            if (exact) {
+                                return {
+                                    ...exact,
+                                    isFallback: false     // 有對應到預計日期
+                                };
+                            }
+
+                            // 沒找到就用「未來 5 天中第 idx 天」，超出長度就循環使用
+                            const fallbackDay = processedDaily[idx % processedDaily.length];
+
+                            return {
+                                ...fallbackDay,
+                                isFallback: true       // 非預計日期，使用近期預報
+                            };
+                        });
+
+                    } catch (err) {
+                        console.error('取得天氣失敗，改用備用靜態資料', err);
+                        // API 失敗時至少有畫面
                         weatherData.value = FALLBACK_WEATHER;
                     }
                 };
 
-                // Currency Logic
-                const EXCHANGE_RATE = ref(0.92);
-                const inputTHB = ref('');
-                const inputTWD = ref('');
-
-                const fetchExchangeRate = async () => {
-                    try {
-                        const res = await fetch('https://open.er-api.com/v6/latest/THB');
-                        const data = await res.json();
-                        if (data && data.rates && data.rates.TWD) {
-                            EXCHANGE_RATE.value = data.rates.TWD;
-                        }
-                    } catch (e) {
-                        console.error('Exchange rate fetch failed', e);
-                    }
-                };
-
-                const updateTWD = () => {
-                    if (inputTHB.value === '') inputTWD.value = '';
-                    else inputTWD.value = (parseFloat(inputTHB.value) * EXCHANGE_RATE.value).toFixed(0);
-                };
-                const updateTHB = () => {
-                    if (inputTWD.value === '') inputTHB.value = '';
-                    else inputTHB.value = (parseFloat(inputTWD.value) / EXCHANGE_RATE.value).toFixed(0);
-                };
-
-                // Data Models
-                const currentItinerary = ref([
-                    { id: 1, time: '10:00', name: '大皇宮', type: 'sightseeing', location: 'Na Phra Lan Rd', note: '門票 500 THB', transport: 'taxi', transportTime: '20' },
-                    { id: 2, time: '12:30', name: 'Kub Kao Kub Pla', type: 'food', location: 'IconSiam 5F', note: '必點咖哩蟹', transport: 'boat', transportTime: '15' }
-                ]);
-
-                const hotels = ref([
-                    { name: 'Grande Centre Point', address: '151 Ratchadamri Rd', checkin: '14:00', checkout: '12:00', wifi: 'GCP_Guest / guest123' }
-                ]);
-
-                const shoppingList = ref([]);
-                const members = ref([
-                    { id: 'kappabooom', name: 'kappabooom', active: true },
-                    { id: 'beibei1029', name: 'beibei1029', active: true },
-                    { id: 'hsiannnnnng', name: 'hsiannnnnng', active: true },
-                    { id: 'shinbinwei', name: 'shinbinwei', active: true },
-                    { id: 'aylwen4444', name: 'aylwen4444', active: true },
-                    { id: 'wunsin', name: 'wunsin', active: true },
-                    { id: 'rtrtr1', name: 'rtrtr1', active: true },
-                    { id: 'blackblacknu', name: 'blackblacknu', active: true }
-                ]);
-
-                // FIREBASE: Expenses are now reactive to Firestore
-                const expenses = ref([]);
-
-                // Initial Load & Listeners
                 onMounted(() => {
-                    fetchWeather();
                     fetchExchangeRate();
-
-                    // FIREBASE: Real-time listener
-                    const q = query(collection(db, DB_NAME), orderBy("createdAt", "desc"));
-                    onSnapshot(q, (snapshot) => {
-                        expenses.value = snapshot.docs.map(doc => ({
-                            id: doc.id,
-                            ...doc.data()
-                        }));
-                        isSyncing.value = false;
-                    }, (error) => {
-                        console.error("Firebase Snapshot Error:", error);
-                        isSyncing.value = false;
-                    });
+                    fetchWeather();
+                    initFirebaseListeners();
                 });
 
-                // Computed
-                const isPastDate = computed(() => {
-                    // Logic to hide past weather cards
-                    return (dateStr) => {
-                        const today = new Date().toISOString().split('T')[0].replace(/-/g, '');
-                        const target = dateStr.replace(/-/g, '');
-                        return target < today;
+                // --- 雙向匯率更新邏輯 ---
+                const updateTWD = () => {
+                    if (inputTHB.value === '' || inputTHB.value === null) {
+                        inputTWD.value = '';
+                        return;
                     }
+                    inputTWD.value = Math.round(inputTHB.value * EXCHANGE_RATE.value);
+                };
+
+                const updateTHB = () => {
+                    if (inputTWD.value === '' || inputTWD.value === null) {
+                        inputTHB.value = '';
+                        return;
+                    }
+                    inputTHB.value = Math.round(inputTWD.value / EXCHANGE_RATE.value);
+                };
+                
+                watch(EXCHANGE_RATE, (newRate) => {
+                     if(inputTHB.value) inputTWD.value = Math.round(inputTHB.value * newRate);
                 });
 
-                const totalTHB = computed(() => expenses.value.filter(e => e.currency === 'THB').reduce((sum, e) => sum + Number(e.amount), 0));
-                const totalTWD = computed(() => expenses.value.filter(e => e.currency === 'TWD').reduce((sum, e) => sum + Number(e.amount), 0));
-                const finalTotalTWD = computed(() => Math.round(totalTWD.value + (totalTHB.value * EXCHANGE_RATE.value)));
+                // --- 檢查是否為過去日期的邏輯 ---
+                const isPastDate = computed(() => {
+                    const currentSelected = dates.value[selectedDateIndex.value];
+                    if (!currentSelected) return false;
 
+                    // 解析日期 "1/16"
+                    const [m, d] = currentSelected.date.split('/');
+                    
+                    // 建立行程日期的 Date 物件 (使用設定的 TRIP_YEAR)
+                    // 注意月份在 JS 中是 0-11
+                    const tripDate = new Date(TRIP_YEAR, parseInt(m) - 1, parseInt(d));
+                    
+                    // 取得系統今天日期，並將時間歸零以進行純日期比較
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+
+                    // 如果行程日期 < 今天，表示已是過去式
+                    return tripDate < today;
+                });
+
+                
+                const currentItinerary = computed(() => itineraryData.value[selectedDateIndex.value] || []);
+                const splitMembers = computed(() => members.value.filter(m => m.active).map(m => m.name));
+                
+                // 修改：根據 currentUser 過濾支出
                 const myExpenses = computed(() => {
-                    // Filter expenses where 'I' (currentUser) am involved
-                    return expenses.value.filter(e => {
-                        // 1. I paid for it (and it's not a split bill, or it is)
-                        // 2. Or someone else paid, but I have a share in it
-                        if (e.payer === currentUser.value) return true; 
-                        if (e.splitDetails && e.splitDetails[currentUser.value] > 0) return true;
-                        return false;
-                    }).map(e => {
-                        // Calculate my share cost
-                        let myCost = 0;
-                        if (e.splitDetails && e.splitDetails[currentUser.value]) {
-                            myCost = e.splitDetails[currentUser.value];
-                        } else if (e.payer === currentUser.value && (!e.splitDetails || Object.keys(e.splitDetails).length === 0)) {
-                            myCost = e.amount; // Personal expense
+                    return expenses.value.filter(exp => {
+                        // 1. 個人支出：如果付款人是 currentUser
+                        if (exp.splitMethod === 'personal') return exp.payer === currentUser.value;
+                        
+                        // 2. 均分：假設只要是啟用的團員都有份
+                        if (exp.splitMethod === 'equal') return true; 
+                        
+                        // 3. 指定金額或比例：檢查 currentUser 是否在名單中且大於 0
+                        if (exp.splitMethod === 'amount' || exp.splitMethod === 'ratio') {
+                            return exp.splitDetails && Number(exp.splitDetails[currentUser.value]) > 0;
                         }
-
-                        // Convert myCost to TWD for display if needed, but keeping original currency is usually better for detail
-                        // Logic requested: "分到我身上的項目"
-                        return {
-                            ...e,
-                            myShareAmount: myCost,
-                            isPayer: e.payer === currentUser.value
-                        };
-                    });
+                        return false;
+                    }).map(exp => {
+                        let myShare = 0;
+                        const totalAmount = Number(exp.amount) || 0;
+                        
+                        if (exp.splitMethod === 'personal') {
+                            myShare = totalAmount;
+                        } else if (exp.splitMethod === 'equal') {
+                            const activeCount = members.value.filter(m => m.active).length || 1;
+                            myShare = Math.round(totalAmount / activeCount); 
+                        } else if (exp.splitMethod === 'amount') {
+                            myShare = Number(exp.splitDetails[currentUser.value]) || 0;
+                        } else if (exp.splitMethod === 'ratio') {
+                            const totalRatio = Object.values(exp.splitDetails).reduce((sum, r) => sum + (Number(r) || 0), 0);
+                            const myRatio = Number(exp.splitDetails[currentUser.value]) || 0;
+                            if (totalRatio > 0) myShare = (totalAmount * myRatio) / totalRatio;
+                        }
+                        
+                        return { ...exp, displayAmount: myShare };
+                    }).sort((a,b) => new Date(b.date) - new Date(a.date));
                 });
 
-                const splitMembers = computed(() => members.value.filter(m => m.active));
+                const totalTHB = computed(() => myExpenses.value.filter(e => e.currency === 'THB').reduce((sum, e) => sum + (Number(e.displayAmount) || 0), 0));
+                const totalTWD = computed(() => myExpenses.value.filter(e => e.currency === 'TWD').reduce((sum, e) => sum + (Number(e.displayAmount) || 0), 0));
+                
+                const finalTotalTWD = computed(() => {
+                    const sum = myExpenses.value.reduce((acc, exp) => {
+                        const amount = Number(exp.displayAmount) || 0;
+                        const valInTWD = exp.currency === 'TWD' ? amount : amount * EXCHANGE_RATE.value;
+                        return acc + valInTWD;
+                    }, 0);
+                    return Math.round(sum); 
+                });
 
-                // Member Balance Calculation (Complex logic simplified)
                 const memberBalances = computed(() => {
                     const balances = {};
-                    members.value.forEach(m => balances[m.id] = 0);
+                    members.value.forEach(m => { balances[m.name] = 0; });
 
                     expenses.value.forEach(exp => {
-                        // If no split details, skip (assume personal expense unless marked otherwise, 
-                        // but your app logic seems to enforce split for group expenses)
-                        if (!exp.splitDetails) return;
-
-                        const payer = exp.payer;
-                        const amount = Number(exp.amount);
-                        // Convert everything to TWD for settlement? Or keep separate?
-                        // Usually settlement is done in one currency. Let's assume TWD for simplicity or base currency.
-                        // If expense is THB, convert to TWD for settlement balance
-                        const amountInTWD = exp.currency === 'THB' ? amount * EXCHANGE_RATE.value : amount;
-
-                        // Payer 'paid' this amount, so they are 'owed' this amount initially
-                        // But we need to subtract their own share.
-
-                        // Actually, easier way:
-                        // Payer +amount
-                        // Everyone -their_share
-
-                        // Add total paid to payer
-                        balances[payer] += amountInTWD;
-
-                        // Subtract share from each member
-                        Object.entries(exp.splitDetails).forEach(([memberId, share]) => {
-                             const shareInTWD = exp.currency === 'THB' ? share * EXCHANGE_RATE.value : share;
-                             if(balances[memberId] !== undefined) {
-                                 balances[memberId] -= shareInTWD;
-                             }
-                        });
-                    });
-
-                    return Object.entries(balances)
-                        .map(([id, amount]) => ({ 
-                            id, 
-                            name: members.value.find(m => m.id === id)?.name || id, 
-                            amount: Math.round(amount) 
-                        }))
-                        .sort((a, b) => b.amount - a.amount);
-                });
-
-                const settlementSteps = computed(() => {
-                    // Greedy algorithm for settlement
-                    let debtors = memberBalances.value.filter(m => m.amount < -1).map(m => ({...m}));
-                    let creditors = memberBalances.value.filter(m => m.amount > 1).map(m => ({...m}));
-
-                    // Sort by magnitude
-                    debtors.sort((a, b) => a.amount - b.amount); // Most negative first
-                    creditors.sort((a, b) => b.amount - a.amount); // Most positive first
-
-                    const steps = [];
-                    let i = 0; // debtor index
-                    let j = 0; // creditor index
-
-                    while (i < debtors.length && j < creditors.length) {
-                        const debtor = debtors[i];
-                        const creditor = creditors[j];
-
-                        // The amount to settle is the minimum of (abs(debt), credit)
-                        const amount = Math.min(Math.abs(debtor.amount), creditor.amount);
-
-                        if (amount > 0) {
-                            steps.push({
-                                from: debtor.name,
-                                to: creditor.name,
-                                amount: amount
-                            });
+                        const amountInTWD = exp.currency === 'TWD' ? (Number(exp.amount) || 0) : (Number(exp.amount) || 0) * EXCHANGE_RATE.value;
+                        if (balances[exp.payer] !== undefined) {
+                            balances[exp.payer] += amountInTWD;
                         }
 
-                        debtor.amount += amount;
-                        creditor.amount -= amount;
+                        let participants = [];
 
-                        // If settled (close to 0), move to next
-                        if (Math.abs(debtor.amount) < 1) i++;
-                        if (creditor.amount < 1) j++;
+                        switch (exp.splitMethod) {
+                            case 'equal':
+                                participants = members.value.filter(m => m.active).map(m => m.name);
+                                const count = participants.length;
+                                if (count > 0) {
+                                    const totalInt = Math.round(amountInTWD);
+                                    const baseShare = Math.floor(totalInt / count);
+                                    let remainder = totalInt % count;
+                                    // Firebase id 是 string，簡單用 hash 轉 int 來做餘數分配
+                                    let idHash = 0;
+                                    if(exp.id) {
+                                        for(let i=0; i<exp.id.length; i++) idHash += exp.id.charCodeAt(i);
+                                    } else {
+                                        idHash = Math.floor(Math.random() * 100);
+                                    }
+                                    
+                                    const startIdx = (idHash % count);
+                                    
+                                    participants.forEach((name, idx) => {
+                                        let share = baseShare;
+                                        if (remainder > 0) {
+                                            const relativeIdx = (idx - startIdx + count) % count;
+                                            if (relativeIdx < remainder) {
+                                                share += 1;
+                                            }
+                                        }
+                                        if (balances[name] !== undefined) balances[name] -= share;
+                                    });
+                                }
+                                break;
+                            
+                            case 'personal':
+                                if (balances[exp.payer] !== undefined) balances[exp.payer] -= amountInTWD;
+                                break;
+
+                            case 'amount':
+                                for(const name in exp.splitDetails) {
+                                    const debtInTWD = exp.currency === 'TWD' ? (Number(exp.splitDetails[name]) || 0) : (Number(exp.splitDetails[name]) || 0) * EXCHANGE_RATE.value;
+                                    if (balances[name] !== undefined) balances[name] -= debtInTWD;
+                                }
+                                break;
+                            
+                            case 'ratio':
+                                const totalRatio = Object.values(exp.splitDetails).reduce((sum, r) => sum + (Number(r) || 0), 0);
+                                if (totalRatio > 0) {
+                                    for(const name in exp.splitDetails) {
+                                        const ratio = (Number(exp.splitDetails[name]) || 0);
+                                        const share = (amountInTWD * ratio) / totalRatio;
+                                        if (balances[name] !== undefined) balances[name] -= share;
+                                    }
+                                }
+                                break;
+                        }
+                    });
+                    return balances;
+                });
+                
+                const settlementSteps = computed(() => {
+                    const balances = JSON.parse(JSON.stringify(memberBalances.value));
+                    const debtors = Object.entries(balances).filter(([,b]) => b < -1).sort((a,b) => a[1] - b[1]); 
+                    const creditors = Object.entries(balances).filter(([,b]) => b > 1).sort((a,b) => b[1] - a[1]);
+                    const steps = [];
+
+                    let i = 0, j = 0;
+                    while (i < debtors.length && j < creditors.length) {
+                        const debtorName = debtors[i][0];
+                        let debtorAmount = debtors[i][1];
+                        const creditorName = creditors[j][0];
+                        let creditorAmount = creditors[j][1];
+
+                        const amountToSettle = Math.min(-debtorAmount, creditorAmount);
+                        
+                        steps.push(`${debtorName} 應支付給 ${creditorName} NT$ ${Math.round(amountToSettle)}`);
+
+                        debtors[i][1] += amountToSettle;
+                        creditors[j][1] -= amountToSettle;
+
+                        if (Math.abs(debtors[i][1]) < 1) i++;
+                        if (Math.abs(creditors[j][1]) < 1) j++;
                     }
                     return steps;
                 });
 
-
-                // Inputs
-                const newShoppingItem = ref({ name: '', price: '', buyer: '' });
-                const newExpense = ref({ 
-                    item: '', 
-                    amount: '', 
-                    currency: 'THB', 
-                    type: 'food', 
-                    payer: '', 
-                    splitMethod: 'even', // even, custom
-                    splitDetails: {} 
-                });
-                const newItinerary = ref({ time: '', name: '', type: 'sightseeing', location: '', note: '', transport: 'taxi' });
-                const newMemberName = ref('');
-
-                // Methods
-                const formatNumber = (num) => new Intl.NumberFormat('en-US').format(Math.round(num));
-                const getCategoryIcon = (type) => ({ food: 'fa-utensils', transport: 'fa-train-subway', ticket: 'fa-ticket', shopping: 'fa-bag-shopping', accommodation: 'fa-bed', other: 'fa-asterisk' }[type] || 'fa-asterisk');
-
+                const CATEGORY_MAP = {
+                    sightseeing: { icon: 'fa-solid fa-camera' }, food: { icon: 'fa-solid fa-utensils' },
+                    shopping: { icon: 'fa-solid fa-bag-shopping' }, accommodation: { icon: 'fa-solid fa-bed' },
+                    transport: { icon: 'fa-solid fa-van-shuttle' }, ticket: { icon: 'fa-solid fa-ticket' },
+                    flight: { icon: 'fa-solid fa-plane' }, other: { icon: 'fa-solid fa-circle-dot' },
+                    stay: { icon: 'fa-solid fa-hotel' }
+                };
+                const getCategoryIcon = (cat) => CATEGORY_MAP[cat]?.icon || CATEGORY_MAP.other.icon;
+                const formatNumber = (num) => num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '0';
+                const getOriginalIndex = (id) => expenses.value.findIndex(e => e.id === id);
+                
                 const handleAddClick = () => {
                     if (currentTab.value === 'shopping') showShoppingModal.value = true;
-                    if (currentTab.value === 'expenses') {
-                         resetNewExpense();
-                         showExpenseModal.value = true;
+                    else if (currentTab.value === 'expenses') {
+                        editingExpenseId.value = null;
+                        resetNewExpense();
+                        showExpenseModal.value = true;
                     }
-                    if (currentTab.value === 'itinerary') {
+                    else {
                         isEditMode.value = false;
-                        newItinerary.value = { time: '', name: '', type: 'sightseeing', location: '', note: '', transport: 'taxi' };
+                        newItinerary.value = { id: Date.now(), category: 'sightseeing', name: '', startTime: '' };
                         showItineraryModal.value = true;
                     }
                 };
-
-                // Helper to get index in filtered list
-                const getOriginalIndex = (item) => expenses.value.findIndex(e => e.id === item.id);
-
-                const resetNewExpense = () => {
-                    newExpense.value = { 
-                        item: '', amount: '', currency: 'THB', type: 'food', 
-                        payer: currentUser.value, // Default payer is me
-                        splitMethod: 'even', splitDetails: {} 
-                    };
-                    isEditMode.value = false;
-                    editingExpenseIndex.value = null;
+                
+                // --- Firebase Member Actions ---
+                const addMember = () => {
+                    const name = newMemberName.value.trim();
+                    if (!name || members.value.find(m => m.name === name)) return;
+                    
+                    const membersRef = dbRef(db, 'members');
+                    push(membersRef, { name, active: true });
+                    newMemberName.value = '';
+                };
+                const toggleMemberActive = (member) => {
+                    const memberRef = dbRef(db, `members/${member.id}`);
+                    update(memberRef, { active: !member.active });
+                };
+                const removeMember = (id) => {
+                    if(confirm('確定刪除此成員？')) {
+                        const memberRef = dbRef(db, `members/${id}`);
+                        remove(memberRef);
+                    }
+                };
+                
+                const toggleMemberDetails = (name) => {
+                    expandedMember.value = expandedMember.value === name ? null : name;
+                };
+                const getMemberPaidExpenses = (name) => {
+                    return expenses.value.filter(e => e.payer === name && e.splitMethod !== 'personal');
                 };
 
-                const startEditExpense = (expense) => {
-                    isEditMode.value = true;
-                    editingExpenseIndex.value = expense.id; // Use ID for Firebase
-                    newExpense.value = JSON.parse(JSON.stringify(expense));
+                const startEditExpense = (id, exp) => {
+                    editingExpenseId.value = id;
+                    // 深拷貝避免直接修改
+                    const copy = JSON.parse(JSON.stringify(exp));
+                    // 移除 Firebase 物件可能帶有的 id 屬性 (因為 newExpense 是純資料)
+                    delete copy.id;
+                    // 初始化 splitDetails 如果不存在
+                    if (!copy.splitDetails) copy.splitDetails = {};
+                    newExpense.value = copy;
                     showExpenseModal.value = true;
                 };
 
-                // FIREBASE: Save (Add/Update)
-                const saveExpense = async () => {
-                    if (!newExpense.value.item || !newExpense.value.amount) return alert('請輸入項目與金額');
-
-                    // Logic to calculate splitDetails if 'even'
-                    if (newExpense.value.splitMethod === 'even') {
-                        const activeMembers = members.value.filter(m => m.active);
-                        const count = activeMembers.length;
-                        const total = Number(newExpense.value.amount);
-                        const perPerson = Math.floor(total / count);
-                        let remainder = total - (perPerson * count);
-
-                        const details = {};
-                        activeMembers.forEach((m, idx) => {
-                            let share = perPerson;
-                            if (remainder > 0) {
-                                share += 1;
-                                remainder--;
-                            }
-                            details[m.id] = share;
-                        });
-                        newExpense.value.splitDetails = details;
+                // --- Firebase Expense Actions ---
+                const saveExpense = () => {
+                    if (!newExpense.value.name || !newExpense.value.amount) return;
+                    
+                    if (editingExpenseId.value === null) {
+                        // Create
+                        const expensesRef = dbRef(db, 'expenses');
+                        push(expensesRef, newExpense.value);
+                    } else {
+                        // Update
+                        const expenseRef = dbRef(db, `expenses/${editingExpenseId.value}`);
+                        set(expenseRef, newExpense.value);
                     }
-
-                    const expenseData = {
-                        ...newExpense.value,
-                        date: new Date().toISOString().split('T')[0], // Simple date
-                        createdAt: serverTimestamp()
-                    };
-
-                    try {
-                        if (isEditMode.value && editingExpenseIndex.value) {
-                             const expenseRef = doc(db, DB_NAME, editingExpenseIndex.value);
-                             const { id, ...dataToUpdate } = expenseData; // remove id if exists in object
-                             await updateDoc(expenseRef, dataToUpdate);
-                        } else {
-                             await addDoc(collection(db, DB_NAME), expenseData);
-                        }
-                        closeExpenseModal();
-                    } catch (e) {
-                        alert("儲存失敗: " + e.message);
-                        console.error(e);
-                    }
+                    closeExpenseModal();
                 };
 
-                // FIREBASE: Remove
-                const removeExpense = async (id) => {
+                const removeExpense = (id) => {
                     if(confirm('確定要刪除此筆紀錄？')) {
-                        try {
-                            await deleteDoc(doc(db, DB_NAME, id));
-                        } catch (e) {
-                            alert("刪除失敗");
-                        }
+                        const expenseRef = dbRef(db, `expenses/${id}`);
+                        remove(expenseRef);
                     }
                 };
-
+                
                 const closeExpenseModal = () => {
                     showExpenseModal.value = false;
-                    editingExpenseIndex.value = null;
-                    resetNewExpense();
+                    editingExpenseId.value = null;
                 }
 
-                // Member Methods
-                const addMember = () => {
-                    if (newMemberName.value) {
-                        const id = newMemberName.value; // simple ID
-                        members.value.push({ id, name: newMemberName.value, active: true });
-                        newMemberName.value = '';
-                    }
-                };
-                const toggleMemberActive = (m) => m.active = !m.active;
-                const removeMember = (idx) => members.value.splice(idx, 1);
-                const toggleMemberDetails = (mId) => {
-                     expandedMember.value = expandedMember.value === mId ? null : mId;
-                };
-                const getMemberPaidExpenses = (mId) => {
-                    return expenses.value.filter(e => e.payer === mId);
-                };
-
-                // Shopping & Itinerary (Local Only for now as per request focus on expenses)
                 const addShoppingItem = () => {
                     if (newShoppingItem.value.name) {
                         shoppingList.value.push({ ...newShoppingItem.value });
@@ -1096,7 +1232,7 @@
                     }
                 };
                 const removeShoppingItem = (idx) => shoppingList.value.splice(idx, 1);
-
+                
                 const saveItineraryItem = () => {
                     if (!newItinerary.value.name) return alert('請輸入名稱');
                     const list = currentItinerary.value;
@@ -1104,7 +1240,7 @@
                         const idx = list.findIndex(i => i.id === newItinerary.value.id);
                         if (idx !== -1) list[idx] = { ...newItinerary.value };
                     } else {
-                        list.push({ ...newItinerary.value, id: Date.now() });
+                        list.push({ ...newItinerary.value });
                     }
                     showItineraryModal.value = false;
                 };
@@ -1125,7 +1261,7 @@
                         list.splice(newIdx, 0, item);
                     }
                 };
-
+                
                 const openMap = (q) => { if(q) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank'); };
                 const openMapDirections = (start, end) => {
                     const o = start.address || start.name;
@@ -1136,7 +1272,8 @@
                     isEditMode.value = true;
                     newItinerary.value = JSON.parse(JSON.stringify(item));
                     showItineraryModal.value = true;
-                };\n
+                };
+                
                 const getWeatherIcon = (cond) => {
                     const map = { sunny: 'fa-solid fa-sun', cloudy: 'fa-solid fa-cloud-sun', rain: 'fa-solid fa-cloud-showers-heavy' };
                     return map[cond] || 'fa-solid fa-sun';
@@ -1148,12 +1285,14 @@
                     transport: '#78909C', ticket: '#8D6E63', flight: '#29B6F6', other: '#BDBDBD'
                 }[cat] || '#BDBDBD');
 
+                resetNewExpense();
+
                 return {
-                    currentTab, selectedDateIndex, showShoppingModal, showExpenseModal, showItineraryModal, showMemberModal, isEditMode, editingExpenseIndex, expandedMember,
+                    currentTab, selectedDateIndex, showShoppingModal, showExpenseModal, showItineraryModal, showMemberModal, isEditMode, editingExpenseId, expandedMember,
                     dates, weatherData, currentItinerary, hotels, shoppingList, expenses, members,
                     newShoppingItem, newExpense, newItinerary, newMemberName,
                     splitMembers, myExpenses, totalTHB, totalTWD, finalTotalTWD, memberBalances, settlementSteps, EXCHANGE_RATE, 
-                    inputTHB, inputTWD, updateTHB, updateTWD, isPastDate, isSyncing,
+                    inputTHB, inputTWD, updateTHB, updateTWD, isPastDate,
                     formatNumber, getCategoryIcon, handleAddClick, getOriginalIndex,
                     addMember, toggleMemberActive, removeMember, toggleMemberDetails, getMemberPaidExpenses,
                     startEditExpense, saveExpense, removeExpense, closeExpenseModal,
