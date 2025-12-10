@@ -130,8 +130,9 @@
                                     <button v-if="item.note.length > 50" @click="item.isNoteExpanded = !item.isNoteExpanded" class="text-deep-sea-blue font-bold mt-1 block">{{ item.isNoteExpanded ? '收合備註' : '查看更多...' }}</button>
                                 </div>
                             </div>
+                            <!-- 3. 修正：將 Google Maps 按鈕改為 <a> 標籤，解決 iOS PWA 卡住問題 -->
                             <div class="absolute top-3 right-3 flex flex-col space-y-1">
-                                <button @click.stop="openMap(item.address || item.name)" class="w-7 h-7 bg-ice-blue text-white rounded-full flex items-center justify-center text-xs hover:bg-deep-sea-blue transition-colors"><i class="fa-solid fa-location-arrow"></i></button>
+                                <a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address || item.name)}`" target="_blank" class="w-7 h-7 bg-ice-blue text-white rounded-full flex items-center justify-center text-xs hover:bg-deep-sea-blue transition-colors z-20" @click.stop><i class="fa-solid fa-location-arrow"></i></a>
                                 <button @click.stop="editItem(item)" class="w-7 h-7 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center text-xs hover:bg-slate-200 transition-colors"><i class="fa-solid fa-pencil"></i></button>
                             </div>
                         </div>
@@ -303,7 +304,7 @@
                     </div>
                 </div>
 
-                <!-- 2. 轉帳建議 (修復手機跑版) -->
+                <!-- 2. 轉帳建議 (修復：移除 flex-1 並改用固定寬度 w-24，解決箭頭跑版) -->
                 <div class="bg-white rounded-3xl p-6 card-shadow">
                     <h3 class="font-bold text-slate-800 mb-4 flex items-center justify-between cursor-pointer" @click="toggleSection('transfer')">
                         <span><i class="fa-solid fa-money-bill-transfer mr-2 text-green-500"></i> 轉帳建議</span>
@@ -311,34 +312,30 @@
                     </h3>
                     <div v-show="!collapsedSections.transfer" class="animate-fade-in">
                         <div v-if="transferSuggestions.length > 0" class="grid grid-cols-1 gap-3">
-                            <div v-for="(item, idx) in transferSuggestions" :key="idx" class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col items-center">
-                                <div class="flex items-center justify-between w-full mb-3">
-                                    <!-- Payer -->
-                                    <div class="flex flex-col items-center w-[30%] max-w-[80px]">
-                                        <div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-sm font-bold mb-1 border-2 border-white shadow-sm">
-                                            {{ item.from.substring(0, 1) }}
-                                        </div>
-                                        <span class="text-xs font-bold text-slate-700 truncate w-full text-center">{{ item.from }}</span>
+                            <div v-for="(item, idx) in transferSuggestions" :key="idx" class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex items-center justify-between">
+                                <!-- Payer -->
+                                <div class="flex flex-col items-center w-[30%] max-w-[80px]">
+                                    <div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-sm font-bold mb-1 border-2 border-white shadow-sm">
+                                        {{ item.from.substring(0, 1) }}
                                     </div>
-                                    
-                                    <!-- Arrow & Label (Fixed Width Container) -->
-                                    <div class="flex-1 flex flex-col items-center justify-center px-1 min-w-[60px]">
-                                        <span class="text-[10px] text-slate-400 mb-1 whitespace-nowrap">支付給</span>
-                                        <div class="w-full h-[2px] bg-slate-200 relative mt-1">
-                                            <i class="fa-solid fa-caret-right absolute -right-1 -top-[5px] text-slate-300 text-lg"></i>
-                                        </div>
-                                    </div>
-
-                                    <!-- Payee -->
-                                    <div class="flex flex-col items-center w-[30%] max-w-[80px]">
-                                        <div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm font-bold mb-1 border-2 border-white shadow-sm">
-                                            {{ item.to.substring(0, 1) }}
-                                        </div>
-                                        <span class="text-xs font-bold text-slate-700 truncate w-full text-center">{{ item.to }}</span>
-                                    </div>
+                                    <span class="text-xs font-bold text-slate-700 truncate w-full text-center">{{ item.from }}</span>
                                 </div>
-                                <div class="w-full bg-white rounded-lg py-2 text-center border border-slate-100 shadow-sm">
-                                    <span class="text-lg font-bold text-green-600">NT$ {{ formatNumber(item.amount) }}</span>
+                                
+                                <!-- Arrow & Label (Fixed Width w-24, centered) -->
+                                <div class="flex flex-col items-center justify-center px-2 w-24 shrink-0">
+                                    <span class="text-[10px] text-slate-400 mb-1 whitespace-nowrap">支付給</span>
+                                    <div class="w-full h-[2px] bg-slate-200 relative mt-1">
+                                        <i class="fa-solid fa-caret-right absolute -right-1 -top-[5px] text-slate-300 text-lg"></i>
+                                    </div>
+                                    <span class="text-xs font-bold text-green-600 mt-2 whitespace-nowrap">NT$ {{ formatNumber(item.amount) }}</span>
+                                </div>
+
+                                <!-- Payee -->
+                                <div class="flex flex-col items-center w-[30%] max-w-[80px]">
+                                    <div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm font-bold mb-1 border-2 border-white shadow-sm">
+                                        {{ item.to.substring(0, 1) }}
+                                    </div>
+                                    <span class="text-xs font-bold text-slate-700 truncate w-full text-center">{{ item.to }}</span>
                                 </div>
                             </div>
                         </div>
@@ -638,19 +635,21 @@
                     // 2. 新增預設行程：抵達飯店
                     for(let i=0; i<dates.value.length; i++) {
                         const itineraryCol = collection(db, `itinerary_day_${i}`);
-                        // 3. 行程同步儲存至 Firestore：
-                        // 這裡使用 onSnapshot，表示只要 Firestore 資料庫有變動，
-                        // 無論是哪台裝置寫入的，這裡都會即時收到更新並渲染到畫面上。
                         onSnapshot(itineraryCol, async (snapshot) => {
                             let items = snapshot.docs.map(doc => ({...doc.data(), id: doc.id, isNoteExpanded: false}));
                             
-                            // 若該天行程為空，則自動寫入預設行程
-                            if (items.length === 0) {
-                                if (i === 0) {
-                                    // 1/16 Day 1
+                            // 1. 修正邏輯：明確檢查每一項預設行程是否存在，若不存在則補上
+                            if (i === 0) {
+                                // 檢查 "抵達曼谷" 是否存在
+                                const hasArrival = items.some(item => item.name.includes('抵達曼谷'));
+                                if (!hasArrival) {
                                     await addDoc(itineraryCol, { category: 'flight', name: '抵達曼谷 (CI0831)', startTime: '13:05', transportType: 'public', travelTime: '約1小時', address: 'Suvarnabhumi Airport', note: '入境審查、領取行李、換匯' });
-                                    // 2. 新增「抵達飯店」
-                                    await addDoc(itineraryCol, { 
+                                }
+
+                                // 檢查 "抵達飯店" 是否存在
+                                const hasHotel = items.some(item => item.name.includes('抵達飯店'));
+                                if (!hasHotel) {
+                                     await addDoc(itineraryCol, { 
                                         category: 'accommodation', 
                                         name: '抵達飯店 (Check-in)', 
                                         startTime: '15:30', 
@@ -659,8 +658,10 @@
                                         address: 'The Quarter Ratchayothin By UHG', 
                                         note: '辦理入住手續，放行李' 
                                     });
-                                } else if (i === 4) {
-                                    // 1/20 Day 5
+                                }
+                            } else if (i === 4) {
+                                const hasDeparture = items.some(item => item.name.includes('前往機場'));
+                                if (!hasDeparture) {
                                     await addDoc(itineraryCol, { category: 'flight', name: '前往機場/起飛 (CI0832)', startTime: '14:05', transportType: 'car', travelTime: '約1小時', address: 'Suvarnabhumi Airport', note: '辦理登機、退稅' });
                                 }
                             }
@@ -897,14 +898,9 @@
                 const getWeatherIcon = (c) => ({sunny:'fa-solid fa-sun', cloudy:'fa-solid fa-cloud-sun', rain:'fa-solid fa-cloud-showers-heavy'}[c]||'fa-solid fa-sun');
                 const getWeatherDescription = (c) => ({sunny:'晴朗炎熱', cloudy:'多雲偶晴', rain:'午後雷陣雨'}[c]||'晴朗');
                 
+                // 3. 修正：移除 window.open 改用 <a> 標籤，保留 fallback 邏輯
                 const openMap = (q) => {
-                    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
-                    try {
-                        const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
-                        if (newWindow) newWindow.opener = null;
-                    } catch (e) {
-                        window.location.href = url; // Fallback
-                    }
+                    // 已改為在 Template 中使用 <a href="..." target="_blank">，此函式保留作為備用或後續擴充
                 };
 
                 const editItem = (i) => { isEditMode.value=true; newItinerary.value=JSON.parse(JSON.stringify(i)); showItineraryModal.value=true; };
