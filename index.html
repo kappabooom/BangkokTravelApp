@@ -69,7 +69,6 @@
                 <button @click="currentTab = 'info'" title="資訊" :class="{'active': currentTab === 'info'}" class="tab-button"><i class="fa-solid fa-circle-info"></i></button>
                 <button @click="currentTab = 'shopping'" title="購物" :class="{'active': currentTab === 'shopping'}" class="tab-button"><i class="fa-solid fa-basket-shopping"></i></button>
                 <button @click="currentTab = 'expenses'" title="花費" :class="{'active': currentTab === 'expenses'}" class="tab-button"><i class="fa-solid fa-coins"></i></button>
-                <button @click="currentTab = 'settings'" title="設定" :class="{'active': currentTab === 'settings'}" class="tab-button"><i class="fa-solid fa-gear"></i></button>
             </div>
         </div>
 
@@ -181,6 +180,27 @@
                             <p class="text-xs text-slate-500 flex items-center"><i class="fa-solid fa-location-dot w-4 text-center mr-2"></i> {{ hotel.address }}</p>
                         </li>
                     </ul>
+                </div>
+
+                <!-- 2. 使用者切換下拉選單 (放置於資訊頁面最下方) -->
+                <div class="bg-white rounded-3xl p-4 card-shadow flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+                             <i class="fa-solid fa-user-gear text-lg"></i>
+                        </div>
+                        <div>
+                             <p class="text-xs text-slate-400 font-medium">當前使用者</p>
+                             <p class="text-sm font-bold text-slate-800">{{ currentUser }}</p>
+                        </div>
+                    </div>
+                    <div class="relative">
+                         <select v-model="currentUser" class="appearance-none bg-slate-50 border border-slate-200 text-slate-700 py-2 pl-4 pr-8 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-deep-sea-blue/20 focus:border-deep-sea-blue transition-all cursor-pointer">
+                             <option v-for="member in members" :key="member.id" :value="member.name">{{ member.name }}</option>
+                         </select>
+                         <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+                             <i class="fa-solid fa-chevron-down text-xs"></i>
+                         </div>
+                    </div>
                 </div>
             </div>
 
@@ -310,20 +330,6 @@
                 </div>
             </div>
 
-            <!-- 5. 設定 Tab -->
-            <div v-if="currentTab === 'settings'" class="animate-fade-in">
-                 <div class="bg-white rounded-3xl p-6 card-shadow">
-                    <h3 class="font-bold text-slate-800 mb-4"><i class="fa-solid fa-user-gear mr-2 text-slate-500"></i> 當前使用者</h3>
-                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        <button v-for="member in members" :key="member.id" @click="currentUser = member.name" 
-                                class="py-2 px-3 text-sm rounded-lg transition-colors"
-                                :class="currentUser === member.name ? 'bg-deep-sea-blue text-white font-bold shadow' : 'bg-slate-100 text-slate-600'">
-                            {{ member.name }}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
         </main>
 
         <!-- Toast Notification -->
@@ -436,13 +442,32 @@
             </div>
         </div>
 
-        <!-- Member Modal -->
+        <!-- 1. 成員管理 Modal (新增編輯功能) -->
         <div v-if="showMemberModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[60] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
             <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
                 <h3 class="font-bold text-lg mb-4 text-center text-slate-800">分帳成員管理</h3>
                 <div class="space-y-2 max-h-60 overflow-y-auto mb-4 min-h-[100px]">
                     <div v-for="m in members" :key="m.id" class="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-3 border border-slate-100">
-                        <span class="text-sm font-medium" :class="m.active ? 'text-slate-700' : 'text-slate-400 line-through'">{{ m.name }}</span>
+                        <!-- 可編輯名稱區域 -->
+                        <div class="flex-1 flex items-center mr-2">
+                            <template v-if="editingMemberId === m.id">
+                                <input v-model="tempMemberName" 
+                                       @keyup.enter="saveMemberName(m)" 
+                                       @blur="saveMemberName(m)"
+                                       ref="editInput"
+                                       class="w-full text-sm font-bold text-slate-700 bg-white border border-deep-sea-blue rounded px-2 py-1 outline-none"
+                                       autofocus>
+                            </template>
+                            <template v-else>
+                                <span class="text-sm font-medium cursor-pointer hover:text-deep-sea-blue transition-colors flex items-center" 
+                                      :class="m.active ? 'text-slate-700' : 'text-slate-400 line-through'"
+                                      @click="startEditMember(m)">
+                                    {{ m.name }}
+                                    <i class="fa-solid fa-pen text-[10px] ml-2 text-slate-300 opacity-0 group-hover:opacity-100"></i>
+                                </span>
+                            </template>
+                        </div>
+
                         <div class="flex items-center space-x-2">
                             <button @click="toggleMemberActive(m)" class="px-2 py-1 rounded-lg text-[10px] font-bold transition-colors" :class="m.active ? 'bg-green-100 text-green-600' : 'bg-slate-200 text-slate-500'">{{ m.active ? '參與' : '不參與' }}</button>
                             <button v-if="m.name !== '我'" @click="removeMember(m.id)" class="w-6 h-6 rounded-full bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"><i class="fa-solid fa-times text-xs"></i></button>
@@ -460,9 +485,8 @@
 
     <!-- Main Logic - Switch to Firestore -->
     <script type="module">
-        import { createApp, ref, computed, onMounted, watch } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
+        import { createApp, ref, computed, onMounted, watch, nextTick } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        // [IMPORTANT] Switch import to Firestore
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, setDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
         // Config (Firestore doesn't need databaseURL)
@@ -495,6 +519,9 @@
                 const inputTHB = ref(100);
                 const inputTWD = ref(92);
                 const expandedMember = ref(null);
+                const editingMemberId = ref(null); // 新增：正在編輯的成員ID
+                const tempMemberName = ref('');   // 新增：暫存編輯中的成員名稱
+                const editInput = ref(null);      // 新增：輸入框 ref
 
                 const dates = ref([
                     { date: '1/16', weekday: '四', hasCar: false },
@@ -519,7 +546,7 @@
                 const newItinerary = ref({});
                 const newExpense = ref({});
 
-                // --- 新增：摺疊區塊狀態 ---
+                // --- 摺疊區塊狀態 ---
                 const collapsedSections = ref({
                     expenses: false, // 支出紀錄 (預設展開)
                     split: true,     // 分帳總覽 (預設收起)
@@ -527,7 +554,7 @@
                 });
                 const toggleSection = (key) => { collapsedSections.value[key] = !collapsedSections.value[key]; };
 
-                // --- 新增：Toast 通知的狀態 ---
+                // --- Toast 通知的狀態 ---
                 const showToast = ref(false);
                 const toastMessage = ref('');
                 const triggerToast = (msg) => {
@@ -536,7 +563,7 @@
                     setTimeout(() => { showToast.value = false; }, 3000);
                 };
 
-                // --- 新增：智慧轉帳建議計算 ---
+                // --- 智慧轉帳建議計算 ---
                 const transferSuggestions = computed(() => {
                     const balances = { ...memberBalances.value };
                     let debtors = [];
@@ -774,6 +801,27 @@
                         newMemberName.value='';
                     }
                 };
+
+                // --- 成員名稱編輯功能 ---
+                const startEditMember = (m) => {
+                    editingMemberId.value = m.id;
+                    tempMemberName.value = m.name;
+                    nextTick(() => {
+                        // 自動聚焦到輸入框
+                        const input = document.querySelector('input[type="text"][autofocus]');
+                         if (input) input.focus();
+                    });
+                };
+
+                const saveMemberName = async (m) => {
+                    if (editingMemberId.value === null) return;
+                    if (tempMemberName.value && tempMemberName.value !== m.name) {
+                        await updateDoc(doc(db, 'members', m.id), { name: tempMemberName.value });
+                        triggerToast('✅ 成員名稱已更新');
+                    }
+                    editingMemberId.value = null;
+                    tempMemberName.value = '';
+                };
                 
                 const toggleMemberActive = async (m) => await updateDoc(doc(db, 'members', m.id), {active: !m.active});
                 const removeMember = async (id) => { if(confirm('確定要刪除此成員嗎？')) await deleteDoc(doc(db, 'members', id)); };
@@ -827,7 +875,8 @@
                     formatNumber, getCategoryIcon, handleAddClick, addMember, toggleMemberActive, removeMember, toggleMemberDetails, getMemberPaidExpenses,
                     startEditExpense, saveExpense, removeExpense, closeExpenseModal, addShoppingItem, removeShoppingItem, saveItineraryItem, removeItineraryItem, openMap, editItem,
                     getWeatherIcon, getWeatherDescription, getTransportIcon, getCategoryColor,
-                    collapsedSections, toggleSection, transferSuggestions, showToast, toastMessage, triggerToast
+                    collapsedSections, toggleSection, transferSuggestions, showToast, toastMessage, triggerToast,
+                    editingMemberId, tempMemberName, startEditMember, saveMemberName, editInput
                 };
             }
         });
