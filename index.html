@@ -60,29 +60,47 @@
         .pulse-arrow { animation: pulse-x 1.5s infinite ease-in-out; }
         @keyframes pulse-x { 0%, 100% { transform: translateX(0); opacity: 0.8; } 50% { transform: translateX(5px); opacity: 1; } }
         
-        /* 2. 優化動畫：加入果凍彈性效果 */
+        /* 1. 優化版動畫：絲滑流暢 (Silky Smooth) */
         .flip-list-move {
-            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); /* 彈性曲線 */
+            transition: transform 0.5s cubic-bezier(0.2, 0, 0, 1); /* 現代化緩動曲線：啟動快，煞車穩 */
+            z-index: 20; /* 確保移動中的項目在上層 */
+            position: relative; 
         }
         .flip-list-enter-active,
         .flip-list-leave-active {
-            transition: all 0.4s ease;
+            transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
         }
         .flip-list-enter-from,
         .flip-list-leave-to {
             opacity: 0;
-            transform: scale(0.8);
+            transform: scale(0.95);
         }
-        /* 移動中的項目樣式 */
-        .moving-item {
-            z-index: 50;
-            box-shadow: 0 10px 25px rgba(230, 81, 0, 0.2) !important;
-            transform: scale(1.02);
-            background-color: #fffbeb !important; /* 暖黃色高亮 */
+        /* 移動高亮效果 */
+        .highlight-bg {
+            animation: highlight 1s ease-out forwards;
         }
+        @keyframes highlight {
+            0% { background-color: #FFF8E1; transform: scale(1.02); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+            100% { background-color: #ffffff; transform: scale(1); box-shadow: 0 4px 20px rgba(230, 81, 0, 0.1); }
+        }
+
+        /* 2. 載入頁面動畫 */
+        .loader-container { position: fixed; inset: 0; z-index: 9999; background-color: #FFF3E0; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease, visibility 0.5s ease; }
+        .loader-container.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        .spinner { width: 50px; height: 50px; border: 4px solid rgba(230, 81, 0, 0.2); border-top-color: #E65100; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem; }
+        .loader-logo { font-size: 3rem; color: #E65100; margin-bottom: 1rem; animation: pulse-logo 1.5s infinite ease-in-out; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes pulse-logo { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } }
     </style>
 </head>
 <body>
+    <!-- 2. 全螢幕載入頁面 -->
+    <div id="loading-screen" class="loader-container">
+        <i class="fa-solid fa-plane-departure loader-logo"></i>
+        <div class="spinner"></div>
+        <p class="text-deep-sea-blue font-bold tracking-widest text-sm">行程規劃中...</p>
+    </div>
+
     <div id="app" class="app-container">
         <!-- Header -->
         <div class="header-bg relative">
@@ -128,9 +146,9 @@
                     </div>
                 </div>
                 
-                <!-- TransitionGroup 動畫列表 -->
+                <!-- TransitionGroup 動畫列表 (加入 highlight-bg 控制) -->
                 <TransitionGroup name="flip-list" tag="div" class="space-y-4 relative">
-                    <div v-for="(item, idx) in currentItinerary" :key="item.id" class="relative group" :class="{'moving-item': movingItemId === item.id}">
+                    <div v-for="(item, idx) in currentItinerary" :key="item.id" class="relative group">
                         <!-- 交通時間線 (不顯示在第一個項目) -->
                         <div v-if="idx > 0" class="pl-10 pb-2 flex items-center text-xs text-slate-400">
                             <div class="h-6 w-0.5 bg-slate-200 absolute left-8 -top-3"></div>
@@ -138,13 +156,14 @@
                             <span class="font-bold">{{ item.travelTime || '約15分鐘' }}</span>
                         </div>
 
-                        <!-- 1. 行程卡片重新設計：電梯式佈局 -->
-                        <div class="bg-white rounded-3xl p-3 pr-4 card-shadow flex border border-ice-blue/50 overflow-hidden items-stretch">
-                            <!-- A. 左側控制欄 (電梯風格：上箭頭 - 圖示 - 下箭頭) -->
+                        <!-- 1. 行程卡片：電梯式佈局 -->
+                        <div class="bg-white rounded-3xl p-3 pr-4 card-shadow flex border border-ice-blue/50 overflow-hidden items-stretch"
+                             :class="{'highlight-bg': recentlyMovedId === item.id}">
+                            <!-- A. 左側控制欄 -->
                             <div class="flex flex-col items-center justify-center mr-3 w-10 shrink-0 space-y-1">
                                 <!-- 上移按鈕 -->
                                 <button @click.stop="moveItem(idx, -1, item.id)" 
-                                        class="w-8 h-6 text-slate-300 hover:text-deep-sea-blue hover:bg-orange-50 rounded-lg transition-colors flex items-center justify-center"
+                                        class="w-8 h-6 text-slate-300 hover:text-deep-sea-blue hover:bg-orange-50 rounded-lg transition-colors flex items-center justify-center active:scale-90"
                                         :class="{'invisible': idx === 0}">
                                     <i class="fa-solid fa-chevron-up text-xs"></i>
                                 </button>
@@ -157,13 +176,13 @@
 
                                 <!-- 下移按鈕 -->
                                 <button @click.stop="moveItem(idx, 1, item.id)" 
-                                        class="w-8 h-6 text-slate-300 hover:text-deep-sea-blue hover:bg-orange-50 rounded-lg transition-colors flex items-center justify-center"
+                                        class="w-8 h-6 text-slate-300 hover:text-deep-sea-blue hover:bg-orange-50 rounded-lg transition-colors flex items-center justify-center active:scale-90"
                                         :class="{'invisible': idx === currentItinerary.length - 1}">
                                     <i class="fa-solid fa-chevron-down text-xs"></i>
                                 </button>
                             </div>
 
-                            <!-- B. 中間內容區 (自動延展，不再受右側高度影響) -->
+                            <!-- B. 中間內容區 -->
                             <div class="flex-1 min-w-0 flex flex-col justify-center py-1">
                                 <div class="flex items-baseline mb-1">
                                      <span v-if="item.startTime" class="text-sm font-bold text-deep-sea-blue mr-2">{{ item.startTime }}</span>
@@ -180,7 +199,7 @@
                                 </div>
                             </div>
 
-                            <!-- C. 右側操作欄 (精簡化，僅保留編輯/地圖) -->
+                            <!-- C. 右側操作欄 -->
                             <div class="flex flex-col justify-center items-end pl-2 ml-1 space-y-3 shrink-0 border-l border-slate-100 border-dashed">
                                 <button @click.stop="editItem(item)" class="w-9 h-9 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-colors shadow-sm">
                                     <i class="fa-solid fa-pencil text-sm"></i>
@@ -591,7 +610,7 @@
                 const editingMemberId = ref(null); 
                 const tempMemberName = ref('');   
                 const editInput = ref(null); 
-                const movingItemId = ref(null); // 用於追蹤正在移動的項目以添加特效
+                const recentlyMovedId = ref(null); // 改名為 recentlyMovedId 讓語意更精確
 
                 const dates = ref([
                     { date: '1/16', weekday: '五', hasCar: false },
@@ -724,8 +743,15 @@
                         });
                     }
 
-                    fetchExchangeRate();
-                    fetchWeather();
+                    await fetchExchangeRate();
+                    await fetchWeather();
+                    
+                    // 2. 載入完成，隱藏 Loader
+                    // 設定一個最小展示時間，避免畫面閃爍
+                    setTimeout(() => {
+                        const loader = document.getElementById('loading-screen');
+                        if(loader) loader.classList.add('hidden');
+                    }, 1500);
                 });
 
                 const fetchExchangeRate = async () => {
@@ -945,13 +971,13 @@
                 };
                 
                 const moveItem = async (visualIndex, direction, itemId) => {
-                    // 標記正在移動的項目以觸發 CSS 效果
-                    movingItemId.value = itemId;
+                    // 1. 設置最近移動的 ID，觸發 CSS Highlight 動畫
+                    recentlyMovedId.value = itemId;
                     
                     const sortedList = [...currentItinerary.value];
                     const targetIndex = visualIndex + direction;
                     if (targetIndex < 0 || targetIndex >= sortedList.length) {
-                        movingItemId.value = null;
+                        recentlyMovedId.value = null;
                         return;
                     }
 
@@ -961,13 +987,14 @@
                     const orderA = itemA.order ?? visualIndex;
                     const orderB = itemB.order ?? targetIndex;
 
-                    // Optimistic update
+                    // Optimistic update (Vue Reactivity)
                     itemA.order = orderB;
                     itemB.order = orderA;
 
-                    // 延遲移除特效，讓使用者看到變化
-                    setTimeout(() => { movingItemId.value = null; }, 500);
+                    // 1秒後移除 Highlight class，以便下次移動還能觸發
+                    setTimeout(() => { recentlyMovedId.value = null; }, 1000);
 
+                    // Firestore update
                     const batch = writeBatch(db);
                     const col = collection(db, `itinerary_day_${selectedDateIndex.value}`);
                     batch.update(doc(col, itemA.id), { order: itemA.order });
@@ -1005,7 +1032,7 @@
                     startEditExpense, saveExpense, removeExpense, closeExpenseModal, addShoppingItem, removeShoppingItem, saveItineraryItem, removeItineraryItem, openMap, editItem,
                     getWeatherIcon, getWeatherDescription, getTransportIcon, getCategoryColor,
                     collapsedSections, toggleSection, transferSuggestions, showToast, toastMessage, triggerToast,
-                    editingMemberId, tempMemberName, startEditMember, saveMemberName, editInput, moveItem, movingItemId
+                    editingMemberId, tempMemberName, startEditMember, saveMemberName, editInput, moveItem, recentlyMovedId
                 };
             }
         });
