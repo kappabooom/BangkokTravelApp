@@ -60,15 +60,9 @@
         .pulse-arrow { animation: pulse-x 1.5s infinite ease-in-out; }
         @keyframes pulse-x { 0%, 100% { transform: translateX(0); opacity: 0.8; } 50% { transform: translateX(5px); opacity: 1; } }
         
-        /* 動畫效果關鍵修正：確保 transform 有被套用 */
+        /* 2. 優化動畫：加入果凍彈性效果 */
         .flip-list-move {
-            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-        /* 避免在移動時產生重疊，確保正在移動的元素層級較高 */
-        .flip-list-item {
-            transition: all 0.4s;
-            display: inline-block;
-            margin-right: 10px;
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); /* 彈性曲線 */
         }
         .flip-list-enter-active,
         .flip-list-leave-active {
@@ -77,7 +71,14 @@
         .flip-list-enter-from,
         .flip-list-leave-to {
             opacity: 0;
-            transform: scale(0.9);
+            transform: scale(0.8);
+        }
+        /* 移動中的項目樣式 */
+        .moving-item {
+            z-index: 50;
+            box-shadow: 0 10px 25px rgba(230, 81, 0, 0.2) !important;
+            transform: scale(1.02);
+            background-color: #fffbeb !important; /* 暖黃色高亮 */
         }
     </style>
 </head>
@@ -129,49 +130,64 @@
                 
                 <!-- TransitionGroup 動畫列表 -->
                 <TransitionGroup name="flip-list" tag="div" class="space-y-4 relative">
-                    <div v-for="(item, idx) in currentItinerary" :key="item.id" class="relative group bg-transparent">
+                    <div v-for="(item, idx) in currentItinerary" :key="item.id" class="relative group" :class="{'moving-item': movingItemId === item.id}">
                         <!-- 交通時間線 (不顯示在第一個項目) -->
-                        <div v-if="idx > 0" class="pl-8 pb-2 flex items-center text-xs text-slate-400">
-                            <div class="h-6 w-0.5 bg-slate-200 absolute left-6 -top-3"></div>
+                        <div v-if="idx > 0" class="pl-10 pb-2 flex items-center text-xs text-slate-400">
+                            <div class="h-6 w-0.5 bg-slate-200 absolute left-8 -top-3"></div>
                             <i :class="getTransportIcon(item.transportType)" class="mr-2 text-slate-300"></i>
                             <span class="font-bold">{{ item.travelTime || '約15分鐘' }}</span>
                         </div>
 
-                        <!-- 行程卡片 -->
-                        <div class="bg-white rounded-3xl p-4 card-shadow flex border border-ice-blue/50 overflow-hidden">
-                            <!-- 左側：圖標與內容 -->
-                            <div class="flex-1 flex min-w-0 pr-2">
-                                <div class="mr-3 flex flex-col items-center min-w-[48px]">
-                                    <div class="p-2.5 rounded-full text-white shadow-md text-lg mb-1" :style="{ backgroundColor: getCategoryColor(item.category) }">
-                                        <i :class="getCategoryIcon(item.category)"></i>
-                                    </div>
-                                    <!-- 時間 (無底色) -->
-                                    <span v-if="item.startTime" class="text-xs font-bold text-slate-600">{{ item.startTime }}</span>
+                        <!-- 1. 行程卡片重新設計：電梯式佈局 -->
+                        <div class="bg-white rounded-3xl p-3 pr-4 card-shadow flex border border-ice-blue/50 overflow-hidden items-stretch">
+                            <!-- A. 左側控制欄 (電梯風格：上箭頭 - 圖示 - 下箭頭) -->
+                            <div class="flex flex-col items-center justify-center mr-3 w-10 shrink-0 space-y-1">
+                                <!-- 上移按鈕 -->
+                                <button @click.stop="moveItem(idx, -1, item.id)" 
+                                        class="w-8 h-6 text-slate-300 hover:text-deep-sea-blue hover:bg-orange-50 rounded-lg transition-colors flex items-center justify-center"
+                                        :class="{'invisible': idx === 0}">
+                                    <i class="fa-solid fa-chevron-up text-xs"></i>
+                                </button>
+                                
+                                <!-- 分類圖示 -->
+                                <div class="w-10 h-10 rounded-full text-white shadow-md flex items-center justify-center text-lg z-10" 
+                                     :style="{ backgroundColor: getCategoryColor(item.category) }">
+                                    <i :class="getCategoryIcon(item.category)"></i>
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <h3 class="text-lg font-bold text-slate-800 leading-tight mb-1 break-words">{{ item.name }}</h3>
-                                    <div class="text-sm text-slate-500 space-y-1">
-                                        <p v-if="item.hours" class="truncate"><i class="fa-regular fa-clock w-4 text-center mr-1 text-ice-blue"></i> {{ item.hours }}</p>
-                                        <p v-if="item.price" class="truncate"><i class="fa-solid fa-ticket w-4 text-center mr-1 text-ice-blue"></i> {{ item.price }}</p>
-                                        <p v-if="item.address" class="break-words line-clamp-2 text-xs"><i class="fa-solid fa-location-dot w-4 text-center mr-1 text-ice-blue"></i> {{ item.address }}</p>
-                                    </div>
-                                    <div v-if="item.note && item.note.length > 0" class="mt-2 text-xs bg-slate-50 p-2 rounded-lg border border-slate-100">
-                                        <div class="note-content" :class="{'expanded': item.isNoteExpanded}">{{ item.note }}</div>
-                                        <button v-if="item.note.length > 50" @click="item.isNoteExpanded = !item.isNoteExpanded" class="text-deep-sea-blue font-bold mt-1">{{ item.isNoteExpanded ? '收合' : '展開' }}</button>
-                                    </div>
+
+                                <!-- 下移按鈕 -->
+                                <button @click.stop="moveItem(idx, 1, item.id)" 
+                                        class="w-8 h-6 text-slate-300 hover:text-deep-sea-blue hover:bg-orange-50 rounded-lg transition-colors flex items-center justify-center"
+                                        :class="{'invisible': idx === currentItinerary.length - 1}">
+                                    <i class="fa-solid fa-chevron-down text-xs"></i>
+                                </button>
+                            </div>
+
+                            <!-- B. 中間內容區 (自動延展，不再受右側高度影響) -->
+                            <div class="flex-1 min-w-0 flex flex-col justify-center py-1">
+                                <div class="flex items-baseline mb-1">
+                                     <span v-if="item.startTime" class="text-sm font-bold text-deep-sea-blue mr-2">{{ item.startTime }}</span>
+                                     <h3 class="text-lg font-bold text-slate-800 leading-tight break-words">{{ item.name }}</h3>
+                                </div>
+                                <div class="text-sm text-slate-500 space-y-1">
+                                    <p v-if="item.hours" class="truncate"><i class="fa-regular fa-clock w-3.5 text-center mr-1 text-ice-blue text-xs"></i> {{ item.hours }}</p>
+                                    <p v-if="item.price" class="truncate"><i class="fa-solid fa-ticket w-3.5 text-center mr-1 text-ice-blue text-xs"></i> {{ item.price }}</p>
+                                    <p v-if="item.address" class="break-words line-clamp-2 text-xs"><i class="fa-solid fa-location-dot w-3.5 text-center mr-1 text-ice-blue text-xs"></i> {{ item.address }}</p>
+                                </div>
+                                <div v-if="item.note && item.note.length > 0" class="mt-2 text-xs bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                    <div class="note-content" :class="{'expanded': item.isNoteExpanded}">{{ item.note }}</div>
+                                    <button v-if="item.note.length > 50" @click="item.isNoteExpanded = !item.isNoteExpanded" class="text-deep-sea-blue font-bold mt-1">{{ item.isNoteExpanded ? '收合' : '展開' }}</button>
                                 </div>
                             </div>
-                            <!-- 右側：操作按鈕 -->
-                            <div class="flex flex-col justify-between items-center pl-2 border-l border-slate-100 w-10 shrink-0 space-y-2">
-                                <div class="flex flex-col space-y-2">
-                                    <button @click.stop="editItem(item)" class="w-8 h-8 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center text-xs hover:bg-slate-200 transition-colors"><i class="fa-solid fa-pencil"></i></button>
-                                    <a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address || item.name)}`" target="_blank" class="w-8 h-8 bg-ice-blue text-white rounded-full flex items-center justify-center text-xs hover:bg-deep-sea-blue transition-colors shadow-sm" @click.stop><i class="fa-solid fa-location-arrow"></i></a>
-                                </div>
-                                <div class="flex flex-col space-y-1 pt-2 border-t border-slate-100">
-                                    <!-- 修正：傳入 idx 以確保操作正確索引 -->
-                                    <button @click.stop="moveItem(idx, -1)" v-if="idx > 0" class="w-8 h-6 text-slate-400 hover:text-deep-sea-blue transition-colors flex items-center justify-center"><i class="fa-solid fa-chevron-up"></i></button>
-                                    <button @click.stop="moveItem(idx, 1)" v-if="idx < currentItinerary.length - 1" class="w-8 h-6 text-slate-400 hover:text-deep-sea-blue transition-colors flex items-center justify-center"><i class="fa-solid fa-chevron-down"></i></button>
-                                </div>
+
+                            <!-- C. 右側操作欄 (精簡化，僅保留編輯/地圖) -->
+                            <div class="flex flex-col justify-center items-end pl-2 ml-1 space-y-3 shrink-0 border-l border-slate-100 border-dashed">
+                                <button @click.stop="editItem(item)" class="w-9 h-9 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-colors shadow-sm">
+                                    <i class="fa-solid fa-pencil text-sm"></i>
+                                </button>
+                                <a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address || item.name)}`" target="_blank" class="w-9 h-9 bg-ice-blue text-white rounded-full flex items-center justify-center hover:bg-deep-sea-blue transition-colors shadow-md shadow-ice-blue/30" @click.stop>
+                                    <i class="fa-solid fa-location-arrow text-sm"></i>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -574,7 +590,8 @@
                 const expandedMember = ref(null);
                 const editingMemberId = ref(null); 
                 const tempMemberName = ref('');   
-                const editInput = ref(null);      
+                const editInput = ref(null); 
+                const movingItemId = ref(null); // 用於追蹤正在移動的項目以添加特效
 
                 const dates = ref([
                     { date: '1/16', weekday: '五', hasCar: false },
@@ -927,40 +944,32 @@
                     }
                 };
                 
-                // 1. 關鍵修正：實作 Optimistic UI Update (本地先改 -> 觸發動畫 -> 寫入DB)
-                const moveItem = async (visualIndex, direction) => {
-                    // 1. 取得當前已排序的列表 (Visual List)
-                    const sortedList = [...currentItinerary.value];
+                const moveItem = async (visualIndex, direction, itemId) => {
+                    // 標記正在移動的項目以觸發 CSS 效果
+                    movingItemId.value = itemId;
                     
-                    // 2. 檢查邊界
+                    const sortedList = [...currentItinerary.value];
                     const targetIndex = visualIndex + direction;
-                    if (targetIndex < 0 || targetIndex >= sortedList.length) return;
+                    if (targetIndex < 0 || targetIndex >= sortedList.length) {
+                        movingItemId.value = null;
+                        return;
+                    }
 
-                    // 3. 取得要交換的兩個物件
                     const itemA = sortedList[visualIndex];
                     const itemB = sortedList[targetIndex];
 
-                    // 4. 【關鍵】直接修改本地 reactive 數據 (raw data) 中的 order
-                    // 因為 currentItinerary 依賴於 itineraryData 中的物件屬性
-                    // 我們只要交換這兩個物件的 order 值，computed 就會重新計算，Vue 就會偵測到變化並執行動畫
-                    
-                    // 先暫存 order (若無 order 則給預設值)
                     const orderA = itemA.order ?? visualIndex;
                     const orderB = itemB.order ?? targetIndex;
 
-                    // 交換 order
-                    // 注意：這裡必須確保我們改的是 itineraryData 裡面的那個參照
-                    // 因為 itemA, itemB 來自 computed，通常也是參照到 itineraryData 的物件
+                    // Optimistic update
                     itemA.order = orderB;
                     itemB.order = orderA;
 
-                    // 此時，currentItinerary 會因為依賴的 order 變了而自動重新排序
-                    // TransitionGroup 會因為順序變了而執行動畫
+                    // 延遲移除特效，讓使用者看到變化
+                    setTimeout(() => { movingItemId.value = null; }, 500);
 
-                    // 5. 背景寫入 Firestore
                     const batch = writeBatch(db);
                     const col = collection(db, `itinerary_day_${selectedDateIndex.value}`);
-                    
                     batch.update(doc(col, itemA.id), { order: itemA.order });
                     batch.update(doc(col, itemB.id), { order: itemB.order });
 
@@ -996,7 +1005,7 @@
                     startEditExpense, saveExpense, removeExpense, closeExpenseModal, addShoppingItem, removeShoppingItem, saveItineraryItem, removeItineraryItem, openMap, editItem,
                     getWeatherIcon, getWeatherDescription, getTransportIcon, getCategoryColor,
                     collapsedSections, toggleSection, transferSuggestions, showToast, toastMessage, triggerToast,
-                    editingMemberId, tempMemberName, startEditMember, saveMemberName, editInput, moveItem
+                    editingMemberId, tempMemberName, startEditMember, saveMemberName, editInput, moveItem, movingItemId
                 };
             }
         });
