@@ -55,13 +55,8 @@
         .expenses-banner { background: linear-gradient(135deg, #FF7043 0%, #AB47BC 100%); }
         .date-selector-sticky { background-color: #ffffff; border-bottom: 1px solid #f0f0f0; z-index: 20; top: 0; padding-top: env(safe-area-inset-top, 20px); }
         .rotate-180 { transform: rotate(180deg); }
-        
-        /* Custom Select Styling */
         .custom-select-wrapper { position: relative; }
-        .custom-select-wrapper select { 
-            -webkit-appearance: none; appearance: none; 
-            width: 100%; height: 100%; opacity: 0; position: absolute; left: 0; top: 0; cursor: pointer; z-index: 10; 
-        }
+        .custom-select-wrapper select { -webkit-appearance: none; appearance: none; width: 100%; height: 100%; opacity: 0; position: absolute; left: 0; top: 0; cursor: pointer; z-index: 10; }
     </style>
 </head>
 <body>
@@ -82,6 +77,7 @@
         <main class="p-4 app-main">
             <!-- 1. 行程 Tab -->
             <div v-if="currentTab === 'itinerary'" class="animate-fade-in">
+                <!-- 日期選擇器 -->
                 <div class="flex overflow-x-auto hide-scrollbar space-x-3 pb-4 mb-2 snap-x px-1 sticky date-selector-sticky pt-1 -mx-4 px-4">
                     <div v-for="(day, index) in dates" :key="index" @click="selectedDateIndex = index"
                          class="snap-center flex-shrink-0 w-[58px] h-[68px] rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 border-2 shadow-sm"
@@ -189,9 +185,8 @@
                     </ul>
                 </div>
 
-                <!-- 3. 使用者切換下拉選單 (重新排版) -->
+                <!-- 使用者切換下拉選單 -->
                 <div class="bg-white rounded-3xl p-4 card-shadow flex items-center justify-between custom-select-wrapper">
-                    <!-- 底層顯示 UI -->
                     <div class="flex items-center space-x-3 w-full">
                         <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-100 to-white border border-indigo-50 flex items-center justify-center text-indigo-500 shadow-sm">
                              <i class="fa-solid fa-user-gear text-xl"></i>
@@ -207,7 +202,6 @@
                              </div>
                         </div>
                     </div>
-                    <!-- 隱藏的原生 Select 覆蓋在上方 -->
                     <select v-model="currentUser" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
                         <option v-for="member in members" :key="member.id" :value="member.name">{{ member.name }}</option>
                     </select>
@@ -309,7 +303,7 @@
                     </div>
                 </div>
 
-                <!-- 2. 轉帳建議 (重新排版：手機適用) -->
+                <!-- 2. 轉帳建議 (修復手機跑版) -->
                 <div class="bg-white rounded-3xl p-6 card-shadow">
                     <h3 class="font-bold text-slate-800 mb-4 flex items-center justify-between cursor-pointer" @click="toggleSection('transfer')">
                         <span><i class="fa-solid fa-money-bill-transfer mr-2 text-green-500"></i> 轉帳建議</span>
@@ -320,30 +314,30 @@
                             <div v-for="(item, idx) in transferSuggestions" :key="idx" class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex flex-col items-center">
                                 <div class="flex items-center justify-between w-full mb-3">
                                     <!-- Payer -->
-                                    <div class="flex flex-col items-center w-1/3">
+                                    <div class="flex flex-col items-center w-[30%] max-w-[80px]">
                                         <div class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-sm font-bold mb-1 border-2 border-white shadow-sm">
                                             {{ item.from.substring(0, 1) }}
                                         </div>
                                         <span class="text-xs font-bold text-slate-700 truncate w-full text-center">{{ item.from }}</span>
                                     </div>
                                     
-                                    <!-- Arrow & Label -->
-                                    <div class="flex-1 flex flex-col items-center justify-center px-2">
-                                        <span class="text-[10px] text-slate-400 mb-1">支付給</span>
-                                        <div class="w-full h-[2px] bg-slate-200 relative">
-                                            <i class="fa-solid fa-caret-right absolute -right-1 -top-[5px] text-slate-300"></i>
+                                    <!-- Arrow & Label (Fixed Width Container) -->
+                                    <div class="flex-1 flex flex-col items-center justify-center px-1 min-w-[60px]">
+                                        <span class="text-[10px] text-slate-400 mb-1 whitespace-nowrap">支付給</span>
+                                        <div class="w-full h-[2px] bg-slate-200 relative mt-1">
+                                            <i class="fa-solid fa-caret-right absolute -right-1 -top-[5px] text-slate-300 text-lg"></i>
                                         </div>
                                     </div>
 
                                     <!-- Payee -->
-                                    <div class="flex flex-col items-center w-1/3">
+                                    <div class="flex flex-col items-center w-[30%] max-w-[80px]">
                                         <div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm font-bold mb-1 border-2 border-white shadow-sm">
                                             {{ item.to.substring(0, 1) }}
                                         </div>
                                         <span class="text-xs font-bold text-slate-700 truncate w-full text-center">{{ item.to }}</span>
                                     </div>
                                 </div>
-                                <div class="w-full bg-white rounded-lg py-2 text-center border border-slate-100">
+                                <div class="w-full bg-white rounded-lg py-2 text-center border border-slate-100 shadow-sm">
                                     <span class="text-lg font-bold text-green-600">NT$ {{ formatNumber(item.amount) }}</span>
                                 </div>
                             </div>
@@ -358,7 +352,7 @@
 
         </main>
 
-        <!-- 1. Toast Notification (重新排版) -->
+        <!-- Toast Notification -->
         <div v-if="showToast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 max-w-[90%] w-auto z-50 animate-fade-in pointer-events-none">
             <div class="bg-slate-800/95 backdrop-blur-md text-white px-5 py-3.5 rounded-full shadow-2xl flex items-center gap-3 border border-slate-700/50">
                 <i class="fa-solid fa-circle-info text-ice-blue text-lg"></i>
@@ -476,7 +470,6 @@
                 <h3 class="font-bold text-lg mb-4 text-center text-slate-800">分帳成員管理</h3>
                 <div class="space-y-2 max-h-60 overflow-y-auto mb-4 min-h-[100px]">
                     <div v-for="m in members" :key="m.id" class="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-3 border border-slate-100">
-                        <!-- 可編輯名稱區域 -->
                         <div class="flex-1 flex items-center mr-2">
                             <template v-if="editingMemberId === m.id">
                                 <input v-model="tempMemberName" 
@@ -495,7 +488,6 @@
                                 </span>
                             </template>
                         </div>
-
                         <div class="flex items-center space-x-2">
                             <button @click="toggleMemberActive(m)" class="px-2 py-1 rounded-lg text-[10px] font-bold transition-colors" :class="m.active ? 'bg-green-100 text-green-600' : 'bg-slate-200 text-slate-500'">{{ m.active ? '參與' : '不參與' }}</button>
                             <button v-if="m.name !== '我'" @click="removeMember(m.id)" class="w-6 h-6 rounded-full bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"><i class="fa-solid fa-times text-xs"></i></button>
@@ -551,12 +543,13 @@
                 const tempMemberName = ref('');   
                 const editInput = ref(null);      
 
+                // 1. 修正日期與星期對應 (1/16 是星期五)
                 const dates = ref([
-                    { date: '1/16', weekday: '四', hasCar: false },
-                    { date: '1/17', weekday: '五', hasCar: false },
-                    { date: '1/18', weekday: '六', hasCar: false },
-                    { date: '1/19', weekday: '日', hasCar: false },
-                    { date: '1/20', weekday: '一', hasCar: false }
+                    { date: '1/16', weekday: '五', hasCar: false },
+                    { date: '1/17', weekday: '六', hasCar: false },
+                    { date: '1/18', weekday: '日', hasCar: false },
+                    { date: '1/19', weekday: '一', hasCar: false },
+                    { date: '1/20', weekday: '二', hasCar: false }
                 ]);
                 const weatherData = ref([]);
                 const itineraryData = ref([[], [], [], [], []]);
@@ -574,15 +567,9 @@
                 const newItinerary = ref({});
                 const newExpense = ref({});
 
-                // --- 摺疊區塊狀態 ---
-                const collapsedSections = ref({
-                    expenses: false, // 支出紀錄 (預設展開)
-                    split: true,     // 分帳總覽 (預設收起)
-                    transfer: true   // 轉帳建議 (預設收起)
-                });
+                const collapsedSections = ref({ expenses: false, split: true, transfer: true });
                 const toggleSection = (key) => { collapsedSections.value[key] = !collapsedSections.value[key]; };
 
-                // --- Toast 通知的狀態 ---
                 const showToast = ref(false);
                 const toastMessage = ref('');
                 const triggerToast = (msg) => {
@@ -591,7 +578,6 @@
                     setTimeout(() => { showToast.value = false; }, 3000);
                 };
 
-                // --- 智慧轉帳建議計算 ---
                 const transferSuggestions = computed(() => {
                     const balances = { ...memberBalances.value };
                     let debtors = [];
@@ -625,40 +611,35 @@
                 const formatNumber = (num) => num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : '0';
                 
                 onMounted(async () => {
-                    // Firestore Listener for Expenses
                     const expensesCol = collection(db, 'expenses');
                     onSnapshot(expensesCol, (snapshot) => {
                         expenses.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     });
 
-                    // Firestore Listener for Members
                     const membersCol = collection(db, 'members');
                     onSnapshot(membersCol, async (snapshot) => {
                         if (!snapshot.empty) {
                             members.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                             if (!members.value.find(m => m.name === currentUser.value)) currentUser.value = members.value[0].name;
                         } else {
-                            // Initial seed if empty
                             for (const name of DEFAULT_MEMBERS) {
                                 await addDoc(membersCol, { name, active: true });
                             }
                         }
                     });
 
-                    // Firestore Listener for Itinerary
-                    // 4. 新增預設行程：抵達跟起飛
+                    // 2. 新增預設行程：抵達飯店
                     for(let i=0; i<dates.value.length; i++) {
                         const itineraryCol = collection(db, `itinerary_day_${i}`);
                         onSnapshot(itineraryCol, async (snapshot) => {
                             let items = snapshot.docs.map(doc => ({...doc.data(), id: doc.id, isNoteExpanded: false}));
                             
-                            // Check and seed default itinerary for Day 1 and Day 5
                             if (items.length === 0) {
                                 if (i === 0) {
-                                    // Day 1: Arrival
                                     await addDoc(itineraryCol, { category: 'flight', name: '抵達曼谷 (CI0831)', startTime: '13:05', transportType: 'public', travelTime: '約1小時', address: 'Suvarnabhumi Airport', note: '入境審查、領取行李、換匯' });
+                                    // 2. 新增「抵達飯店」
+                                    await addDoc(itineraryCol, { category: 'accommodation', name: '抵達飯店', startTime: '15:00', transportType: 'car', travelTime: '約1小時', address: 'Bangkok Hotel', note: 'Check-in 休息' });
                                 } else if (i === 4) {
-                                    // Day 5: Departure
                                     await addDoc(itineraryCol, { category: 'flight', name: '前往機場/起飛 (CI0832)', startTime: '14:05', transportType: 'car', travelTime: '約1小時', address: 'Suvarnabhumi Airport', note: '辦理登機、退稅' });
                                 }
                             }
@@ -679,7 +660,7 @@
                 };
 
                 const fetchWeather = async () => {
-                    const tripStart = new Date(TRIP_YEAR, 0, 16); // 2026-01-16
+                    const tripStart = new Date(TRIP_YEAR, 0, 16); 
                     const now = new Date();
                     const diffDays = (tripStart - now) / (1000 * 60 * 60 * 24);
                     
@@ -722,13 +703,7 @@
                         weatherData.value = dates.value.map((d, i) => processed[i % processed.length] || processed[0]);
 
                     } catch (err) {
-                        weatherData.value = [
-                            { condition: 'sunny', temp: '32/24', feel: '35', isFallback: true },
-                            { condition: 'sunny', temp: '32/24', feel: '35', isFallback: true },
-                            { condition: 'sunny', temp: '32/24', feel: '35', isFallback: true },
-                            { condition: 'sunny', temp: '32/24', feel: '35', isFallback: true },
-                            { condition: 'sunny', temp: '32/24', feel: '35', isFallback: true }
-                        ];
+                        weatherData.value = Array(5).fill({ condition: 'sunny', temp: '32/24', feel: '35', isFallback: true });
                     }
                 };
 
@@ -843,7 +818,6 @@
                     }
                 };
 
-                // --- 成員名稱編輯功能 ---
                 const startEditMember = (m) => {
                     editingMemberId.value = m.id;
                     tempMemberName.value = m.name;
@@ -872,7 +846,7 @@
                 const saveItineraryItem = async () => { 
                     if(!newItinerary.value.name) return;
                     const dataToSave = JSON.parse(JSON.stringify(newItinerary.value));
-                    delete dataToSave.isNoteExpanded; // Don't save this state to db
+                    delete dataToSave.isNoteExpanded; 
                     const col = collection(db, `itinerary_day_${selectedDateIndex.value}`);
 
                     if(isEditMode.value) {
@@ -901,7 +875,18 @@
                 const getCategoryColor = (c) => ({sightseeing:'#FF7043', food:'#FFA726', shopping:'#EC407A', accommodation:'#5C6BC0', transport:'#78909C', ticket:'#8D6E63', flight:'#29B6F6', other: '#9E9E9E'}[c]||'#BDBDBD');
                 const getWeatherIcon = (c) => ({sunny:'fa-solid fa-sun', cloudy:'fa-solid fa-cloud-sun', rain:'fa-solid fa-cloud-showers-heavy'}[c]||'fa-solid fa-sun');
                 const getWeatherDescription = (c) => ({sunny:'晴朗炎熱', cloudy:'多雲偶晴', rain:'午後雷陣雨'}[c]||'晴朗');
-                const openMap = (q) => window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`);
+                
+                // 3. 修正 Google Maps 開啟問題
+                const openMap = (q) => {
+                    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+                    try {
+                        const newWindow = window.open(url, '_blank', 'noopener,noreferrer');
+                        if (newWindow) newWindow.opener = null;
+                    } catch (e) {
+                        window.location.href = url; // Fallback
+                    }
+                };
+
                 const editItem = (i) => { isEditMode.value=true; newItinerary.value=JSON.parse(JSON.stringify(i)); showItineraryModal.value=true; };
                 
                 resetNewExpense();
