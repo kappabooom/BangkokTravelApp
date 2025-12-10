@@ -543,7 +543,6 @@
                 const tempMemberName = ref('');   
                 const editInput = ref(null);      
 
-                // 1. 修正日期與星期對應 (1/16 是星期五)
                 const dates = ref([
                     { date: '1/16', weekday: '五', hasCar: false },
                     { date: '1/17', weekday: '六', hasCar: false },
@@ -553,9 +552,17 @@
                 ]);
                 const weatherData = ref([]);
                 const itineraryData = ref([[], [], [], [], []]);
+                
+                // 1. 更新飯店資訊
                 const hotels = ref([
-                    { name: '曼谷市區飯店 (範例)', date: '1/16 - 1/20 (4晚)', phone: '+66-2-123-4567', address: 'Bangkok, Thailand' }
+                    { 
+                        name: 'The Quarter Ratchayothin By UHG', 
+                        date: '1/16 - 1/20 (4晚)', 
+                        phone: '+66 2 011 1888', 
+                        address: 'Soi Ratchadaphisek 36, Chan Kasem, Chatuchak, Bangkok' 
+                    }
                 ]);
+
                 const DEFAULT_MEMBERS = ['kappabooom', 'beibei1029', 'hsiannnnng', 'shinbinwei', 'aylwen4444', 'wunsin', 'rtrtr1', 'blackblacknu'];
                 const members = ref(DEFAULT_MEMBERS.map((name, i) => ({ id: `default_${i}`, name, active: true })));
                 const shoppingList = ref([]);
@@ -631,15 +638,29 @@
                     // 2. 新增預設行程：抵達飯店
                     for(let i=0; i<dates.value.length; i++) {
                         const itineraryCol = collection(db, `itinerary_day_${i}`);
+                        // 3. 行程同步儲存至 Firestore：
+                        // 這裡使用 onSnapshot，表示只要 Firestore 資料庫有變動，
+                        // 無論是哪台裝置寫入的，這裡都會即時收到更新並渲染到畫面上。
                         onSnapshot(itineraryCol, async (snapshot) => {
                             let items = snapshot.docs.map(doc => ({...doc.data(), id: doc.id, isNoteExpanded: false}));
                             
+                            // 若該天行程為空，則自動寫入預設行程
                             if (items.length === 0) {
                                 if (i === 0) {
+                                    // 1/16 Day 1
                                     await addDoc(itineraryCol, { category: 'flight', name: '抵達曼谷 (CI0831)', startTime: '13:05', transportType: 'public', travelTime: '約1小時', address: 'Suvarnabhumi Airport', note: '入境審查、領取行李、換匯' });
                                     // 2. 新增「抵達飯店」
-                                    await addDoc(itineraryCol, { category: 'accommodation', name: '抵達飯店', startTime: '15:00', transportType: 'car', travelTime: '約1小時', address: 'Bangkok Hotel', note: 'Check-in 休息' });
+                                    await addDoc(itineraryCol, { 
+                                        category: 'accommodation', 
+                                        name: '抵達飯店 (Check-in)', 
+                                        startTime: '15:30', 
+                                        transportType: 'car', 
+                                        travelTime: '約1小時', 
+                                        address: 'The Quarter Ratchayothin By UHG', 
+                                        note: '辦理入住手續，放行李' 
+                                    });
                                 } else if (i === 4) {
+                                    // 1/20 Day 5
                                     await addDoc(itineraryCol, { category: 'flight', name: '前往機場/起飛 (CI0832)', startTime: '14:05', transportType: 'car', travelTime: '約1小時', address: 'Suvarnabhumi Airport', note: '辦理登機、退稅' });
                                 }
                             }
@@ -876,7 +897,6 @@
                 const getWeatherIcon = (c) => ({sunny:'fa-solid fa-sun', cloudy:'fa-solid fa-cloud-sun', rain:'fa-solid fa-cloud-showers-heavy'}[c]||'fa-solid fa-sun');
                 const getWeatherDescription = (c) => ({sunny:'晴朗炎熱', cloudy:'多雲偶晴', rain:'午後雷陣雨'}[c]||'晴朗');
                 
-                // 3. 修正 Google Maps 開啟問題
                 const openMap = (q) => {
                     const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
                     try {
