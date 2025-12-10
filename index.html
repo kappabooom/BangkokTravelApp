@@ -60,18 +60,24 @@
         .pulse-arrow { animation: pulse-x 1.5s infinite ease-in-out; }
         @keyframes pulse-x { 0%, 100% { transform: translateX(0); opacity: 0.8; } 50% { transform: translateX(5px); opacity: 1; } }
         
-        /* 1. 新增：TransitionGroup 動畫效果 */
+        /* 動畫效果關鍵修正：確保 transform 有被套用 */
         .flip-list-move {
-            transition: transform 0.5s cubic-bezier(0.55, 0, 0.1, 1);
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        /* 避免在移動時產生重疊，確保正在移動的元素層級較高 */
+        .flip-list-item {
+            transition: all 0.4s;
+            display: inline-block;
+            margin-right: 10px;
         }
         .flip-list-enter-active,
         .flip-list-leave-active {
-            transition: all 0.5s ease;
+            transition: all 0.4s ease;
         }
         .flip-list-enter-from,
         .flip-list-leave-to {
             opacity: 0;
-            transform: translateX(30px);
+            transform: scale(0.9);
         }
     </style>
 </head>
@@ -121,10 +127,10 @@
                     </div>
                 </div>
                 
-                <!-- 1. 新增：使用 TransitionGroup 包裹行程列表以實現動畫 -->
-                <TransitionGroup name="flip-list" tag="div" class="space-y-4">
-                    <div v-for="(item, idx) in currentItinerary" :key="item.id" class="relative group">
-                        <!-- 交通時間線 -->
+                <!-- TransitionGroup 動畫列表 -->
+                <TransitionGroup name="flip-list" tag="div" class="space-y-4 relative">
+                    <div v-for="(item, idx) in currentItinerary" :key="item.id" class="relative group bg-transparent">
+                        <!-- 交通時間線 (不顯示在第一個項目) -->
                         <div v-if="idx > 0" class="pl-8 pb-2 flex items-center text-xs text-slate-400">
                             <div class="h-6 w-0.5 bg-slate-200 absolute left-6 -top-3"></div>
                             <i :class="getTransportIcon(item.transportType)" class="mr-2 text-slate-300"></i>
@@ -139,7 +145,7 @@
                                     <div class="p-2.5 rounded-full text-white shadow-md text-lg mb-1" :style="{ backgroundColor: getCategoryColor(item.category) }">
                                         <i :class="getCategoryIcon(item.category)"></i>
                                     </div>
-                                    <!-- 2. 修改：移除時間的底色 -->
+                                    <!-- 時間 (無底色) -->
                                     <span v-if="item.startTime" class="text-xs font-bold text-slate-600">{{ item.startTime }}</span>
                                 </div>
                                 <div class="flex-1 min-w-0">
@@ -155,14 +161,16 @@
                                     </div>
                                 </div>
                             </div>
+                            <!-- 右側：操作按鈕 -->
                             <div class="flex flex-col justify-between items-center pl-2 border-l border-slate-100 w-10 shrink-0 space-y-2">
                                 <div class="flex flex-col space-y-2">
                                     <button @click.stop="editItem(item)" class="w-8 h-8 bg-slate-100 text-slate-500 rounded-full flex items-center justify-center text-xs hover:bg-slate-200 transition-colors"><i class="fa-solid fa-pencil"></i></button>
                                     <a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address || item.name)}`" target="_blank" class="w-8 h-8 bg-ice-blue text-white rounded-full flex items-center justify-center text-xs hover:bg-deep-sea-blue transition-colors shadow-sm" @click.stop><i class="fa-solid fa-location-arrow"></i></a>
                                 </div>
                                 <div class="flex flex-col space-y-1 pt-2 border-t border-slate-100">
-                                    <button @click.stop="moveItem(item, -1)" v-if="idx > 0" class="w-8 h-6 text-slate-400 hover:text-deep-sea-blue transition-colors flex items-center justify-center"><i class="fa-solid fa-chevron-up"></i></button>
-                                    <button @click.stop="moveItem(item, 1)" v-if="idx < currentItinerary.length - 1" class="w-8 h-6 text-slate-400 hover:text-deep-sea-blue transition-colors flex items-center justify-center"><i class="fa-solid fa-chevron-down"></i></button>
+                                    <!-- 修正：傳入 idx 以確保操作正確索引 -->
+                                    <button @click.stop="moveItem(idx, -1)" v-if="idx > 0" class="w-8 h-6 text-slate-400 hover:text-deep-sea-blue transition-colors flex items-center justify-center"><i class="fa-solid fa-chevron-up"></i></button>
+                                    <button @click.stop="moveItem(idx, 1)" v-if="idx < currentItinerary.length - 1" class="w-8 h-6 text-slate-400 hover:text-deep-sea-blue transition-colors flex items-center justify-center"><i class="fa-solid fa-chevron-down"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -919,28 +927,44 @@
                     }
                 };
                 
-                // 1. 修正：moveItem 功能改為重新索引 (Re-indexing)
-                const moveItem = async (item, direction) => {
-                    const list = [...currentItinerary.value];
-                    const fromIndex = list.findIndex(i => i.id === item.id);
-                    if (fromIndex === -1) return;
+                // 1. 關鍵修正：實作 Optimistic UI Update (本地先改 -> 觸發動畫 -> 寫入DB)
+                const moveItem = async (visualIndex, direction) => {
+                    // 1. 取得當前已排序的列表 (Visual List)
+                    const sortedList = [...currentItinerary.value];
+                    
+                    // 2. 檢查邊界
+                    const targetIndex = visualIndex + direction;
+                    if (targetIndex < 0 || targetIndex >= sortedList.length) return;
 
-                    const toIndex = fromIndex + direction;
-                    if (toIndex < 0 || toIndex >= list.length) return;
+                    // 3. 取得要交換的兩個物件
+                    const itemA = sortedList[visualIndex];
+                    const itemB = sortedList[targetIndex];
 
-                    const [movedItem] = list.splice(fromIndex, 1);
-                    list.splice(toIndex, 0, movedItem);
+                    // 4. 【關鍵】直接修改本地 reactive 數據 (raw data) 中的 order
+                    // 因為 currentItinerary 依賴於 itineraryData 中的物件屬性
+                    // 我們只要交換這兩個物件的 order 值，computed 就會重新計算，Vue 就會偵測到變化並執行動畫
+                    
+                    // 先暫存 order (若無 order 則給預設值)
+                    const orderA = itemA.order ?? visualIndex;
+                    const orderB = itemB.order ?? targetIndex;
 
+                    // 交換 order
+                    // 注意：這裡必須確保我們改的是 itineraryData 裡面的那個參照
+                    // 因為 itemA, itemB 來自 computed，通常也是參照到 itineraryData 的物件
+                    itemA.order = orderB;
+                    itemB.order = orderA;
+
+                    // 此時，currentItinerary 會因為依賴的 order 變了而自動重新排序
+                    // TransitionGroup 會因為順序變了而執行動畫
+
+                    // 5. 背景寫入 Firestore
                     const batch = writeBatch(db);
                     const col = collection(db, `itinerary_day_${selectedDateIndex.value}`);
                     
-                    list.forEach((itineraryItem, index) => {
-                        const docRef = doc(col, itineraryItem.id);
-                        batch.update(docRef, { order: index });
-                    });
+                    batch.update(doc(col, itemA.id), { order: itemA.order });
+                    batch.update(doc(col, itemB.id), { order: itemB.order });
 
                     await batch.commit();
-                    triggerToast('✅ 順序已更新');
                 };
 
                 const updateTWD = () => inputTWD.value = Math.round(inputTHB.value * EXCHANGE_RATE.value);
