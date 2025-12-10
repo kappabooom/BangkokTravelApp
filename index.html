@@ -60,10 +60,9 @@
         .pulse-arrow { animation: pulse-x 1.5s infinite ease-in-out; }
         @keyframes pulse-x { 0%, 100% { transform: translateX(0); opacity: 0.8; } 50% { transform: translateX(5px); opacity: 1; } }
         
-        /* 1. 優化版動畫：絲滑流暢 (Silky Smooth) */
         .flip-list-move {
-            transition: transform 0.5s cubic-bezier(0.2, 0, 0, 1); /* 現代化緩動曲線：啟動快，煞車穩 */
-            z-index: 20; /* 確保移動中的項目在上層 */
+            transition: transform 0.5s cubic-bezier(0.2, 0, 0, 1);
+            z-index: 20;
             position: relative; 
         }
         .flip-list-enter-active,
@@ -75,7 +74,6 @@
             opacity: 0;
             transform: scale(0.95);
         }
-        /* 移動高亮效果 */
         .highlight-bg {
             animation: highlight 1s ease-out forwards;
         }
@@ -84,7 +82,6 @@
             100% { background-color: #ffffff; transform: scale(1); box-shadow: 0 4px 20px rgba(230, 81, 0, 0.1); }
         }
 
-        /* 2. 載入頁面動畫 */
         .loader-container { position: fixed; inset: 0; z-index: 9999; background-color: #FFF3E0; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease, visibility 0.5s ease; }
         .loader-container.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
         .spinner { width: 50px; height: 50px; border: 4px solid rgba(230, 81, 0, 0.2); border-top-color: #E65100; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem; }
@@ -94,11 +91,11 @@
     </style>
 </head>
 <body>
-    <!-- 2. 全螢幕載入頁面 -->
+    <!-- 1. 修改：載入頁面文字調整為 "Loading..." -->
     <div id="loading-screen" class="loader-container">
         <i class="fa-solid fa-plane-departure loader-logo"></i>
         <div class="spinner"></div>
-        <p class="text-deep-sea-blue font-bold tracking-widest text-sm">行程規劃中...</p>
+        <p class="text-deep-sea-blue font-bold tracking-widest text-sm">Loading...</p>
     </div>
 
     <div id="app" class="app-container">
@@ -146,7 +143,7 @@
                     </div>
                 </div>
                 
-                <!-- TransitionGroup 動畫列表 (加入 highlight-bg 控制) -->
+                <!-- TransitionGroup 動畫列表 -->
                 <TransitionGroup name="flip-list" tag="div" class="space-y-4 relative">
                     <div v-for="(item, idx) in currentItinerary" :key="item.id" class="relative group">
                         <!-- 交通時間線 (不顯示在第一個項目) -->
@@ -156,7 +153,7 @@
                             <span class="font-bold">{{ item.travelTime || '約15分鐘' }}</span>
                         </div>
 
-                        <!-- 1. 行程卡片：電梯式佈局 -->
+                        <!-- 行程卡片 -->
                         <div class="bg-white rounded-3xl p-3 pr-4 card-shadow flex border border-ice-blue/50 overflow-hidden items-stretch"
                              :class="{'highlight-bg': recentlyMovedId === item.id}">
                             <!-- A. 左側控制欄 -->
@@ -282,23 +279,30 @@
                 </div>
             </div>
 
-            <!-- 3. 購物清單 Tab -->
+            <!-- 2. 修改：購物清單 Tab (使用者分類 + Firestore 同步) -->
             <div v-if="currentTab === 'shopping'" class="animate-fade-in">
                 <div class="bg-white rounded-3xl p-6 card-shadow min-h-[60vh]">
                     <h3 class="font-bold text-slate-800 mb-4 flex items-center justify-between">
-                        <span><i class="fa-solid fa-basket-shopping text-accent-yellow mr-2"></i> 購物清單</span>
-                        <span class="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-lg">{{ shoppingList.length }} 項</span>
+                        <span class="flex items-center"><i class="fa-solid fa-basket-shopping text-accent-yellow mr-2"></i> {{ currentUser }} 的清單</span>
+                        <span class="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-lg">{{ currentShoppingList.length }} 項</span>
                     </h3>
-                    <ul class="space-y-3" v-if="shoppingList.length > 0">
-                        <li v-for="(item, index) in shoppingList" :key="index" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                            <div class="flex items-center">
-                                <input type="checkbox" v-model="item.checked" class="w-5 h-5 text-deep-sea-blue rounded focus:ring-deep-sea-blue border-gray-300 mr-3 accent-deep-sea-blue">
-                                <span :class="{'line-through text-slate-400': item.checked, 'text-slate-700 font-medium': !item.checked}">{{ item.name }}</span>
+                    <ul class="space-y-3" v-if="currentShoppingList.length > 0">
+                        <li v-for="(item, index) in currentShoppingList" :key="item.id" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 transition-all hover:shadow-sm">
+                            <div class="flex items-center flex-1 mr-2">
+                                <!-- 使用 @change 監聽變更，並傳入 item 進行 DB 更新 -->
+                                <input type="checkbox" :checked="item.checked" @change="toggleShoppingItem(item)" class="w-5 h-5 text-deep-sea-blue rounded focus:ring-deep-sea-blue border-gray-300 mr-3 accent-deep-sea-blue cursor-pointer">
+                                <span :class="{'line-through text-slate-400': item.checked, 'text-slate-700 font-medium': !item.checked}" class="break-all">{{ item.name }}</span>
                             </div>
-                            <button @click="removeShoppingItem(index)" class="text-slate-300 hover:text-red-500 transition-colors"><i class="fa-solid fa-trash-can"></i></button>
+                            <!-- 刪除按鈕改為傳入 ID -->
+                            <button @click="removeShoppingItem(item.id)" class="text-slate-300 hover:text-red-500 transition-colors p-2"><i class="fa-solid fa-trash-can"></i></button>
                         </li>
                     </ul>
-                    <div v-else class="text-center py-12 text-slate-300"><i class="fa-solid fa-bag-shopping text-5xl mb-3 text-slate-200"></i><p class="text-sm">購物清單空白</p></div>
+                    <div v-else class="text-center py-12 text-slate-300 flex flex-col items-center">
+                        <div class="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-3">
+                            <i class="fa-solid fa-cart-plus text-2xl text-slate-200"></i>
+                        </div>
+                        <p class="text-sm">尚無商品，幫 {{ currentUser }} 加一點？</p>
+                    </div>
                 </div>
             </div>
 
@@ -433,7 +437,7 @@
         <!-- Shopping Modal -->
         <div v-if="showShoppingModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
             <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
-                <h3 class="font-bold text-lg mb-5 text-center text-slate-800">新增購物清單</h3>
+                <h3 class="font-bold text-lg mb-5 text-center text-slate-800">新增購物清單 ({{ currentUser }})</h3>
                 <input v-model="newShoppingItem.name" type="text" placeholder="商品名稱" class="w-full bg-slate-50 border-none rounded-xl p-4 mb-4 focus:ring-2 focus:ring-deep-sea-blue text-sm outline-none">
                 <div class="flex space-x-3">
                     <button @click="showShoppingModal = false" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
@@ -610,7 +614,7 @@
                 const editingMemberId = ref(null); 
                 const tempMemberName = ref('');   
                 const editInput = ref(null); 
-                const recentlyMovedId = ref(null); // 改名為 recentlyMovedId 讓語意更精確
+                const recentlyMovedId = ref(null); 
 
                 const dates = ref([
                     { date: '1/16', weekday: '五', hasCar: false },
@@ -634,7 +638,9 @@
 
                 const DEFAULT_MEMBERS = ['kappabooom', 'beibei1029', 'hsiannnnng', 'shinbinwei', 'aylwen4444', 'wunsin', 'rtrtr1', 'blackblacknu'];
                 const members = ref(DEFAULT_MEMBERS.map((name, i) => ({ id: `default_${i}`, name, active: true })));
-                const shoppingList = ref([]);
+                
+                // 2. 修改：購物清單資料結構
+                const allShoppingList = ref([]); // 存放從 Firestore 抓回來的所有資料
                 const expenses = ref([]);
                 const newMemberName = ref('');
                 const currentUser = ref(DEFAULT_MEMBERS[0]);
@@ -653,6 +659,11 @@
                     showToast.value = true;
                     setTimeout(() => { showToast.value = false; }, 3000);
                 };
+                
+                // 2. 修改：即時計算當前使用者的購物清單
+                const currentShoppingList = computed(() => {
+                    return allShoppingList.value.filter(item => item.owner === currentUser.value);
+                });
 
                 const transferSuggestions = computed(() => {
                     const balances = { ...memberBalances.value };
@@ -690,6 +701,11 @@
                     const expensesCol = collection(db, 'expenses');
                     onSnapshot(expensesCol, (snapshot) => {
                         expenses.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    });
+                    
+                    // 2. 修改：訂閱購物清單集合
+                    onSnapshot(collection(db, 'shopping_list'), (snapshot) => {
+                        allShoppingList.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     });
 
                     const membersCol = collection(db, 'members');
@@ -747,7 +763,6 @@
                     await fetchWeather();
                     
                     // 2. 載入完成，隱藏 Loader
-                    // 設定一個最小展示時間，避免畫面閃爍
                     setTimeout(() => {
                         const loader = document.getElementById('loading-screen');
                         if(loader) loader.classList.add('hidden');
@@ -947,8 +962,32 @@
                 const toggleMemberActive = async (m) => await updateDoc(doc(db, 'members', m.id), {active: !m.active});
                 const removeMember = async (id) => { if(confirm('確定要刪除此成員嗎？')) await deleteDoc(doc(db, 'members', id)); };
                 
-                const addShoppingItem = () => { if(newShoppingItem.value.name) shoppingList.value.push({...newShoppingItem.value}); newShoppingItem.value.name=''; showShoppingModal.value=false; };
-                const removeShoppingItem = (i) => shoppingList.value.splice(i, 1);
+                // 2. 修改：新增購物清單項目 (寫入 Firestore)
+                const addShoppingItem = async () => { 
+                    if(newShoppingItem.value.name) {
+                        await addDoc(collection(db, 'shopping_list'), {
+                            name: newShoppingItem.value.name,
+                            checked: false,
+                            owner: currentUser.value // 記錄擁有人
+                        });
+                        newShoppingItem.value.name=''; 
+                        showShoppingModal.value=false; 
+                        triggerToast('✅ 商品已加入');
+                    }
+                };
+                
+                // 2. 修改：切換商品狀態 (更新 Firestore)
+                const toggleShoppingItem = async (item) => {
+                    await updateDoc(doc(db, 'shopping_list', item.id), { checked: !item.checked });
+                };
+
+                // 2. 修改：刪除商品 (刪除 Firestore)
+                const removeShoppingItem = async (id) => { 
+                    if(confirm('確定要刪除這個商品嗎？')) {
+                        await deleteDoc(doc(db, 'shopping_list', id));
+                        triggerToast('🗑️ 商品已刪除');
+                    }
+                };
 
                 const saveItineraryItem = async () => { 
                     if(!newItinerary.value.name) return;
@@ -971,35 +1010,24 @@
                 };
                 
                 const moveItem = async (visualIndex, direction, itemId) => {
-                    // 1. 設置最近移動的 ID，觸發 CSS Highlight 動畫
                     recentlyMovedId.value = itemId;
-                    
                     const sortedList = [...currentItinerary.value];
                     const targetIndex = visualIndex + direction;
                     if (targetIndex < 0 || targetIndex >= sortedList.length) {
                         recentlyMovedId.value = null;
                         return;
                     }
-
                     const itemA = sortedList[visualIndex];
                     const itemB = sortedList[targetIndex];
-
                     const orderA = itemA.order ?? visualIndex;
                     const orderB = itemB.order ?? targetIndex;
-
-                    // Optimistic update (Vue Reactivity)
                     itemA.order = orderB;
                     itemB.order = orderA;
-
-                    // 1秒後移除 Highlight class，以便下次移動還能觸發
                     setTimeout(() => { recentlyMovedId.value = null; }, 1000);
-
-                    // Firestore update
                     const batch = writeBatch(db);
                     const col = collection(db, `itinerary_day_${selectedDateIndex.value}`);
                     batch.update(doc(col, itemA.id), { order: itemA.order });
                     batch.update(doc(col, itemB.id), { order: itemB.order });
-
                     await batch.commit();
                 };
 
@@ -1024,12 +1052,12 @@
 
                 return {
                     currentTab, selectedDateIndex, showShoppingModal, showExpenseModal, showItineraryModal, showMemberModal, isEditMode, editingExpenseId, expandedMember,
-                    dates, weatherData, currentItinerary, hotels, shoppingList, expenses, members,
+                    dates, weatherData, currentItinerary, hotels, shoppingList: currentShoppingList, expenses, members, // 這裡將 shoppingList 指向 computed
                     newShoppingItem, newExpense, newItinerary, newMemberName,
                     splitMembers, myExpenses, totalTHB, totalTWD, finalTotalTWD, memberBalances, EXCHANGE_RATE,
-                    inputTHB, inputTWD, updateTWD, updateTHB, currentUser,
+                    inputTHB, inputTWD, updateTWD, updateTHB, currentUser, currentShoppingList,
                     formatNumber, getCategoryIcon, handleAddClick, addMember, toggleMemberActive, removeMember, toggleMemberDetails, getMemberPaidExpenses,
-                    startEditExpense, saveExpense, removeExpense, closeExpenseModal, addShoppingItem, removeShoppingItem, saveItineraryItem, removeItineraryItem, openMap, editItem,
+                    startEditExpense, saveExpense, removeExpense, closeExpenseModal, addShoppingItem, removeShoppingItem, toggleShoppingItem, saveItineraryItem, removeItineraryItem, openMap, editItem,
                     getWeatherIcon, getWeatherDescription, getTransportIcon, getCategoryColor,
                     collapsedSections, toggleSection, transferSuggestions, showToast, toastMessage, triggerToast,
                     editingMemberId, tempMemberName, startEditMember, saveMemberName, editInput, moveItem, recentlyMovedId
