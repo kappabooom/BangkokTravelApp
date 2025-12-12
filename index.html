@@ -36,6 +36,9 @@
         @import url('https://fonts.googleapis.com/css?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         body { background-color: #FFF3E0; -webkit-tap-highlight-color: transparent; font-family: 'Noto Sans TC', sans-serif; color: #334155; }
         .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background-color: #ffffff; box-shadow: 0 0 30px rgba(0, 0, 0, 0.05); position: relative; padding-bottom: 90px; }
+        /* 修正1: 讓登入頁面強制全螢幕覆蓋 */
+        .login-screen { position: fixed; inset: 0; z-index: 9990; background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
         .header-bg { background-color: #ffffff; padding: 0; position: relative; overflow: hidden; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15); border-bottom-left-radius: 35px; border-bottom-right-radius: 35px; z-index: 10; }
         .header-image-container { width: 100%; height: 250px; overflow: hidden; background-color: transparent; border-bottom-left-radius: 35px; border-bottom-right-radius: 35px; }
         .header-image-container img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -60,27 +63,11 @@
         .pulse-arrow { animation: pulse-x 1.5s infinite ease-in-out; }
         @keyframes pulse-x { 0%, 100% { transform: translateX(0); opacity: 0.8; } 50% { transform: translateX(5px); opacity: 1; } }
         
-        .flip-list-move {
-            transition: transform 0.5s cubic-bezier(0.2, 0, 0, 1);
-            z-index: 20;
-            position: relative; 
-        }
-        .flip-list-enter-active,
-        .flip-list-leave-active {
-            transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
-        }
-        .flip-list-enter-from,
-        .flip-list-leave-to {
-            opacity: 0;
-            transform: scale(0.95);
-        }
-        .highlight-bg {
-            animation: highlight 1s ease-out forwards;
-        }
-        @keyframes highlight {
-            0% { background-color: #FFF8E1; transform: scale(1.02); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-            100% { background-color: #ffffff; transform: scale(1); box-shadow: 0 4px 20px rgba(230, 81, 0, 0.1); }
-        }
+        .flip-list-move { transition: transform 0.5s cubic-bezier(0.2, 0, 0, 1); z-index: 20; position: relative; }
+        .flip-list-enter-active, .flip-list-leave-active { transition: all 0.3s cubic-bezier(0.2, 0, 0, 1); }
+        .flip-list-enter-from, .flip-list-leave-to { opacity: 0; transform: scale(0.95); }
+        .highlight-bg { animation: highlight 1s ease-out forwards; }
+        @keyframes highlight { 0% { background-color: #FFF8E1; transform: scale(1.02); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); } 100% { background-color: #ffffff; transform: scale(1); box-shadow: 0 4px 20px rgba(230, 81, 0, 0.1); } }
 
         .loader-container { position: fixed; inset: 0; z-index: 9999; background-color: #FFF3E0; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: opacity 0.5s ease, visibility 0.5s ease; }
         .loader-container.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
@@ -100,8 +87,8 @@
 
     <div id="app" class="app-container">
 
-        <!-- 1. 成員選擇（登入）頁面 -->
-        <div v-if="!hasSelectedUser" class="min-h-screen bg-gradient-to-br from-orange-50 to-orange-100 p-6 flex flex-col items-center justify-center animate-fade-in">
+        <!-- 1. 成員選擇（登入）頁面 (修正: 使用 fixed inset-0 填滿畫面) -->
+        <div v-if="!hasSelectedUser" class="login-screen animate-fade-in p-6">
             <div class="text-center mb-8">
                 <div class="w-24 h-24 bg-white rounded-full mx-auto shadow-lg flex items-center justify-center mb-4">
                     <i class="fa-solid fa-plane-up text-4xl text-deep-sea-blue"></i>
@@ -293,14 +280,18 @@
                         </ul>
                     </div>
 
-                    <!-- 使用者資訊卡 -->
-                    <div class="bg-white rounded-3xl p-4 card-shadow flex items-center justify-between" @click="hasSelectedUser = false">
-                        <div class="flex items-center space-x-3 w-full cursor-pointer">
-                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-100 to-white border border-indigo-50 flex items-center justify-center text-indigo-500 shadow-sm">
+                    <!-- 使用者資訊卡 (修正: 改回下拉選單) -->
+                    <div class="bg-white rounded-3xl p-4 card-shadow flex items-center justify-between">
+                        <div class="flex items-center space-x-3 w-full">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-100 to-white border border-indigo-50 flex items-center justify-center text-indigo-500 shadow-sm shrink-0">
                                  <i class="fa-solid fa-user-gear text-xl"></i>
                             </div>
-                            <div class="flex-1">
+                            <div class="flex-1 custom-select-wrapper">
                                  <p class="text-[10px] text-slate-400 font-medium tracking-wide">目前操作使用者</p>
+                                 <!-- 修正: 下拉選單綁定 pendingUser -->
+                                 <select v-model="pendingUser" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                                     <option v-for="m in members" :key="m.id" :value="m.name">{{ m.name }}</option>
+                                 </select>
                                  <div class="flex items-center justify-between">
                                      <div>
                                          <p class="text-lg font-bold text-slate-800">{{ currentUser }}</p>
@@ -308,7 +299,7 @@
                                      </div>
                                      <div class="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 flex items-center space-x-2 text-xs text-slate-500">
                                          <span>切換</span>
-                                         <i class="fa-solid fa-arrow-right-from-bracket text-[10px]"></i>
+                                         <i class="fa-solid fa-chevron-down text-[10px]"></i>
                                      </div>
                                  </div>
                             </div>
@@ -618,7 +609,7 @@
 
     <!-- Main Logic -->
     <script type="module">
-        import { createApp, ref, computed, onMounted, nextTick } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
+        import { createApp, ref, computed, onMounted, nextTick, watch } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
         import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
@@ -659,6 +650,7 @@
                 // Login / User State
                 const hasSelectedUser = ref(false);
                 const currentUser = ref(''); 
+                const pendingUser = ref(''); // 修正: 新增 pendingUser 處理下拉選單切換
 
                 // Admin & Password Logic
                 const isRoleEditMode = ref(false);
@@ -802,6 +794,17 @@
                         if(loader) loader.classList.add('hidden');
                     }, 1500);
                 });
+                
+                // 修正: 監聽下拉選單變化
+                watch(pendingUser, (newVal, oldVal) => {
+                    if (newVal && newVal !== currentUser.value) {
+                         // 當選擇了不同使用者時，不直接切換，先進行驗證
+                         const member = members.value.find(m => m.name === newVal);
+                         if (member) {
+                             attemptLogin(member);
+                         }
+                    }
+                });
 
                 // Login Logic
                 const attemptLogin = (member) => {
@@ -825,6 +828,7 @@
 
                 const performLogin = (member) => {
                     currentUser.value = member.name;
+                    pendingUser.value = member.name; // 同步下拉選單
                     hasSelectedUser.value = true;
                     triggerToast(`歡迎回來，${member.name}`);
                 };
@@ -1091,7 +1095,7 @@
                             triggerToast('Admin 密碼錯誤');
                         }
                     } 
-                    // Case 2: Login as Admin
+                    // Case 2: Login as Admin (修正: 確認後明確執行登入)
                     else if (passwordMode.value === 'loginAdmin') {
                         if (input === ROLE_PASSWORD) {
                             performLogin(targetLoginMember.value);
@@ -1128,6 +1132,7 @@
                     rolePasswordInput.value = '';
                     targetLoginMember.value = null;
                     passwordMode.value = 'role';
+                    pendingUser.value = currentUser.value; // Reset dropdown if cancelled
                 };
 
                 const cancelRolePassword = () => {
@@ -1182,7 +1187,7 @@
                     // New Returns
                     isRoleEditMode, showRolePasswordModal, rolePasswordInput, confirmRolePassword, cancelRolePassword, updateMemberRole, closeMemberModal, openRolePasswordMode,
                     currentUserRole, canEditItinerary, 
-                    hasSelectedUser, attemptLogin, targetLoginMember, passwordMode, openSetPasswordMode
+                    hasSelectedUser, attemptLogin, targetLoginMember, passwordMode, openSetPasswordMode, pendingUser
                 };
             }
         });
