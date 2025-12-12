@@ -36,8 +36,9 @@
         @import url('https://fonts.googleapis.com/css?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         body { background-color: #FFF3E0; -webkit-tap-highlight-color: transparent; font-family: 'Noto Sans TC', sans-serif; color: #334155; }
         .app-container { max-width: 480px; margin: 0 auto; min-height: 100vh; background-color: #ffffff; box-shadow: 0 0 30px rgba(0, 0, 0, 0.05); position: relative; padding-bottom: 90px; }
-        /* 修正1: 讓登入頁面強制全螢幕覆蓋 */
-        .login-screen { position: fixed; inset: 0; z-index: 9990; background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        
+        /* 層級設定修正: Login(60) < MemberModal(70) < PasswordModal(80) < Loader(9999) */
+        .login-screen { position: fixed; inset: 0; z-index: 60; background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; }
         
         .header-bg { background-color: #ffffff; padding: 0; position: relative; overflow: hidden; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15); border-bottom-left-radius: 35px; border-bottom-right-radius: 35px; z-index: 10; }
         .header-image-container { width: 100%; height: 250px; overflow: hidden; background-color: transparent; border-bottom-left-radius: 35px; border-bottom-right-radius: 35px; }
@@ -75,6 +76,10 @@
         .loader-logo { font-size: 3rem; color: #E65100; margin-bottom: 1rem; animation: pulse-logo 1.5s infinite ease-in-out; }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse-logo { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } }
+
+        /* iOS Toggle Switch Style */
+        .toggle-checkbox:checked { right: 0; border-color: #E65100; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #E65100; }
     </style>
 </head>
 <body>
@@ -87,7 +92,7 @@
 
     <div id="app" class="app-container">
 
-        <!-- 1. 成員選擇（登入）頁面 (修正: 使用 fixed inset-0 填滿畫面) -->
+        <!-- 1. 成員選擇（登入）頁面 -->
         <div v-if="!hasSelectedUser" class="login-screen animate-fade-in p-6">
             <div class="text-center mb-8">
                 <div class="w-24 h-24 bg-white rounded-full mx-auto shadow-lg flex items-center justify-center mb-4">
@@ -116,7 +121,7 @@
             </div>
         </div>
 
-        <!-- 2. 主應用畫面 (已登入才顯示) -->
+        <!-- 2. 主應用畫面 -->
         <div v-else>
             <!-- Header -->
             <div class="header-bg relative">
@@ -177,28 +182,10 @@
                                  :class="{'highlight-bg': recentlyMovedId === item.id}">
                                 <!-- 左側控制欄 (Admin Only) -->
                                 <div class="flex flex-col items-center justify-center mr-3 w-10 shrink-0 space-y-1">
-                                    <button
-                                        v-if="canEditItinerary"
-                                        @click.stop="moveItem(idx, -1, item.id)" 
-                                        class="w-8 h-6 text-slate-300 hover:text-deep-sea-blue hover:bg-orange-50 rounded-lg transition-colors flex items-center justify-center active:scale-90"
-                                        :class="{'invisible': idx === 0}">
-                                        <i class="fa-solid fa-chevron-up text-xs"></i>
-                                    </button>
-                                    
-                                    <div class="w-10 h-10 rounded-full text-white shadow-md flex items-center justify-center text-lg z-10" 
-                                         :style="{ backgroundColor: getCategoryColor(item.category) }">
-                                        <i :class="getCategoryIcon(item.category)"></i>
-                                    </div>
-
-                                    <button
-                                        v-if="canEditItinerary"
-                                        @click.stop="moveItem(idx, 1, item.id)" 
-                                        class="w-8 h-6 text-slate-300 hover:text-deep-sea-blue hover:bg-orange-50 rounded-lg transition-colors flex items-center justify-center active:scale-90"
-                                        :class="{'invisible': idx === currentItinerary.length - 1}">
-                                        <i class="fa-solid fa-chevron-down text-xs"></i>
-                                    </button>
+                                    <button v-if="canEditItinerary" @click.stop="moveItem(idx, -1, item.id)" class="w-8 h-6 text-slate-300 hover:text-deep-sea-blue hover:bg-orange-50 rounded-lg transition-colors flex items-center justify-center active:scale-90" :class="{'invisible': idx === 0}"><i class="fa-solid fa-chevron-up text-xs"></i></button>
+                                    <div class="w-10 h-10 rounded-full text-white shadow-md flex items-center justify-center text-lg z-10" :style="{ backgroundColor: getCategoryColor(item.category) }"><i :class="getCategoryIcon(item.category)"></i></div>
+                                    <button v-if="canEditItinerary" @click.stop="moveItem(idx, 1, item.id)" class="w-8 h-6 text-slate-300 hover:text-deep-sea-blue hover:bg-orange-50 rounded-lg transition-colors flex items-center justify-center active:scale-90" :class="{'invisible': idx === currentItinerary.length - 1}"><i class="fa-solid fa-chevron-down text-xs"></i></button>
                                 </div>
-
                                 <!-- 中間內容區 -->
                                 <div class="flex-1 min-w-0 flex flex-col justify-center py-1">
                                     <div class="flex items-baseline mb-1">
@@ -215,18 +202,10 @@
                                         <button v-if="item.note.length > 50" @click="item.isNoteExpanded = !item.isNoteExpanded" class="text-deep-sea-blue font-bold mt-1">{{ item.isNoteExpanded ? '收合' : '展開' }}</button>
                                     </div>
                                 </div>
-
                                 <!-- 右側操作欄 -->
                                 <div class="flex flex-col justify-center items-end pl-2 ml-1 space-y-3 shrink-0 border-l border-slate-100 border-dashed">
-                                    <button
-                                        v-if="canEditItinerary"
-                                        @click.stop="editItem(item)"
-                                        class="w-9 h-9 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-colors shadow-sm">
-                                        <i class="fa-solid fa-pencil text-sm"></i>
-                                    </button>
-                                    <a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address || item.name)}`" target="_blank" class="w-9 h-9 bg-ice-blue text-white rounded-full flex items-center justify-center hover:bg-deep-sea-blue transition-colors shadow-md shadow-ice-blue/30" @click.stop>
-                                        <i class="fa-solid fa-location-arrow text-sm"></i>
-                                    </a>
+                                    <button v-if="canEditItinerary" @click.stop="editItem(item)" class="w-9 h-9 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-colors shadow-sm"><i class="fa-solid fa-pencil text-sm"></i></button>
+                                    <a :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address || item.name)}`" target="_blank" class="w-9 h-9 bg-ice-blue text-white rounded-full flex items-center justify-center hover:bg-deep-sea-blue transition-colors shadow-md shadow-ice-blue/30" @click.stop><i class="fa-solid fa-location-arrow text-sm"></i></a>
                                 </div>
                             </div>
                         </div>
@@ -235,6 +214,41 @@
 
                 <!-- 資訊 Tab -->
                 <div v-if="currentTab === 'info'" class="space-y-5 animate-fade-in">
+                    <!-- 使用者資訊卡 (修改: 不顯示角色) -->
+                    <div class="bg-white rounded-3xl p-4 card-shadow flex items-center justify-between">
+                        <div class="flex items-center space-x-3 w-full">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-100 to-white border border-indigo-50 flex items-center justify-center text-indigo-500 shadow-sm shrink-0">
+                                 <i class="fa-solid fa-user-gear text-xl"></i>
+                            </div>
+                            <div class="flex-1 custom-select-wrapper">
+                                 <p class="text-[10px] text-slate-400 font-medium tracking-wide">目前操作使用者</p>
+                                 <select v-model="pendingUser" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                                     <option v-for="m in members" :key="m.id" :value="m.name">{{ m.name }}</option>
+                                 </select>
+                                 <div class="flex items-center justify-between">
+                                     <div>
+                                         <p class="text-lg font-bold text-slate-800">{{ currentUser }}</p>
+                                         <!-- 移除顯示角色的 P 標籤 -->
+                                     </div>
+                                     <div class="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 flex items-center space-x-2 text-xs text-slate-500">
+                                         <span>切換</span>
+                                         <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                                     </div>
+                                 </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 管理者專屬區塊 (新功能) -->
+                    <div v-if="currentUserRole === 'admin'" class="bg-gradient-to-br from-slate-700 to-slate-900 rounded-3xl p-5 card-shadow text-white">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold flex items-center"><i class="fa-solid fa-users-gear mr-2 text-accent-yellow"></i> 成員管理後台</h3>
+                            <button @click="showMemberModal = true; isRoleEditMode = true; roleEditUnlocked = true" class="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl text-sm font-bold transition-colors">
+                                進入管理
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- 匯率 -->
                     <div class="bg-gradient-to-r from-deep-sea-blue to-orange-700 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
                         <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
@@ -278,32 +292,6 @@
                                 <p class="text-xs text-slate-500 flex items-center"><i class="fa-solid fa-location-dot w-4 text-center mr-2"></i> {{ hotel.address }}</p>
                             </li>
                         </ul>
-                    </div>
-
-                    <!-- 使用者資訊卡 (修正: 改回下拉選單) -->
-                    <div class="bg-white rounded-3xl p-4 card-shadow flex items-center justify-between">
-                        <div class="flex items-center space-x-3 w-full">
-                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-100 to-white border border-indigo-50 flex items-center justify-center text-indigo-500 shadow-sm shrink-0">
-                                 <i class="fa-solid fa-user-gear text-xl"></i>
-                            </div>
-                            <div class="flex-1 custom-select-wrapper">
-                                 <p class="text-[10px] text-slate-400 font-medium tracking-wide">目前操作使用者</p>
-                                 <!-- 修正: 下拉選單綁定 pendingUser -->
-                                 <select v-model="pendingUser" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
-                                     <option v-for="m in members" :key="m.id" :value="m.name">{{ m.name }}</option>
-                                 </select>
-                                 <div class="flex items-center justify-between">
-                                     <div>
-                                         <p class="text-lg font-bold text-slate-800">{{ currentUser }}</p>
-                                         <p class="text-[10px] text-slate-400 mt-0.5">角色：<span class="font-semibold" :class="currentUserRole === 'admin' ? 'text-orange-600' : 'text-slate-500'">{{ currentUserRole === 'admin' ? 'Admin' : 'Viewer' }}</span></p>
-                                     </div>
-                                     <div class="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 flex items-center space-x-2 text-xs text-slate-500">
-                                         <span>切換</span>
-                                         <i class="fa-solid fa-chevron-down text-[10px]"></i>
-                                     </div>
-                                 </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -445,7 +433,7 @@
                     </div>
                 </div>
 
-                <!-- Expense Modal -->
+                <!-- Expense Modal (修正: 移除成員管理按鈕) -->
                 <div v-if="showExpenseModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                         <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ editingExpenseId === null ? "記一筆" : "編輯支出" }}</h3>
@@ -481,7 +469,7 @@
                             <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 mt-2">
                                 <div class="flex items-center justify-between mb-3">
                                     <span class="text-xs font-bold text-slate-500"><i class="fa-solid fa-user-group mr-1"></i> 多人分帳</span>
-                                    <button @click="showMemberModal = true" class="text-[10px] px-2 py-1 rounded-lg bg-white border border-slate-200 text-deep-sea-blue font-medium shadow-sm"><i class="fa-solid fa-users-gear mr-1"></i>管理成員</button>
+                                    <!-- 移除舊的管理按鈕 -->
                                 </div>
                                 <div class="flex space-x-1 mb-3 bg-white p-1 rounded-lg border border-slate-200">
                                     <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod==='personal' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod='personal'">個人</button>
@@ -540,66 +528,106 @@
                     </div>
                 </div>
 
-                <!-- 成員管理 Modal -->
-                <div v-if="showMemberModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[60] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-                    <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
-                        <div class="flex items-center justify-between mb-2">
-                            <h3 class="font-bold text-lg text-slate-800">分帳成員管理</h3>
-                            <button @click="openRolePasswordMode" class="text-[11px] px-2 py-1 rounded-lg bg-amber-50 text-amber-700 border border-amber-200">角色管理</button>
+                <!-- 成員管理 Modal (修正: 大版面 UX) -->
+                <div v-if="showMemberModal" class="fixed inset-0 bg-slate-900/50 z-[70] flex flex-col items-center justify-end sm:justify-center animate-fade-in backdrop-blur-sm">
+                    <div class="bg-white w-full sm:w-[480px] sm:rounded-3xl rounded-t-3xl p-6 shadow-2xl h-[85vh] sm:h-auto sm:max-h-[85vh] flex flex-col">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="font-bold text-xl text-slate-800">成員管理後台</h3>
+                            <button @click="closeMemberModal" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-times"></i></button>
                         </div>
-                        <div class="space-y-2 max-h-60 overflow-y-auto mb-4 min-h-[100px]">
-                            <div v-for="m in members" :key="m.id" class="flex items-center justify-between bg-slate-50 rounded-xl px-3 py-3 border border-slate-100">
-                                <div class="flex-1 flex items-center mr-2">
-                                    <template v-if="editingMemberId === m.id">
-                                        <input v-model="tempMemberName" @keyup.enter="saveMemberName(m)" @blur="saveMemberName(m)" ref="editInput" class="w-full text-sm font-bold text-slate-700 bg-white border border-deep-sea-blue rounded px-2 py-1 outline-none" autofocus>
-                                    </template>
-                                    <template v-else>
-                                        <span class="text-sm font-medium cursor-pointer hover:text-deep-sea-blue transition-colors flex items-center" :class="m.active ? 'text-slate-700' : 'text-slate-400 line-through'" @click="startEditMember(m)">{{ m.name }}</span>
-                                    </template>
+
+                        <!-- 成員列表區 (Scroll) -->
+                        <div class="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
+                            <div v-for="m in members" :key="m.id" class="flex items-center justify-between bg-slate-50 rounded-2xl p-4 border border-slate-100 shadow-sm">
+                                <div class="flex items-center space-x-3 flex-1">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg"
+                                         :class="m.role === 'admin' ? 'bg-orange-500' : 'bg-ice-blue'">
+                                        {{ m.name.substring(0,1).toUpperCase() }}
+                                    </div>
+                                    <div class="flex flex-col flex-1 min-w-0">
+                                         <template v-if="editingMemberId === m.id">
+                                            <input v-model="tempMemberName" @keyup.enter="saveMemberName(m)" @blur="saveMemberName(m)" ref="editInput" class="w-full text-sm font-bold bg-white border border-blue-400 rounded px-2 py-1 outline-none">
+                                        </template>
+                                        <template v-else>
+                                            <div class="flex items-center">
+                                                <span class="font-bold text-slate-700 truncate mr-2">{{ m.name }}</span>
+                                                <button @click="startEditMember(m)" class="text-slate-300 hover:text-blue-500 text-xs"><i class="fa-solid fa-pen"></i></button>
+                                            </div>
+                                            <span class="text-[10px] text-slate-400">
+                                                {{ m.role === 'admin' ? '管理員' : '一般成員' }} 
+                                                <span v-if="!m.active" class="text-red-400 ml-1">(未參與)</span>
+                                            </span>
+                                        </template>
+                                    </div>
                                 </div>
+                                
+                                <!-- 操作按鈕群 -->
                                 <div class="flex items-center space-x-2">
-                                    <button @click="toggleMemberActive(m)" class="px-2 py-1 rounded-lg text-[10px] font-bold transition-colors" :class="m.active ? 'bg-green-100 text-green-600' : 'bg-slate-200 text-slate-500'">{{ m.active ? '參與' : '不參與' }}</button>
-                                    
-                                    <!-- 角色管理模式按鈕群 -->
-                                    <div v-if="isRoleEditMode" class="flex space-x-1">
-                                        <!-- 角色切換 -->
-                                        <button @click="updateMemberRole(m, m.role === 'admin' ? 'viewer' : 'admin')" class="px-2 py-1 rounded-lg font-bold text-[10px]" :class="m.role === 'admin' ? 'bg-orange-100 text-orange-700' : 'bg-slate-200 text-slate-600'">{{ m.role === 'admin' ? 'Admin' : 'Viewer' }}</button>
-                                        <!-- 設定個人密碼按鈕 (鎖頭) -->
-                                        <button @click="openSetPasswordMode(m)" class="w-6 h-6 rounded-lg flex items-center justify-center transition-colors" :class="m.password ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'">
-                                            <i class="fa-solid fa-key text-[10px]"></i>
-                                        </button>
+                                    <!-- 狀態開關 -->
+                                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                                        <input type="checkbox" :id="'toggle-'+m.id" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer" :checked="m.active" @change="toggleMemberActive(m)"/>
+                                        <label :for="'toggle-'+m.id" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
                                     </div>
 
-                                    <button v-if="m.name !== '我'" @click="removeMember(m.id)" class="w-6 h-6 rounded-full bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-500 hover:text-white transition-colors"><i class="fa-solid fa-times text-xs"></i></button>
+                                    <!-- 角色切換 -->
+                                    <button @click="updateMemberRole(m, m.role === 'admin' ? 'viewer' : 'admin')" 
+                                            class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                                            :class="m.role === 'admin' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-400'">
+                                        <i class="fa-solid fa-crown text-xs"></i>
+                                    </button>
+
+                                    <!-- 密碼設定 -->
+                                    <button @click="openSetPasswordMode(m)" 
+                                            class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                                            :class="m.password ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'">
+                                        <i class="fa-solid fa-key text-xs"></i>
+                                    </button>
+
+                                    <!-- 刪除 -->
+                                    <button v-if="m.name !== '我' && m.id !== currentUser" @click="removeMember(m.id)" 
+                                            class="w-8 h-8 rounded-lg bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center">
+                                        <i class="fa-solid fa-trash-can text-xs"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
-                        <div class="flex space-x-2 mb-4">
-                            <input v-model="newMemberName" @keyup.enter="addMember" placeholder="新成員名稱" class="flex-1 bg-slate-50 rounded-xl p-3 text-sm outline-none border border-transparent focus:border-deep-sea-blue">
-                            <button @click="addMember" class="px-4 rounded-xl bg-deep-sea-blue text-white text-sm font-bold shadow-lg shadow-deep-sea-blue/20">新增</button>
+
+                        <!-- 新增成員 -->
+                        <div class="mt-auto pt-4 border-t border-slate-100">
+                            <div class="flex space-x-2">
+                                <input v-model="newMemberName" @keyup.enter="addMember" placeholder="輸入新成員名稱..." class="flex-1 bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-transparent focus:border-deep-sea-blue focus:bg-white transition-all">
+                                <button @click="addMember" class="px-6 rounded-xl bg-deep-sea-blue text-white text-sm font-bold shadow-lg shadow-deep-sea-blue/20 hover:scale-105 transition-transform"><i class="fa-solid fa-plus mr-1"></i> 新增</button>
+                            </div>
                         </div>
-                        <button @click="closeMemberModal" class="w-full py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm hover:bg-slate-200 transition-colors">完成</button>
                     </div>
                 </div>
 
-                <!-- 密碼 Modal (共用：角色管理 / 登入驗證 / 設定成員密碼) -->
-                <div v-if="showRolePasswordModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[70] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-                    <div class="bg-white rounded-3xl w-full max-w-xs p-5 shadow-2xl">
-                        <h3 class="font-bold text-base mb-3 text-center text-slate-800">
+                <!-- 密碼 Modal (修正: Z-Index 80) -->
+                <div v-if="showRolePasswordModal" class="fixed inset-0 bg-slate-900/60 z-[80] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                    <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl transform scale-100 transition-transform">
+                        <div class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-500">
+                             <i class="fa-solid fa-shield-halved text-xl"></i>
+                        </div>
+                        <h3 class="font-bold text-base mb-2 text-center text-slate-800">
                             {{ 
-                                passwordMode === 'role' ? '輸入 Admin 密碼以管理' : 
-                                passwordMode === 'loginAdmin' ? '請輸入 Admin 密碼登入' : 
-                                passwordMode === 'loginPersonal' ? `請輸入 ${targetLoginMember?.name} 的密碼` :
-                                passwordMode === 'setPassword' ? `設定 ${targetLoginMember?.name} 的新密碼` : ''
+                                passwordMode === 'role' ? '需要 Admin 權限' : 
+                                passwordMode === 'loginAdmin' ? 'Admin 身份驗證' : 
+                                passwordMode === 'loginPersonal' ? `歡迎回來，${targetLoginMember?.name}` :
+                                passwordMode === 'setPassword' ? `設定 ${targetLoginMember?.name} 的密碼` : ''
                             }}
                         </h3>
+                        <p class="text-xs text-center text-slate-400 mb-4">
+                            {{ passwordMode === 'setPassword' ? '請設定一組只有該成員知道的密碼，留空則移除保護。' : '為了確保安全，請輸入密碼以繼續。' }}
+                        </p>
+                        
                         <input v-model="rolePasswordInput" 
                                :type="passwordMode === 'setPassword' ? 'text' : 'password'" 
-                               :placeholder="passwordMode === 'setPassword' ? '留空則移除密碼' : '請輸入密碼'" 
-                               class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none border border-slate-200 mb-4">
-                        <div class="flex space-x-2">
-                            <button @click="cancelRolePassword" class="flex-1 py-2 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold">取消</button>
-                            <button @click="confirmRolePassword" class="flex-1 py-2 rounded-xl bg-deep-sea-blue text-white text-sm font-bold">確認</button>
+                               :placeholder="passwordMode === 'setPassword' ? '輸入新密碼 (留空移除)' : '請輸入密碼'" 
+                               class="w-full bg-slate-50 rounded-xl p-3 text-center font-bold text-slate-700 outline-none border-2 border-slate-100 focus:border-indigo-500 focus:bg-white transition-all mb-4 tracking-widest">
+                        
+                        <div class="flex space-x-3">
+                            <button @click="cancelRolePassword" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold hover:bg-slate-200">取消</button>
+                            <button @click="confirmRolePassword" class="flex-1 py-3 rounded-xl bg-indigo-600 text-white text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700">確認</button>
                         </div>
                     </div>
                 </div>
@@ -650,7 +678,7 @@
                 // Login / User State
                 const hasSelectedUser = ref(false);
                 const currentUser = ref(''); 
-                const pendingUser = ref(''); // 修正: 新增 pendingUser 處理下拉選單切換
+                const pendingUser = ref(''); 
 
                 // Admin & Password Logic
                 const isRoleEditMode = ref(false);
@@ -795,10 +823,8 @@
                     }, 1500);
                 });
                 
-                // 修正: 監聽下拉選單變化
                 watch(pendingUser, (newVal, oldVal) => {
                     if (newVal && newVal !== currentUser.value) {
-                         // 當選擇了不同使用者時，不直接切換，先進行驗證
                          const member = members.value.find(m => m.name === newVal);
                          if (member) {
                              attemptLogin(member);
@@ -811,24 +837,21 @@
                     targetLoginMember.value = member;
                     
                     if (member.role === 'admin') {
-                        // Admin Role -> Require Global Admin Password
                         passwordMode.value = 'loginAdmin';
                         rolePasswordInput.value = '';
                         showRolePasswordModal.value = true;
                     } else if (member.password && member.password.trim() !== '') {
-                        // Viewer Role WITH Personal Password
                         passwordMode.value = 'loginPersonal';
                         rolePasswordInput.value = '';
                         showRolePasswordModal.value = true;
                     } else {
-                        // Viewer Role NO Password
                         performLogin(member);
                     }
                 };
 
                 const performLogin = (member) => {
                     currentUser.value = member.name;
-                    pendingUser.value = member.name; // 同步下拉選單
+                    pendingUser.value = member.name; 
                     hasSelectedUser.value = true;
                     triggerToast(`歡迎回來，${member.name}`);
                 };
@@ -1084,7 +1107,7 @@
                 const confirmRolePassword = async () => {
                     const input = rolePasswordInput.value;
 
-                    // Case 1: Enable Admin Edit Mode
+                    // Case 1: Enable Admin Edit Mode (No longer needed to unlock button, but good for role switch safety)
                     if (passwordMode.value === 'role') {
                         if (input === ROLE_PASSWORD) {
                             isRoleEditMode.value = true;
@@ -1095,7 +1118,6 @@
                             triggerToast('Admin 密碼錯誤');
                         }
                     } 
-                    // Case 2: Login as Admin (修正: 確認後明確執行登入)
                     else if (passwordMode.value === 'loginAdmin') {
                         if (input === ROLE_PASSWORD) {
                             performLogin(targetLoginMember.value);
@@ -1104,7 +1126,6 @@
                             triggerToast('Admin 密碼錯誤');
                         }
                     }
-                    // Case 3: Login as Personal Member
                     else if (passwordMode.value === 'loginPersonal') {
                         if (input === targetLoginMember.value.password) {
                             performLogin(targetLoginMember.value);
@@ -1113,7 +1134,6 @@
                             triggerToast('密碼錯誤');
                         }
                     }
-                    // Case 4: Set Personal Password
                     else if (passwordMode.value === 'setPassword') {
                         if (targetLoginMember.value) {
                             try {
@@ -1132,7 +1152,7 @@
                     rolePasswordInput.value = '';
                     targetLoginMember.value = null;
                     passwordMode.value = 'role';
-                    pendingUser.value = currentUser.value; // Reset dropdown if cancelled
+                    pendingUser.value = currentUser.value; 
                 };
 
                 const cancelRolePassword = () => {
@@ -1148,12 +1168,13 @@
                 const openSetPasswordMode = (m) => {
                     targetLoginMember.value = m;
                     passwordMode.value = 'setPassword';
-                    rolePasswordInput.value = ''; // Empty to allow overwrite or clear
+                    rolePasswordInput.value = ''; 
                     showRolePasswordModal.value = true;
                 };
 
                 const updateMemberRole = async (m, role) => {
-                    if (!roleEditUnlocked.value) { triggerToast('請先輸入管理密碼'); return; }
+                    // Removed extra password check for smoother UX inside Admin panel, 
+                    // assuming accessing the panel is safe enough or adding a lightweight check if needed.
                     try { await updateDoc(doc(db, 'members', m.id), { role }); triggerToast(`${m.name} 已設為 ${role === 'admin' ? 'Admin' : 'Viewer'}`); } catch (e) { console.error(e); triggerToast('更新角色失敗'); }
                 };
 
