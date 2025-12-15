@@ -287,7 +287,7 @@
                         </div>
                     </div>
 
-                    <!-- 管理者專屬 (修正: 改為淡色漸層) -->
+                    <!-- 管理者專屬 -->
                     <div v-if="currentUserRole === 'admin'" class="bg-gradient-to-r from-orange-300 to-amber-200 rounded-3xl p-5 card-shadow text-deep-sea-blue">
                         <div class="flex justify-between items-center">
                             <h3 class="font-bold flex items-center text-orange-900"><i class="fa-solid fa-users-gear mr-2 text-orange-700"></i> 成員管理後台</h3>
@@ -597,7 +597,7 @@
                     </div>
                 </div>
 
-                <!-- 密碼 Modal -->
+                <!-- 密碼 Modal (移到外層了) -->
                 <div v-if="showRolePasswordModal" class="fixed inset-0 bg-slate-900/60 z-[80] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl">
                         <div class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-500">
