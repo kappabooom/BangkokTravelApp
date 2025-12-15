@@ -124,7 +124,7 @@
             </div>
         </div>
 
-        <!-- 2. 主應用畫面 (v-else) -->
+        <!-- 2. 主應用畫面 -->
         <div v-else>
             <div class="header-bg relative">
                 <div class="header-image-container">
@@ -254,11 +254,12 @@
                     <div class="bg-white rounded-3xl p-6 card-shadow">
                         <h3 class="font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2"><i class="fa-solid fa-hotel text-rose-500 mr-2"></i> 住宿資訊</h3>
                         <ul class="space-y-4">
-                            <li v-for="hotel in hotels" :key="hotel.name" class="bg-rose-50 rounded-xl p-4 border border-rose-100">
-                                <p class="font-bold text-deep-sea-blue mb-2">{{ hotel.name }}</p>
-                                <p class="text-xs text-slate-500 mb-1 flex items-center"><i class="fa-solid fa-calendar-days w-4 text-center mr-2"></i> {{ hotel.date }}</p>
-                                <p class="text-xs text-slate-500 mb-1 flex items-center"><i class="fa-solid fa-phone w-4 text-center mr-2"></i> {{ hotel.phone }}</p>
-                                <p class="text-xs text-slate-500 flex items-center"><i class="fa-solid fa-location-dot w-4 text-center mr-2"></i> {{ hotel.address }}</p>
+                            <li v-for="hotel in hotels" :key="hotel.name" class="bg-rose-50 rounded-xl p-4 border border-rose-100 relative overflow-hidden">
+                                <div class="absolute right-0 top-0 p-2 opacity-10"><i class="fa-solid fa-bed text-4xl"></i></div>
+                                <p class="font-bold text-deep-sea-blue mb-2 text-lg">{{ hotel.name }}</p>
+                                <p class="text-xs text-slate-500 mb-1 flex items-center font-bold"><i class="fa-solid fa-calendar-days w-5 text-center mr-2 text-rose-400"></i> {{ hotel.date }}</p>
+                                <p class="text-xs text-slate-500 mb-1 flex items-center"><i class="fa-solid fa-phone w-5 text-center mr-2 text-rose-400"></i> {{ hotel.phone }}</p>
+                                <p class="text-xs text-slate-500 flex items-center"><i class="fa-solid fa-location-dot w-5 text-center mr-2 text-rose-400"></i> {{ hotel.address }}</p>
                             </li>
                         </ul>
                     </div>
@@ -600,11 +601,11 @@
             </main>
         </div>
 
-        <!-- 3. 密碼 Modal (已修正：移至 app 的最外層，脫離 v-else 的限制) -->
+        <!-- 3. 密碼 Modal (已修正配色：深海藍橘主題) -->
         <div v-if="showRolePasswordModal" class="fixed inset-0 bg-slate-900/60 z-[80] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-            <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl">
-                <div class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-500">
-                        <i class="fa-solid fa-shield-halved text-xl"></i>
+            <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl border border-orange-100">
+                <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deep-sea-blue shadow-inner">
+                        <i class="fa-solid fa-shield-cat text-xl"></i>
                 </div>
                 <h3 class="font-bold text-base mb-2 text-center text-slate-800">
                     {{ 
@@ -621,11 +622,11 @@
                 <input v-model="rolePasswordInput" 
                         :type="passwordMode === 'setPassword' ? 'text' : 'password'" 
                         :placeholder="passwordMode === 'setPassword' ? '輸入新密碼 (留空移除)' : '請輸入密碼'" 
-                        class="w-full bg-slate-50 rounded-xl p-3 text-center font-bold text-slate-700 outline-none border-2 border-slate-100 focus:border-indigo-500 focus:bg-white transition-all mb-4 tracking-widest">
+                        class="w-full bg-slate-50 rounded-xl p-3 text-center font-bold text-deep-sea-blue outline-none border-2 border-transparent focus:border-deep-sea-blue focus:bg-white transition-all mb-4 tracking-widest ring-1 ring-slate-100 focus:ring-deep-sea-blue/30">
                 
                 <div class="flex space-x-3">
-                    <button @click="cancelRolePassword" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold hover:bg-slate-200">取消</button>
-                    <button @click="confirmRolePassword" class="flex-1 py-3 rounded-xl bg-indigo-600 text-white text-sm font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700">確認</button>
+                    <button @click="cancelRolePassword" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold hover:bg-slate-200 transition-colors">取消</button>
+                    <button @click="confirmRolePassword" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-deep-sea-blue to-orange-500 text-white text-sm font-bold shadow-lg shadow-orange-200 hover:scale-105 transition-transform">確認</button>
                 </div>
             </div>
         </div>
@@ -635,7 +636,7 @@
     <script type="module">
         import { createApp, ref, computed, onMounted, nextTick, watch } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js';
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, writeBatch } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCyYCSGWQ0Wdf13AE62UG7W8WiwpqCHs_0",
@@ -649,6 +650,46 @@
 
         const firebaseApp = initializeApp(firebaseConfig);
         const db = getFirestore(firebaseApp);
+
+        // 預設行程資料 (若資料庫為空則自動寫入)
+        const INITIAL_ITINERARY = [
+            // Day 1 (1/16): 抵達 -> 飯店入住 -> Ari 咖啡街 -> 喬德夜市 -> 高空酒吧
+            [
+                { category: 'transport', name: '抵達曼谷 (CI0831)', startTime: '13:05', note: '領取行李、辦理入境', order: 1, transportType: 'car', travelTime: '約 40 分' },
+                { category: 'accommodation', name: '入住 Craftsman Hotel', startTime: '14:30', address: 'Soi Phahon Yothin 11', order: 2, transportType: 'car', travelTime: '約 15 分' },
+                { category: 'food', name: 'Ari 咖啡街巡禮', startTime: '15:30', note: '推薦 Nana Coffee Roasters 或 Gump’s Ari', order: 3, transportType: 'public', travelTime: '約 20 分' },
+                { category: 'sightseeing', name: '喬德夜市 Jodd Fairs', startTime: '18:00', note: '晚餐、逛街 (Rama 9)', order: 4, transportType: 'car', travelTime: '約 20 分' },
+                { category: 'other', name: '高空酒吧 (Tichuca)', startTime: '21:00', note: '需檢查服裝儀容', order: 5 }
+            ],
+            // Day 2 (1/17): 鄭王廟 -> 臥佛寺 -> icon Siam -> 碼頭夜市
+            [
+                { category: 'sightseeing', name: '鄭王廟 (Wat Arun)', startTime: '09:00', note: '穿著泰服拍照', order: 1, transportType: 'public', travelTime: '船程約 10 分' },
+                { category: 'sightseeing', name: '臥佛寺 (Wat Pho)', startTime: '11:00', note: '就在對岸', order: 2, transportType: 'public', travelTime: '船程約 15 分' },
+                { category: 'shopping', name: 'ICONSIAM', startTime: '13:00', note: '室內水上市場午餐、吹冷氣', order: 3, transportType: 'public', travelTime: '免費接駁船' },
+                { category: 'sightseeing', name: 'Asiatique 碼頭夜市', startTime: '18:00', note: '晚餐、摩天輪', order: 4 }
+            ],
+            // Day 3 (1/18): (包車、換飯店): 美功鐵道市集 -> 安帕瓦水上市場 -> Airbnb 入住 -> 夜生活
+            [
+                { category: 'transport', name: '包車出發 & 退房', startTime: '09:00', note: '前往美功', order: 1, transportType: 'car', travelTime: '約 1.5 小時' },
+                { category: 'sightseeing', name: '美功鐵道市集', startTime: '11:00', note: '看火車經過 (約11:10/11:30)', order: 2, transportType: 'car', travelTime: '約 20 分' },
+                { category: 'sightseeing', name: '安帕瓦水上市場', startTime: '13:00', note: '週末限定，吃海鮮', order: 3, transportType: 'car', travelTime: '約 1.5 小時' },
+                { category: 'accommodation', name: '入住 Thong Lor Airbnb', startTime: '17:00', address: 'Sukhumvit Soi 55', order: 4, transportType: 'walk', travelTime: '步行' },
+                { category: 'other', name: 'Thong Lor 夜生活', startTime: '20:00', note: '酒吧巡禮', order: 5 }
+            ],
+            // Day 4 (1/19): central world -> 四面佛 -> bigC採購 -> 隨便逛逛
+            [
+                { category: 'shopping', name: 'Central World', startTime: '10:00', note: '逛街、午餐', order: 1, transportType: 'walk', travelTime: '步行' },
+                { category: 'sightseeing', name: '四面佛', startTime: '13:00', note: '參拜許願', order: 2, transportType: 'walk', travelTime: '步行' },
+                { category: 'shopping', name: 'Big C Supercenter', startTime: '14:00', note: '伴手禮採購', order: 3, transportType: 'walk', travelTime: '步行' },
+                { category: 'other', name: '隨便逛逛 / 按摩', startTime: '16:00', note: 'Siam 周邊', order: 4 }
+            ],
+            // Day 5 (1/20): 去機場
+            [
+                { category: 'food', name: '早午餐 / 最後整理', startTime: '10:00', note: 'Airbnb 退房', order: 1, transportType: 'car', travelTime: '約 40 分' },
+                { category: 'transport', name: '前往 BKK 機場', startTime: '11:30', note: '預計 12:00 抵達', order: 2, transportType: 'flight', travelTime: '飛機' },
+                { category: 'flight', name: '回程班機 (CI0832)', startTime: '14:05', note: 'Bye Bangkok!', order: 3 }
+            ]
+        ];
 
         const app = createApp({
             setup() {
@@ -684,18 +725,21 @@
                 const passwordMode = ref('role');
                 const targetLoginMember = ref(null);
 
+                // Day 3 (1/18) 設為租車日 (hasCar: true)
                 const dates = ref([
                     { date: '1/16', weekday: '五', hasCar: false },
                     { date: '1/17', weekday: '六', hasCar: false },
-                    { date: '1/18', weekday: '日', hasCar: false },
+                    { date: '1/18', weekday: '日', hasCar: true },
                     { date: '1/19', weekday: '一', hasCar: false },
                     { date: '1/20', weekday: '二', hasCar: false }
                 ]);
                 const weatherData = ref([]);
                 const itineraryData = ref([[], [], [], [], []]);
                 
+                // 更新住宿資訊
                 const hotels = ref([
-                    { name: 'The Quarter Ratchayothin By UHG', date: '1/16 - 1/20 (4晚)', phone: '+66 2 011 1888', address: 'Soi Ratchadaphisek 36, Chan Kasem, Chatuchak, Bangkok' }
+                    { name: '曼谷工匠酒店 Craftsman', date: '1/16 - 1/18 (2晚)', phone: '+66 2 279 7299', address: 'Soi Phahon Yothin 11, Phaya Thai' },
+                    { name: 'Thong Lor 附近 Airbnb', date: '1/18 - 1/20 (2晚)', phone: 'Contact Host', address: 'Sukhumvit Soi 55 (Thong Lor), Watthana' }
                 ]);
 
                 const DEFAULT_MEMBERS = ['kappabooom', 'beibei1029', 'hsiannnnng', 'shinbinwei', 'aylwen4444', 'wunsin', 'rtrtr1', 'blackblacknu'];
@@ -793,8 +837,20 @@
                         }
                     });
 
+                    // 行程資料讀取與初始化
                     for(let i=0; i<dates.value.length; i++) {
                         const itineraryCol = collection(db, `itinerary_day_${i}`);
+                        // 檢查該天行程是否為空，若是則填入預設資料
+                        const snap = await getDocs(itineraryCol);
+                        if (snap.empty && INITIAL_ITINERARY[i]) {
+                            const batch = writeBatch(db);
+                            INITIAL_ITINERARY[i].forEach(item => {
+                                const newRef = doc(itineraryCol);
+                                batch.set(newRef, item);
+                            });
+                            await batch.commit();
+                        }
+
                         onSnapshot(itineraryCol, async (snapshot) => {
                             let items = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id, isNoteExpanded: false, order: doc.data().order ?? 9999 }));
                             itineraryData.value[i] = items;
@@ -1180,7 +1236,7 @@
                 const startEditExpense = (id, exp) => { editingExpenseId.value=id; newExpense.value=JSON.parse(JSON.stringify(exp)); delete newExpense.value.id; if(!newExpense.value.splitDetails) newExpense.value.splitDetails={}; showExpenseModal.value=true; };
                 const closeExpenseModal = () => { showExpenseModal.value=false; editingExpenseId.value=null; };
                 const getCategoryIcon = (c) => ({sightseeing:'fa-solid fa-camera', food:'fa-solid fa-utensils', shopping:'fa-solid fa-bag-shopping', accommodation:'fa-solid fa-bed', transport:'fa-solid fa-van-shuttle', ticket:'fa-solid fa-ticket', flight:'fa-solid fa-plane', other:'fa-solid fa-circle-dot'}[c]||'fa-solid fa-circle-dot');
-                const getTransportIcon = (t) => ({car:'fa-solid fa-car', walk:'fa-solid fa-person-walking', public:'fa-solid fa-train-subway'}[t]||'fa-solid fa-arrow-right');
+                const getTransportIcon = (t) => ({car:'fa-solid fa-car', walk:'fa-solid fa-person-walking', public:'fa-solid fa-train-subway', flight: 'fa-solid fa-plane-up'}[t]||'fa-solid fa-arrow-right');
                 const getCategoryColor = (c) => ({sightseeing:'#FF7043', food:'#FFA726', shopping:'#EC407A', accommodation:'#5C6BC0', transport:'#78909C', ticket:'#8D6E63', flight:'#29B6F6', other: '#9E9E9E'}[c]||'#BDBDBD');
                 const getWeatherIcon = (c) => ({sunny:'fa-solid fa-sun', cloudy:'fa-solid fa-cloud-sun', rain:'fa-solid fa-cloud-showers-heavy'}[c]||'fa-solid fa-sun');
                 const getWeatherDescription = (c) => ({sunny:'晴朗炎熱', cloudy:'多雲偶晴', rain:'午後雷陣雨'}[c]||'晴朗');
