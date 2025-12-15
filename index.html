@@ -151,7 +151,7 @@
                         </div>
                     </div>
 
-                    <!-- 天氣區塊 (修改配色：sky-blue) -->
+                    <!-- 天氣區塊 -->
                     <div v-if="weatherData[selectedDateIndex]" class="mb-4 bg-sky-50 border border-sky-200 rounded-2xl p-4 flex justify-between items-center shadow-md animate-fade-in">
                         <div class="flex items-start text-sky-700 space-x-4">
                             <i :class="getWeatherIcon(weatherData[selectedDateIndex].condition)" class="text-5xl text-accent-yellow"></i>
@@ -216,23 +216,23 @@
                 
                 <!-- 資訊 Tab -->
                 <div v-if="currentTab === 'info'" class="space-y-5 animate-fade-in">
-                    <!-- 匯率 (修改配色：Teal/Emerald) -->
-                    <div class="bg-gradient-to-br from-teal-500 to-emerald-600 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+                    <!-- 匯率 (修改配色：黃綠色系 Lime/Emerald) -->
+                    <div class="bg-gradient-to-br from-lime-500 to-emerald-600 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
                         <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
                         <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full -ml-10 -mb-10 blur-2xl"></div>
-                        <h3 class="font-bold text-lg mb-4 flex items-center relative z-10"><i class="fa-solid fa-calculator mr-2"></i> 匯率換算</h3>
+                        <h3 class="font-bold text-lg mb-4 flex items-center relative z-10 text-lime-50"><i class="fa-solid fa-calculator mr-2"></i> 匯率換算</h3>
                         <div class="flex items-center justify-between space-x-3 relative z-10">
                             <div class="flex-1">
-                                <label class="text-[10px] text-teal-100 block mb-1 uppercase tracking-wider">THB</label>
+                                <label class="text-[10px] text-lime-100 block mb-1 uppercase tracking-wider">THB</label>
                                 <input type="number" v-model.number="inputTHB" @input="updateTWD" class="w-full bg-white/20 border border-white/30 rounded-xl px-3 py-2.5 text-white placeholder-white focus:outline-none focus:bg-white/30 text-lg font-bold">
                             </div>
-                            <i class="fa-solid fa-arrow-right-arrow-left text-teal-200 mt-5"></i>
+                            <i class="fa-solid fa-arrow-right-arrow-left text-lime-200 mt-5"></i>
                             <div class="flex-1">
-                                <label class="text-[10px] text-teal-100 block mb-1 uppercase tracking-wider">TWD</label>
+                                <label class="text-[10px] text-lime-100 block mb-1 uppercase tracking-wider">TWD</label>
                                 <input type="number" v-model.number="inputTWD" @input="updateTHB" class="w-full bg-white/10 border border-white/30 rounded-xl px-3 py-2.5 text-white placeholder-white focus:outline-none focus:bg-white/20 text-lg font-bold">
                             </div>
                         </div>
-                        <p class="text-[10px] text-teal-100 mt-3 text-right relative z-10">1 THB = {{ EXCHANGE_RATE.toFixed(4) }} TWD</p>
+                        <p class="text-[10px] text-lime-100 mt-3 text-right relative z-10">1 THB = {{ EXCHANGE_RATE.toFixed(4) }} TWD</p>
                     </div>
 
                     <!-- 航班 -->
@@ -613,39 +613,39 @@
                     </div>
                 </div>
 
-                <!-- 密碼 Modal (已修正配色：深海藍橘主題) -->
-                <div v-if="showRolePasswordModal" class="fixed inset-0 bg-slate-900/60 z-[80] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-                    <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl border border-orange-100">
-                        <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deep-sea-blue shadow-inner">
-                                <i class="fa-solid fa-shield-cat text-xl"></i>
-                        </div>
-                        <h3 class="font-bold text-base mb-2 text-center text-slate-800">
-                            {{ 
-                                passwordMode === 'role' ? '需要 Admin 權限' : 
-                                passwordMode === 'loginAdmin' ? 'Admin 身份驗證' : 
-                                passwordMode === 'loginPersonal' ? `歡迎回來，${targetLoginMember?.name}` :
-                                passwordMode === 'setPassword' ? `設定 ${targetLoginMember?.name} 的密碼` : ''
-                            }}
-                        </h3>
-                        <p class="text-xs text-center text-slate-400 mb-4">
-                            {{ passwordMode === 'setPassword' ? '請設定一組只有該成員知道的密碼，留空則移除保護。' : '為了確保安全，請輸入密碼以繼續。' }}
-                        </p>
-                        
-                        <input v-model="rolePasswordInput" 
-                                :type="passwordMode === 'setPassword' ? 'text' : 'password'" 
-                                :placeholder="passwordMode === 'setPassword' ? '輸入新密碼 (留空移除)' : '請輸入密碼'" 
-                                class="w-full bg-slate-50 rounded-xl p-3 text-center font-bold text-deep-sea-blue outline-none border-2 border-transparent focus:border-deep-sea-blue focus:bg-white transition-all mb-4 tracking-widest ring-1 ring-slate-100 focus:ring-deep-sea-blue/30">
-                        
-                        <div class="flex space-x-3">
-                            <button @click="cancelRolePassword" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold hover:bg-slate-200 transition-colors">取消</button>
-                            <button @click="confirmRolePassword" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-deep-sea-blue to-orange-500 text-white text-sm font-bold shadow-lg shadow-orange-200 hover:scale-105 transition-transform">確認</button>
-                        </div>
+            </div> <!-- v-else end -->
+
+            <!-- 3. 密碼 Modal (已修正位置：移到最外層，不受 v-if/v-else 影響) -->
+            <div v-if="showRolePasswordModal" class="fixed inset-0 bg-slate-900/60 z-[80] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl border border-orange-100">
+                    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deep-sea-blue shadow-inner">
+                            <i class="fa-solid fa-shield-cat text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-base mb-2 text-center text-slate-800">
+                        {{ 
+                            passwordMode === 'role' ? '需要 Admin 權限' : 
+                            passwordMode === 'loginAdmin' ? 'Admin 身份驗證' : 
+                            passwordMode === 'loginPersonal' ? `歡迎回來，${targetLoginMember?.name}` :
+                            passwordMode === 'setPassword' ? `設定 ${targetLoginMember?.name} 的密碼` : ''
+                        }}
+                    </h3>
+                    <p class="text-xs text-center text-slate-400 mb-4">
+                        {{ passwordMode === 'setPassword' ? '請設定一組只有該成員知道的密碼，留空則移除保護。' : '為了確保安全，請輸入密碼以繼續。' }}
+                    </p>
+                    
+                    <input v-model="rolePasswordInput" 
+                            :type="passwordMode === 'setPassword' ? 'text' : 'password'" 
+                            :placeholder="passwordMode === 'setPassword' ? '輸入新密碼 (留空移除)' : '請輸入密碼'" 
+                            class="w-full bg-slate-50 rounded-xl p-3 text-center font-bold text-deep-sea-blue outline-none border-2 border-transparent focus:border-deep-sea-blue focus:bg-white transition-all mb-4 tracking-widest ring-1 ring-slate-100 focus:ring-deep-sea-blue/30">
+                    
+                    <div class="flex space-x-3">
+                        <button @click="cancelRolePassword" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold hover:bg-slate-200 transition-colors">取消</button>
+                        <button @click="confirmRolePassword" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-deep-sea-blue to-orange-500 text-white text-sm font-bold shadow-lg shadow-orange-200 hover:scale-105 transition-transform">確認</button>
                     </div>
                 </div>
             </div>
-        </div>
 
-    </div>
+    </div> <!-- app end -->
 
     <!-- 主程式 (JS) -->
     <script type="module">
