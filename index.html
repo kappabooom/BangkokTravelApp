@@ -271,7 +271,7 @@
                             </div>
                             <div class="flex-1 custom-select-wrapper">
                                  <p class="text-[10px] text-slate-400 font-medium tracking-wide">目前操作使用者</p>
-                                 <select v-model="pendingUser" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+                                 <select :value="currentUser" @change="switchUser($event.target.value)" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
                                      <option v-for="m in members" :key="m.id" :value="m.name">{{ m.name }}</option>
                                  </select>
                                  <div class="flex items-center justify-between">
@@ -287,11 +287,11 @@
                         </div>
                     </div>
 
-                    <!-- 管理者專屬 (修正: 改為暖色系主題) -->
-                    <div v-if="currentUserRole === 'admin'" class="bg-gradient-to-r from-orange-400 to-deep-sea-blue rounded-3xl p-5 card-shadow text-white">
+                    <!-- 管理者專屬 (修正: 改為淡色漸層) -->
+                    <div v-if="currentUserRole === 'admin'" class="bg-gradient-to-r from-orange-300 to-amber-200 rounded-3xl p-5 card-shadow text-deep-sea-blue">
                         <div class="flex justify-between items-center">
-                            <h3 class="font-bold flex items-center"><i class="fa-solid fa-users-gear mr-2 text-white"></i> 成員管理後台</h3>
-                            <button @click="showMemberModal = true" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm backdrop-blur-sm">
+                            <h3 class="font-bold flex items-center text-orange-900"><i class="fa-solid fa-users-gear mr-2 text-orange-700"></i> 成員管理後台</h3>
+                            <button @click="showMemberModal = true" class="bg-white/40 hover:bg-white/60 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm backdrop-blur-sm text-orange-900">
                                 進入管理
                             </button>
                         </div>
@@ -530,7 +530,7 @@
                     </div>
                 </div>
 
-                <!-- 成員管理 Modal：修正長名排版問題 -->
+                <!-- 成員管理 Modal -->
                 <div v-if="showMemberModal" class="fixed inset-0 bg-slate-900/50 z-[70] flex flex-col items-center justify-end sm:justify-center animate-fade-in backdrop-blur-sm">
                     <div class="bg-white w-full sm:w-[480px] sm:rounded-3xl rounded-t-3xl p-6 shadow-2xl h-[85vh] sm:h-auto sm:max-h-[85vh] flex flex-col">
                         <div class="flex items-center justify-between mb-6">
@@ -548,7 +548,6 @@
                                         {{ m.name.substring(0,1).toUpperCase() }}
                                     </div>
                                     <div class="flex flex-col min-w-0 flex-1">
-                                         <!-- 修正: 使用 flex-1 和 truncate 確保名字過長時切斷，按鈕固定 -->
                                          <div class="flex items-center min-w-0">
                                             <template v-if="editingMemberId === m.id">
                                                 <input v-model="tempMemberName" @keyup.enter="saveMemberName(m)" @blur="saveMemberName(m)" ref="editInput" class="w-full text-sm font-bold bg-white border border-blue-400 rounded px-2 py-1 outline-none">
@@ -786,7 +785,6 @@
                                 };
                             });
                             membersLoaded.value = true;
-                            // 修正：不自動預設 pendingUser，讓使用者手動選擇
                         } else {
                             for (const name of DEFAULT_MEMBERS) {
                                 await addDoc(membersCol, { name, active: true, role: 'viewer', password: '' });
@@ -811,18 +809,20 @@
                     }, 1500);
                 });
                 
-                watch(pendingUser, (newVal, oldVal) => {
-                    if (newVal && newVal !== currentUser.value && membersLoaded.value) {
-                         const member = members.value.find(m => m.name === newVal);
-                         if (member) {
-                             attemptLogin(member);
-                         }
+                // 移除原有的 pendingUser watch，改為事件驅動
+                const switchUser = (userName) => {
+                    const member = members.value.find(m => m.name === userName);
+                    if (member) {
+                        attemptLogin(member);
                     }
-                });
+                };
 
                 const attemptLogin = (member) => {
                     targetLoginMember.value = member;
                     
+                    // 只要觸發登入檢查，就暫時將 pendingUser 設為該成員，讓 Select 顯示正確
+                    pendingUser.value = member.name;
+
                     if (member.role === 'admin') {
                         passwordMode.value = 'loginAdmin';
                         rolePasswordInput.value = '';
@@ -1138,7 +1138,10 @@
                     rolePasswordInput.value = '';
                     targetLoginMember.value = null;
                     passwordMode.value = 'role';
-                    pendingUser.value = currentUser.value; 
+                    // 如果沒有成功登入，將 pendingUser 重置回當前使用者，避免 UI 顯示錯誤
+                    if (currentUser.value) {
+                        pendingUser.value = currentUser.value; 
+                    }
                 };
 
                 const cancelRolePassword = () => {
@@ -1204,7 +1207,7 @@
                     updateMemberRole, closeMemberModal, openRolePasswordMode,
                     currentUserRole, canEditItinerary, 
                     hasSelectedUser, attemptLogin, targetLoginMember, passwordMode, openSetPasswordMode,
-                    pendingUser, membersLoaded
+                    pendingUser, membersLoaded, switchUser
                 };
             }
         });
