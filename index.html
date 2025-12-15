@@ -76,14 +76,10 @@
         .loader-logo { font-size: 3rem; color: #E65100; margin-bottom: 1rem; animation: pulse-logo 1.5s infinite ease-in-out; }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes pulse-logo { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.1); opacity: 0.8; } }
-
-        /* iOS Toggle Switch Style */
-        .toggle-checkbox:checked { right: 0; border-color: #E65100; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #E65100; }
     </style>
 </head>
 <body>
-    <!-- 載入頁面 -->
+    <!-- 載入頁面 (Loading) -->
     <div id="loading-screen" class="loader-container">
         <i class="fa-solid fa-plane-departure loader-logo"></i>
         <div class="spinner"></div>
@@ -92,8 +88,9 @@
 
     <div id="app" class="app-container">
 
-        <!-- 成員選擇（登入）頁面：只有在 membersLoaded 且尚未登入時顯示 -->
-        <div v-if="!hasSelectedUser && membersLoaded" class="login-screen animate-fade-in p-6">
+        <!-- 1. 成員選擇（登入）頁面 -->
+        <!-- 修改: 只要還沒 hasSelectedUser 就顯示，不依賴 membersLoaded (內部再判斷 loading) -->
+        <div v-if="!hasSelectedUser" class="login-screen animate-fade-in p-6">
             <div class="text-center mb-8">
                 <div class="w-24 h-24 bg-white rounded-full mx-auto shadow-lg flex items-center justify-center mb-4">
                     <i class="fa-solid fa-plane-up text-4xl text-deep-sea-blue"></i>
@@ -102,7 +99,14 @@
                 <p class="text-sm text-slate-500">請選擇您的成員身份以登入</p>
             </div>
 
-            <div class="grid grid-cols-2 gap-4 w-full max-w-sm">
+            <!-- 如果成員列表還沒載入，顯示載入中 -->
+            <div v-if="members.length === 0" class="flex flex-col items-center">
+                <div class="spinner w-8 h-8 border-2"></div>
+                <span class="text-xs text-slate-400">正在讀取成員...</span>
+            </div>
+
+            <!-- 成員列表 -->
+            <div v-else class="grid grid-cols-2 gap-4 w-full max-w-sm">
                 <div v-for="member in members" :key="member.id" 
                      @click="attemptLogin(member)"
                      class="bg-white p-4 rounded-2xl shadow-sm border border-orange-100 flex flex-col items-center justify-center cursor-pointer hover:shadow-md hover:scale-105 transition-all relative overflow-hidden group">
@@ -121,7 +125,7 @@
             </div>
         </div>
 
-        <!-- 主應用畫面 -->
+        <!-- 2. 主應用畫面 -->
         <div v-else>
             <div class="header-bg relative">
                 <div class="header-image-container">
@@ -179,7 +183,7 @@
                             <!-- 行程卡片 -->
                             <div class="bg-white rounded-3xl p-3 pr-4 card-shadow flex border border-ice-blue/50 overflow-hidden items-stretch"
                                  :class="{'highlight-bg': recentlyMovedId === item.id}">
-                                <!-- 左側控制欄 (Admin Only) -->
+                                <!-- 左側控制欄 -->
                                 <div class="flex flex-col items-center justify-center mr-3 w-10 shrink-0 space-y-1">
                                     <button v-if="canEditItinerary" @click.stop="moveItem(idx, -1, item.id)" class="w-8 h-6 text-slate-300 hover:text-deep-sea-blue hover:bg-orange-50 rounded-lg transition-colors flex items-center justify-center active:scale-90" :class="{'invisible': idx === 0}"><i class="fa-solid fa-chevron-up text-xs"></i></button>
                                     <div class="w-10 h-10 rounded-full text-white shadow-md flex items-center justify-center text-lg z-10" :style="{ backgroundColor: getCategoryColor(item.category) }"><i :class="getCategoryIcon(item.category)"></i></div>
@@ -211,7 +215,7 @@
                     </TransitionGroup>
                 </div>
                 
-                <!-- 資訊 Tab（重排結構：匯率 / 航班 / 住宿在上，使用者 & 管理在最下） -->
+                <!-- 資訊 Tab -->
                 <div v-if="currentTab === 'info'" class="space-y-5 animate-fade-in">
                     <!-- 匯率 -->
                     <div class="bg-gradient-to-r from-deep-sea-blue to-orange-700 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
@@ -260,7 +264,7 @@
                         </ul>
                     </div>
 
-                    <!-- 使用者資訊卡：放在最下方 -->
+                    <!-- 使用者資訊卡 -->
                     <div class="bg-white rounded-3xl p-4 card-shadow flex items-center justify-between">
                         <div class="flex items-center space-x-3 w-full">
                             <div class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-100 to-white border border-indigo-50 flex items-center justify-center text-indigo-500 shadow-sm shrink-0">
@@ -284,7 +288,7 @@
                         </div>
                     </div>
 
-                    <!-- 管理者專屬：也在最下方，緊接在使用者卡片後 -->
+                    <!-- 管理者專屬 -->
                     <div v-if="currentUserRole === 'admin'" class="bg-gradient-to-br from-slate-700 to-slate-900 rounded-3xl p-5 card-shadow text-white">
                         <div class="flex justify-between items-center">
                             <h3 class="font-bold flex items-center"><i class="fa-solid fa-users-gear mr-2 text-accent-yellow"></i> 成員管理後台</h3>
@@ -433,7 +437,7 @@
                     </div>
                 </div>
 
-                <!-- Expense Modal (修正: 移除成員管理按鈕) -->
+                <!-- Expense Modal -->
                 <div v-if="showExpenseModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                         <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ editingExpenseId === null ? "記一筆" : "編輯支出" }}</h3>
@@ -527,7 +531,7 @@
                     </div>
                 </div>
 
-                <!-- 成員管理 Modal：修正排版不會被名稱撐壞 -->
+                <!-- 成員管理 Modal：修正排版不會被名稱撐壞，更換為白色卡片風格 -->
                 <div v-if="showMemberModal" class="fixed inset-0 bg-slate-900/50 z-[70] flex flex-col items-center justify-end sm:justify-center animate-fade-in backdrop-blur-sm">
                     <div class="bg-white w-full sm:w-[480px] sm:rounded-3xl rounded-t-3xl p-6 shadow-2xl h-[85vh] sm:h-auto sm:max-h-[85vh] flex flex-col">
                         <div class="flex items-center justify-between mb-6">
@@ -535,9 +539,10 @@
                             <button @click="closeMemberModal" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-times"></i></button>
                         </div>
 
-                        <!-- 成員列表：左側固定佔滿，右側操作固定寬度 -->
+                        <!-- 成員列表 -->
                         <div class="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
-                            <div v-for="m in members" :key="m.id" class="flex items-center justify-between bg-slate-50 rounded-2xl p-4 border border-slate-100 shadow-sm">
+                            <!-- 修改: 卡片背景改為 bg-white，邊框 border-orange-100 -->
+                            <div v-for="m in members" :key="m.id" class="flex items-center justify-between bg-white rounded-2xl p-4 border border-orange-100 shadow-sm">
                                 <!-- 左側：頭像 + 名稱 + 角色/狀態 -->
                                 <div class="flex items-center space-x-3 flex-1 min-w-0">
                                     <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
@@ -556,18 +561,18 @@
                                          </div>
                                          <span class="text-[10px] text-slate-400 truncate">
                                             {{ m.role === 'admin' ? '管理員' : '一般成員' }} 
-                                            <span v-if="!m.active" class="text-red-400 ml-1">(未參與)</span>
                                          </span>
                                     </div>
                                 </div>
                                 
-                                <!-- 右側：固定寬度操作按鈕列 -->
-                                <div class="flex items-center space-x-2 flex-shrink-0 w-[140px] justify-end">
-                                    <!-- 狀態開關 -->
-                                    <div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
-                                        <input type="checkbox" :id="'toggle-'+m.id" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer right-5" :checked="m.active" @change="toggleMemberActive(m)"/>
-                                        <label :for="'toggle-'+m.id" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
-                                    </div>
+                                <!-- 右側：固定寬度操作按鈕列 (flex-nowrap) -->
+                                <div class="flex items-center space-x-2 flex-shrink-0 flex-nowrap">
+                                    
+                                    <!-- 修改: 狀態切換改為「按鈕」，避免滑動開關破圖 -->
+                                    <button @click="toggleMemberActive(m)" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors min-w-[50px] text-center"
+                                            :class="m.active ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'">
+                                        {{ m.active ? '參與' : '隱藏' }}
+                                    </button>
 
                                     <!-- 角色切換 -->
                                     <button @click="updateMemberRole(m, m.role === 'admin' ? 'viewer' : 'admin')" 
@@ -602,7 +607,7 @@
                     </div>
                 </div>
 
-                <!-- 密碼 Modal：z-[80]，不會被登入頁遮住 -->
+                <!-- 密碼 Modal -->
                 <div v-if="showRolePasswordModal" class="fixed inset-0 bg-slate-900/60 z-[80] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl">
                         <div class="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4 text-indigo-500">
