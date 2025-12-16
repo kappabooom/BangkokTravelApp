@@ -216,30 +216,30 @@
                 
                 <!-- 資訊 Tab -->
                 <div v-if="currentTab === 'info'" class="space-y-5 animate-fade-in">
-                    <!-- 匯率 (修改配色：墨綠 #134e4a / 米色 #fef3c7 / 金色 #fbbf24) -->
-                    <div class="bg-gradient-to-br from-[#0f392b] to-[#062c24] rounded-3xl p-6 text-white shadow-xl relative overflow-hidden border border-[#34d399]/10">
-                        <div class="absolute top-0 right-0 w-32 h-32 bg-[#fbbf24]/5 rounded-full -mr-10 -mt-10 blur-2xl"></div>
-                        <div class="absolute bottom-0 left-0 w-32 h-32 bg-[#fbbf24]/5 rounded-full -ml-10 -mb-10 blur-2xl"></div>
+                    <!-- 匯率 (修改配色：溫暖橘色系 Orange/Amber) -->
+                    <div class="bg-gradient-to-br from-orange-400 to-amber-500 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden border border-orange-200/20">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full -mr-10 -mt-10 blur-2xl"></div>
+                        <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/20 rounded-full -ml-10 -mb-10 blur-2xl"></div>
                         
-                        <h3 class="font-bold text-lg mb-4 flex items-center relative z-10 text-[#fff8e1]">
-                            <i class="fa-solid fa-coins mr-2 text-[#fbbf24]"></i> 匯率換算
+                        <h3 class="font-bold text-lg mb-4 flex items-center relative z-10 text-white">
+                            <i class="fa-solid fa-coins mr-2 text-yellow-200"></i> 匯率換算
                         </h3>
                         
                         <div class="flex items-center justify-between space-x-3 relative z-10">
                             <div class="flex-1">
-                                <label class="text-[10px] text-[#fbbf24] block mb-1 uppercase tracking-wider font-bold opacity-80">THB</label>
-                                <input type="number" v-model.number="inputTHB" @input="updateTWD" class="w-full bg-[#fff8e1]/10 border border-[#fff8e1]/10 rounded-xl px-3 py-2.5 text-[#fff8e1] placeholder-[#fff8e1]/30 focus:outline-none focus:bg-[#fff8e1]/20 text-lg font-bold font-mono shadow-inner">
+                                <label class="text-[10px] text-orange-50 block mb-1 uppercase tracking-wider font-bold">THB</label>
+                                <input type="number" v-model.number="inputTHB" @input="updateTWD" class="w-full bg-white/20 border border-white/20 rounded-xl px-3 py-2.5 text-white placeholder-white/50 focus:outline-none focus:bg-white/30 text-lg font-bold shadow-sm font-mono">
                             </div>
-                            <i class="fa-solid fa-arrow-right-arrow-left text-[#fbbf24]/70 mt-5"></i>
+                            <i class="fa-solid fa-arrow-right-arrow-left text-white/80 mt-5"></i>
                             <div class="flex-1">
-                                <label class="text-[10px] text-[#fbbf24] block mb-1 uppercase tracking-wider font-bold opacity-80">TWD</label>
-                                <input type="number" v-model.number="inputTWD" @input="updateTHB" class="w-full bg-[#fff8e1]/10 border border-[#fff8e1]/10 rounded-xl px-3 py-2.5 text-[#fff8e1] placeholder-[#fff8e1]/30 focus:outline-none focus:bg-[#fff8e1]/20 text-lg font-bold font-mono shadow-inner">
+                                <label class="text-[10px] text-orange-50 block mb-1 uppercase tracking-wider font-bold">TWD</label>
+                                <input type="number" v-model.number="inputTWD" @input="updateTHB" class="w-full bg-white/20 border border-white/20 rounded-xl px-3 py-2.5 text-white placeholder-white/50 focus:outline-none focus:bg-white/30 text-lg font-bold shadow-sm font-mono">
                             </div>
                         </div>
                         
-                        <div class="mt-4 flex justify-between items-center relative z-10 border-t border-[#fff8e1]/10 pt-2">
-                             <div class="text-[10px] text-[#fff8e1]/50"><i class="fa-solid fa-rotate mr-1"></i>即時匯率</div>
-                             <p class="text-xs text-[#fbbf24] font-bold tracking-wide">1 THB = {{ EXCHANGE_RATE.toFixed(4) }} TWD</p>
+                        <div class="mt-4 flex justify-between items-center relative z-10 border-t border-white/20 pt-2">
+                             <div class="text-[10px] text-white/70"><i class="fa-solid fa-rotate mr-1"></i>即時匯率</div>
+                             <p class="text-xs text-white font-bold tracking-wide">1 THB = {{ EXCHANGE_RATE.toFixed(4) }} TWD</p>
                         </div>
                     </div>
 
