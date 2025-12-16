@@ -216,7 +216,7 @@
                 
                 <!-- 資訊 Tab -->
                 <div v-if="currentTab === 'info'" class="space-y-5 animate-fade-in">
-                    <!-- 匯率 (修改配色：溫暖橘色系 Orange/Amber) -->
+                    <!-- 匯率 (橘色系 + 即時更新功能) -->
                     <div class="bg-gradient-to-br from-orange-400 to-amber-500 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden border border-orange-200/20">
                         <div class="absolute top-0 right-0 w-32 h-32 bg-white/20 rounded-full -mr-10 -mt-10 blur-2xl"></div>
                         <div class="absolute bottom-0 left-0 w-32 h-32 bg-white/20 rounded-full -ml-10 -mb-10 blur-2xl"></div>
@@ -238,7 +238,11 @@
                         </div>
                         
                         <div class="mt-4 flex justify-between items-center relative z-10 border-t border-white/20 pt-2">
-                             <div class="text-[10px] text-white/70"><i class="fa-solid fa-rotate mr-1"></i>即時匯率</div>
+                             <!-- 新增：點擊更新匯率功能 -->
+                             <button @click="fetchExchangeRate" class="text-[10px] text-white/70 hover:text-white flex items-center transition-colors">
+                                <i class="fa-solid fa-rotate mr-1" :class="{'animate-spin': isRatesLoading}"></i>
+                                {{ isRatesLoading ? '更新中...' : '點擊更新匯率' }}
+                             </button>
                              <p class="text-xs text-white font-bold tracking-wide">1 THB = {{ EXCHANGE_RATE.toFixed(4) }} TWD</p>
                         </div>
                     </div>
@@ -734,6 +738,7 @@
                 const tempMemberName = ref('');   
                 const editInput = ref(null); 
                 const recentlyMovedId = ref(null);
+                const isRatesLoading = ref(false);
                 
                 const hasSelectedUser = ref(false);
                 const currentUser = ref(''); 
@@ -751,7 +756,7 @@
                 const dates = ref([
                     { date: '1/16', weekday: '五', hasCar: false },
                     { date: '1/17', weekday: '六', hasCar: false },
-                    { date: '1/18', weekday: '日', hasCar: true },
+                    { date: '1/18', weekday: '日', hasCar: false },
                     { date: '1/19', weekday: '一', hasCar: false },
                     { date: '1/20', weekday: '二', hasCar: false }
                 ]);
@@ -918,11 +923,16 @@
                 };
 
                 const fetchExchangeRate = async () => { 
+                    isRatesLoading.value = true;
                     try { 
                         const r = await fetch('https://open.er-api.com/v6/latest/THB'); 
                         const d = await r.json(); 
-                        if(d && d.rates && d.rates.TWD) EXCHANGE_RATE.value = Number(d.rates.TWD); 
+                        if(d && d.rates && d.rates.TWD) {
+                            EXCHANGE_RATE.value = Number(d.rates.TWD); 
+                            if(inputTHB.value) updateTWD();
+                        }
                     } catch(e) { console.error('匯率失敗', e); } 
+                    finally { setTimeout(() => isRatesLoading.value = false, 500); }
                 };
                 
                 const fetchWeather = async () => { 
@@ -1280,7 +1290,7 @@
                     updateMemberRole, closeMemberModal, openRolePasswordMode,
                     currentUserRole, canEditItinerary, 
                     hasSelectedUser, attemptLogin, targetLoginMember, passwordMode, openSetPasswordMode,
-                    pendingUser, membersLoaded, switchUser
+                    pendingUser, membersLoaded, switchUser, fetchExchangeRate, isRatesLoading
                 };
             }
         });
