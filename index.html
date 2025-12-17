@@ -678,43 +678,48 @@
         const firebaseApp = initializeApp(firebaseConfig);
         const db = getFirestore(firebaseApp);
 
-        // 預設行程資料
+        // 預設行程資料 (更新：1/16 - 1/20 曼谷之旅)
         const INITIAL_ITINERARY = [
-            // Day 1 (1/16)
+            // Day 1: 1/16 (五) 抵達與文青阿黎
             [
-                { category: 'transport', name: '抵達曼谷 (CI0831)', startTime: '13:05', note: '領取行李、辦理入境', order: 1, transportType: 'car', travelTime: '約 40 分' },
-                { category: 'accommodation', name: '入住 Craftsman Hotel', startTime: '14:30', address: 'Soi Phahon Yothin 11', order: 2, transportType: 'car', travelTime: '約 15 分' },
-                { category: 'food', name: 'Ari 咖啡街巡禮', startTime: '15:30', note: '推薦 Nana Coffee Roasters 或 Gump’s Ari', order: 3, transportType: 'public', travelTime: '約 20 分' },
-                { category: 'sightseeing', name: '喬德夜市 Jodd Fairs', startTime: '18:00', note: '晚餐、逛街 (Rama 9)', order: 4, transportType: 'car', travelTime: '約 20 分' },
-                { category: 'other', name: '高空酒吧 (Tichuca)', startTime: '21:00', note: '需檢查服裝儀容', order: 5 }
+                { category: 'transport', name: '抵達曼谷 (CI0831)', startTime: '13:05', note: '領取行李、辦理入境、叫車', order: 1, transportType: 'flight', travelTime: '' },
+                { category: 'accommodation', name: 'Check-in (Ari/Phaya Thai)', startTime: '14:00', address: 'Ari 或 Phaya Thai 區域', note: '入住飯店，放行李', order: 2, transportType: 'car', travelTime: '約 40-60 分' },
+                { category: 'food', name: 'Ari 咖啡街 (Soi 1-4)', startTime: '15:30', address: 'Ari Soi 1-4, Phaya Thai', note: '文青聚集地，推薦 Nana Coffee Roasters 或 Gump’s Ari 拍照', order: 3, transportType: 'walk', travelTime: '步行或短程車' },
+                { category: 'food', name: '晚餐：Lay Lao (Ari店)', startTime: '18:00', address: 'Phahon Yothin 7, Samsen Nai', note: '★8人務必訂位★ 必點：生醃蟹青木瓜沙拉、烤松阪豬', order: 4, transportType: 'walk', travelTime: '步行' },
+                { category: 'other', name: '放鬆行程', startTime: '20:00', note: '按摩 (Calm Spa) / 大麻店巡禮 / 飯店泳池', order: 5 }
             ],
-            // Day 2 (1/17)
+            // Day 2: 1/17 (六) 河岸古蹟與絕美日落 (提早版)
             [
-                { category: 'sightseeing', name: '鄭王廟 (Wat Arun)', startTime: '09:00', note: '穿著泰服拍照', order: 1, transportType: 'public', travelTime: '船程約 10 分' },
-                { category: 'sightseeing', name: '臥佛寺 (Wat Pho)', startTime: '11:00', note: '就在對岸', order: 2, transportType: 'public', travelTime: '船程約 15 分' },
-                { category: 'shopping', name: 'ICONSIAM', startTime: '13:00', note: '室內水上市場午餐、吹冷氣', order: 3, transportType: 'public', travelTime: '免費接駁船' },
-                { category: 'sightseeing', name: 'Asiatique 碼頭夜市', startTime: '18:00', note: '晚餐、摩天輪', order: 4 }
+                { category: 'food', name: '早餐：Fran’s Ari', startTime: '08:30', address: 'Ngam Duphli Alley', note: '08:00 開門。★8人大桌非常熱門，務必一個月前搶訂★', order: 1, transportType: 'car', travelTime: '約 15 分' },
+                { category: 'sightseeing', name: '臥佛寺 (Wat Pho)', startTime: '10:30', address: '2 Sanam Chai Rd', note: '避開下午人潮。參觀46米臥佛。建議叫兩台 Grab 直達或搭船至 Tha Tien。', order: 2, transportType: 'car', travelTime: '約 30-40 分' },
+                { category: 'food', name: '午餐：RONGROS (容若)', startTime: '12:15', address: 'Arun Amarin Rd', note: '11:00 開門。★強烈建議預訂★ 窗邊可看鄭王廟。', order: 3, transportType: 'walk', travelTime: '步行' },
+                { category: 'sightseeing', name: '鄭王廟 (Wat Arun)', startTime: '14:00', address: '158 Thanon Wang Doem', note: '搭渡輪過河(5分鐘)。陽光強烈拍照好看但請防曬。', order: 4, transportType: 'public', travelTime: '渡輪 5 分' },
+                { category: 'shopping', name: 'ICONSIAM (暹羅天地)', startTime: '16:00', address: '299 Charoen Nakhon Rd', note: '搭船前往。逛 SookSiam 水上市場，避開晚餐人潮。', order: 5, transportType: 'public', travelTime: '搭船' },
+                { category: 'food', name: '晚餐：Asiatique / Warehouse 2', startTime: '19:00', address: 'Charoen Krung Rd', note: 'Peppery Thai Seafood 或夜市自理。飯後可去 Yao Rooftop Bar。', order: 6, transportType: 'public', travelTime: '接駁船' }
             ],
-            // Day 3 (1/18)
+            // Day 3: 1/18 (日) 鐵道市場與水上風情 (包車日)
             [
-                { category: 'transport', name: '包車出發 & 退房', startTime: '09:00', note: '前往美功', order: 1, transportType: 'car', travelTime: '約 1.5 小時' },
-                { category: 'sightseeing', name: '美功鐵道市集', startTime: '11:00', note: '看火車經過 (約11:10/11:30)', order: 2, transportType: 'car', travelTime: '約 20 分' },
-                { category: 'sightseeing', name: '安帕瓦水上市場', startTime: '13:00', note: '週末限定，吃海鮮', order: 3, transportType: 'car', travelTime: '約 1.5 小時' },
-                { category: 'accommodation', name: '入住 Thong Lor Airbnb', startTime: '17:00', address: 'Sukhumvit Soi 55', order: 4, transportType: 'walk', travelTime: '步行' },
-                { category: 'other', name: 'Thong Lor 夜生活', startTime: '20:00', note: '酒吧巡禮', order: 5 }
+                { category: 'transport', name: '包車出發 (Commuter Van)', startTime: '08:30', note: '8人+行李上車。建議包車 10-12 小時。', order: 1, transportType: 'car', travelTime: '' },
+                { category: 'sightseeing', name: '美功鐵道市集', startTime: '10:30', address: 'Mae Klong, Samut Songkhram', note: '★重點時刻：11:10 抵達火車、11:30 發車。午餐：廣銘珍雲吞麵或媽媽桑泡麵。', order: 2, transportType: 'car', travelTime: '約 1.5-2 小時' },
+                { category: 'sightseeing', name: '安帕瓦水上市場', startTime: '12:30', address: 'Amphawa, Samut Songkhram', note: '週五-週日限定。體驗在地水上生活與搭船。', order: 3, transportType: 'car', travelTime: '約 20 分' },
+                { category: 'accommodation', name: 'Check-in Airbnb (Thong Lor)', startTime: '17:30', address: 'Thong Lor (Sukhumvit 55)', note: '返回曼谷市區入住', order: 4, transportType: 'car', travelTime: '約 1.5-2 小時' },
+                { category: 'food', name: '晚餐：頌通酒家 (Sornthong)', startTime: '19:00', address: '2829-31 Rama IV Rd', note: '老字號海鮮熱炒，必吃咖哩螃蟹。', order: 5, transportType: 'car', travelTime: '約 15 分' },
+                { category: 'other', name: '通羅夜生活', startTime: '21:00', note: 'The Commons 喝精釀啤酒 或 Tichuca 高空酒吧', order: 6, transportType: 'walk', travelTime: '步行/短程車' }
             ],
-            // Day 4 (1/19)
+            // Day 4: 1/19 (一) 市中心購物與海鮮巡禮
             [
-                { category: 'shopping', name: 'Central World', startTime: '10:00', note: '逛街、午餐', order: 1, transportType: 'walk', travelTime: '步行' },
-                { category: 'sightseeing', name: '四面佛', startTime: '13:00', note: '參拜許願', order: 2, transportType: 'walk', travelTime: '步行' },
-                { category: 'shopping', name: 'Big C Supercenter', startTime: '14:00', note: '伴手禮採購', order: 3, transportType: 'walk', travelTime: '步行' },
-                { category: 'other', name: '隨便逛逛 / 按摩', startTime: '16:00', note: 'Siam 周邊', order: 4 }
+                { category: 'sightseeing', name: '四面佛 (Erawan Shrine)', startTime: '09:30', address: 'Ratchadamri Rd', note: '早上睡飽再來。拜完剛好百貨開門。', order: 1, transportType: 'public', travelTime: 'BTS Chit Lom' },
+                { category: 'shopping', name: 'Central World', startTime: '10:00', address: '999/9 Rama I Rd', note: '剛開門人最少，逛街最舒服。', order: 2, transportType: 'walk', travelTime: '步行' },
+                { category: 'food', name: '午餐：Here Hai (Paragon店)', startTime: '12:00', address: 'Siam Paragon G樓 Gourmet Eats', note: '米其林蟹肉炒飯。雖是美食街但尖峰需找位，建議準時到。', order: 3, transportType: 'walk', travelTime: '步行' },
+                { category: 'shopping', name: 'Siam 商圈自由逛', startTime: '14:00', address: 'Siam Paragon / Center / Discovery', note: '自由逛街時間。', order: 4, transportType: 'walk', travelTime: '步行' },
+                { category: 'food', name: '晚餐：Mungkorn Seafood', startTime: '18:00', address: 'Sukhumvit 71 (近 Phra Khanong)', note: '泰國蝦、海鮮點餐吃到飽。', order: 5, transportType: 'car', travelTime: 'BTS/Grab' },
+                { category: 'shopping', name: 'Big C Ekkamai 採購', startTime: '20:30', address: '78 Soi Sukhumvit 63', note: '補貨零食伴手禮。', order: 6, transportType: 'car', travelTime: '短程車' }
             ],
-            // Day 5 (1/20)
+            // Day 5: 1/20 (二) 返家
             [
-                { category: 'food', name: '早午餐 / 最後整理', startTime: '10:00', note: 'Airbnb 退房', order: 1, transportType: 'car', travelTime: '約 40 分' },
-                { category: 'transport', name: '前往 BKK 機場', startTime: '11:30', note: '預計 12:00 抵達', order: 2, transportType: 'flight', travelTime: '飛機' },
-                { category: 'flight', name: '回程班機 (CI0832)', startTime: '14:05', note: 'Bye Bangkok!', order: 3 }
+                { category: 'food', name: '悠閒早餐 / 最後整理', startTime: '09:00', note: '整理戰利品、Airbnb 退房', order: 1, transportType: 'other', travelTime: '' },
+                { category: 'transport', name: '前往 BKK 機場', startTime: '10:30', note: '提前 3.5-4 小時出發。預計 11:30 前抵達機場。', order: 2, transportType: 'car', travelTime: '約 40-60 分' },
+                { category: 'flight', name: '回程班機 (CI0832)', startTime: '14:05', note: 'Bye Bangkok! 回家囉', order: 3, transportType: 'flight', travelTime: '' }
             ]
         ];
 
