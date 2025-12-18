@@ -64,22 +64,7 @@
             -ms-overflow-style: none; /* IE and Edge */
             scrollbar-width: none; /* Firefox */
         }
-        /* 美化滾動條 */
-        .pretty-scrollbar::-webkit-scrollbar {
-            width: 4px;
-            height: 4px;
-        }
-        .pretty-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .pretty-scrollbar::-webkit-scrollbar-thumb {
-            background: #e0e0e0;
-            border-radius: 4px;
-        }
-        .pretty-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #bdbdbd;
-        }
-
+        
         .tab-indicator {
             position: absolute;
             bottom: 0;
@@ -111,6 +96,7 @@
         }
         .footer-nav {
             flex-shrink: 0;
+            z-index: 50;
         }
         
         .main-container {
@@ -118,12 +104,6 @@
             grid-template-rows: auto 1fr auto;
             height: 100%;
             overflow: hidden;
-        }
-        .main-content {
-            overflow-y: auto;
-        }
-        .footer-nav {
-            z-index: 50;
         }
 
         .group:hover .group-hover-visible {
@@ -160,15 +140,9 @@
             }
         }
         
-        /* 處理 item 移動的動畫 */
-        .list-move {
-            transition: transform 0.5s cubic-bezier(0.55, 0, 0.1, 1);
-        }
-
         .moved-item {
             animation: pulse-bg 1.5s ease-out;
         }
-
         @keyframes pulse-bg {
             0% { background-color: transparent; }
             30% { background-color: #fff8e1; }
@@ -185,7 +159,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            isolation: isolate; /* 創建新的堆疊上下文 */
+            isolation: isolate; 
         }
         
         .toast {
@@ -193,19 +167,12 @@
             top: 2rem;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 10001; /* 比密碼modal更高 */
+            z-index: 10001; 
             animation: toast-in 0.3s ease-out forwards;
         }
-
         @keyframes toast-in {
-            from {
-                opacity: 0;
-                transform: translate(-50%, -20px);
-            }
-            to {
-                opacity: 1;
-                transform: translate(-50%, 0);
-            }
+            from { opacity: 0; transform: translate(-50%, -20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
         }
     </style>
 </head>
@@ -220,9 +187,7 @@
         <!-- Login Screen -->
         <div v-if="!hasSelectedUser" class="login-screen animate-fade-in p-6">
             <div class="text-center mb-8">
-                <div
-                    class="w-24 h-24 bg-white rounded-full mx-auto shadow-lg flex items-center justify-center mb-4"
-                >
+                <div class="w-24 h-24 bg-white rounded-full mx-auto shadow-lg flex items-center justify-center mb-4">
                     <i class="fa-solid fa-plane-up text-4xl text-deep-sea-blue"></i>
                 </div>
                 <h1 class="text-2xl font-black text-slate-700">2026 曼谷之旅</h1>
@@ -233,8 +198,6 @@
                 <i class="fa-solid fa-spinner fa-spin text-2xl text-slate-400"></i>
                 <span class="text-xs text-slate-400">正在讀取成員...</span>
             </div>
-
-            <!-- STEP 1: 成員列表 (預設顯示) -->
             <div v-else-if="loginStep === 'select'" class="grid grid-cols-2 gap-4 w-full max-w-sm animate-fade-in">
                 <div
                     v-for="member in members"
@@ -242,41 +205,22 @@
                     @click="attemptLogin(member)"
                     class="bg-white p-4 rounded-2xl shadow-sm border border-orange-100 flex flex-col items-center justify-center cursor-pointer hover:shadow-md hover:scale-105 transition-all relative overflow-hidden group"
                 >
-                    <div
-                        class="absolute top-0 right-0 p-2"
-                        v-if="member.role === 'admin' || member.password"
-                    >
+                    <div class="absolute top-0 right-0 p-2" v-if="member.role === 'admin' || member.password">
                         <i class="fa-solid fa-lock text-xs text-orange-300"></i>
                     </div>
-                    <div
-                        v-if="member.role === 'admin'"
-                        class="absolute top-1 left-1 bg-deep-sea-blue text-white text-[8px] font-bold px-2 py-0.5 rounded-full"
-                    >
+                    <div v-if="member.role === 'admin'" class="absolute top-1 left-1 bg-deep-sea-blue text-white text-[8px] font-bold px-2 py-0.5 rounded-full">
                         ADMIN
                     </div>
-                    <div
-                        class="w-14 h-14 rounded-full bg-orange-50 mb-3 flex items-center justify-center"
-                    >
-                        <i
-                            :class="`fa-solid ${
-                                member.role === 'admin'
-                                    ? 'fa-user-secret'
-                                    : 'fa-user'
-                            } text-2xl text-orange-400`"
-                        ></i>
+                    <div class="w-14 h-14 rounded-full bg-orange-50 mb-3 flex items-center justify-center">
+                        <i :class="['fa-solid', member.role === 'admin' ? 'fa-user-secret' : 'fa-user', 'text-2xl', 'text-orange-400']"></i>
                     </div>
-                    <span class="font-bold text-slate-700 text-sm">{{
-                        member.name
-                    }}</span>
+                    <span class="font-bold text-slate-700 text-sm">{{ member.name }}</span>
                 </div>
             </div>
-
-            <!-- STEP 2: 密碼輸入 (取代原本地點) -->
-            <!-- 這樣就不用處理 Modal z-index 的問題，直接在頁面上顯示 -->
             <div v-else-if="loginStep === 'password'" class="w-full max-w-xs animate-fade-in">
                 <div class="bg-white rounded-3xl p-6 shadow-xl border border-orange-100">
                     <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deep-sea-blue shadow-inner">
-                         <i :class="`fa-solid ${targetLoginMember?.role === 'admin' ? 'fa-user-secret' : 'fa-user'} text-3xl`"></i>
+                         <i :class="['fa-solid', targetLoginMember?.role === 'admin' ? 'fa-user-secret' : 'fa-user', 'text-3xl']"></i>
                     </div>
                     
                     <h3 class="font-bold text-lg mb-2 text-center text-slate-800">
@@ -305,17 +249,12 @@
             </div>
         </div>
 
-        <!-- Main Content (only if user selected) -->
+        <!-- Main Content -->
         <template v-if="hasSelectedUser">
-            <!-- Header -->
             <header class="p-4 bg-white border-b border-gray-100 flex justify-between items-center flex-shrink-0 relative z-50">
                 <div>
-                    <h1 class="font-black text-xl text-slate-800">
-                        2026 曼谷之旅
-                    </h1>
-                    <div class="text-xs text-slate-400">
-                        {{ dates[0].date }} - {{ dates[dates.length - 1].date }}
-                    </div>
+                    <h1 class="font-black text-xl text-slate-800">2026 曼谷之旅</h1>
+                    <div class="text-xs text-slate-400">{{ dates[0].date }} - {{ dates[dates.length - 1].date }}</div>
                 </div>
                 <div class="text-right">
                     <div class="font-bold text-slate-600 text-sm">{{ currentUser }}</div>
@@ -323,24 +262,18 @@
                 </div>
             </header>
 
-            <!-- Main Content Area -->
             <main class="main-content bg-slate-50 no-scrollbar">
                 <!-- Itinerary View -->
                 <div v-show="currentTab === 'itinerary'">
-                    <!-- Date Tabs -->
-                    <!-- 修正：移除 backdrop-blur，改用 bg-slate-50 實色背景，避免穿圖 -->
-                    <div
-                        class="sticky top-0 bg-slate-50 z-40 flex justify-between items-center px-2 py-2 border-b border-slate-200 no-scrollbar overflow-x-auto shadow-sm"
-                    >
+                    <!-- Date Tabs (Sticky & Solid Background) -->
+                    <div class="sticky top-0 bg-[#f8f9fa] z-[40] flex justify-between items-center px-2 py-2 border-b border-slate-200 no-scrollbar overflow-x-auto shadow-sm relative">
                         <div
                             v-for="(day, index) in dates"
                             :key="index"
                             @click="selectedDateIndex = index"
                             :class="{
-                                'border-deep-sea-blue text-deep-sea-blue bg-white shadow-sm':
-                                    selectedDateIndex === index,
-                                'border-transparent text-slate-500':
-                                    selectedDateIndex !== index,
+                                'border-deep-sea-blue text-deep-sea-blue bg-white shadow-sm': selectedDateIndex === index,
+                                'border-transparent text-slate-500': selectedDateIndex !== index,
                             }"
                             class="text-center px-3 py-1 rounded-full cursor-pointer transition-all border-2 flex-shrink-0 mx-1"
                         >
@@ -386,7 +319,7 @@
                                     <i :class="getCategoryIcon(item.category)"></i>
                                 </div>
 
-                                <div class="flex-grow min-w-0"> <!-- min-w-0 防止文字溢出 -->
+                                <div class="flex-grow min-w-0">
                                     <div class="flex justify-between items-start">
                                         <div>
                                             <div v-if="item.time" class="text-xs text-slate-400 font-bold">{{ item.time }}</div>
@@ -402,7 +335,6 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Edit/Delete Buttons -->
                                 <div v-if="canEditItinerary" class="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur-sm rounded-lg p-1">
                                     <button @click="moveItem(item, 'up')" :disabled="index === 0" class="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 disabled:opacity-30"><i class="fa-solid fa-arrow-up text-xs"></i></button>
                                     <button @click="moveItem(item, 'down')" :disabled="index === currentItinerary.length - 1" class="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 disabled:opacity-30"><i class="fa-solid fa-arrow-down text-xs"></i></button>
@@ -421,17 +353,13 @@
                 <!-- Shopping List View -->
                 <div v-show="currentTab === 'shopping'">
                     <div class="p-4">
-                        <h2 class="font-bold text-lg text-slate-800 mb-2">
-                            匯率換算
-                        </h2>
+                        <h2 class="font-bold text-lg text-slate-800 mb-2">匯率換算</h2>
                         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
                             <div class="flex-1">
                                 <label class="text-xs text-slate-500">泰銖 THB</label>
                                 <input type="number" v-model="inputTHB" @input="updateTWD" class="w-full font-bold text-2xl bg-transparent outline-none">
                             </div>
-                            <div class="text-2xl text-slate-300">
-                                <i class="fa-solid fa-right-left"></i>
-                            </div>
+                            <div class="text-2xl text-slate-300"><i class="fa-solid fa-right-left"></i></div>
                             <div class="flex-1 text-right">
                                 <label class="text-xs text-slate-500">台幣 TWD</label>
                                 <input type="number" v-model="inputTWD" @input="updateTHB" class="w-full font-bold text-2xl bg-transparent outline-none text-right">
@@ -445,9 +373,7 @@
                         </div>
                     </div>
                     <div class="p-4">
-                        <h2 class="font-bold text-lg text-slate-800 mb-2">
-                           {{ currentUser }} 的清單
-                        </h2>
+                        <h2 class="font-bold text-lg text-slate-800 mb-2">{{ currentUser }} 的清單</h2>
                         <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
                            <div v-for="item in currentShoppingList" :key="item.id" class="p-4 flex items-center">
                                <input type="checkbox" :checked="item.checked" @change="toggleShoppingItem(item)" class="w-5 h-5 rounded-md border-gray-300 text-deep-sea-blue focus:ring-deep-sea-blue/50">
@@ -469,20 +395,15 @@
                 <!-- Expenses View -->
                 <div v-show="currentTab === 'expenses'">
                      <div class="p-4">
-                        <h2 class="font-bold text-lg text-slate-800 mb-2">
-                           個人記帳
-                        </h2>
+                        <h2 class="font-bold text-lg text-slate-800 mb-2">個人記帳</h2>
                         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                            <div class="text-center">
                                <p class="text-sm text-slate-500">已付總額 (TWD)</p>
                                <p class="text-3xl font-black text-deep-sea-blue my-1">{{ formatNumber(finalTotalTWD) }}</p>
-                               <div class="text-xs text-slate-400">
-                                   THB {{ formatNumber(totalTHB) }} + TWD {{ formatNumber(totalTWD) }}
-                               </div>
+                               <div class="text-xs text-slate-400">THB {{ formatNumber(totalTHB) }} + TWD {{ formatNumber(totalTWD) }}</div>
                            </div>
                         </div>
                     </div>
-
                     <div class="p-4 pt-0">
                          <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
                            <div v-for="expense in expenses.filter(e => e.payer === currentUser)" :key="expense.id" class="p-4 flex items-center">
@@ -507,11 +428,9 @@
                 </div>
             </main>
 
-            <!-- Floating Action Button -->
             <button @click="handleAddClick" v-if="hasSelectedUser" class="fixed bottom-24 right-6 z-40 w-16 h-16 rounded-full bg-gradient-to-r from-deep-sea-blue to-orange-500 text-white shadow-lg flex items-center justify-center text-2xl">
                 <i class="fa-solid fa-plus"></i>
             </button>
-
 
             <!-- Itinerary Modal -->
             <div v-if="showItineraryModal" class="fixed inset-0 bg-black/50 z-50 flex items-end justify-center" @click.self="showItineraryModal=false">
@@ -569,44 +488,20 @@
             <!-- Footer Navigation -->
             <footer class="footer-nav bg-white shadow-[-4px_0_15px_rgba(0,0,0,0.1)] relative">
                 <div class="flex justify-around">
-                    <div
-                        @click="currentTab = 'itinerary'"
-                        class="tab flex-1 text-center py-3 cursor-pointer"
-                        :class="{ active: currentTab === 'itinerary' }"
-                    >
+                    <div @click="currentTab = 'itinerary'" class="tab flex-1 text-center py-3 cursor-pointer" :class="{ active: currentTab === 'itinerary' }">
                         <i class="fa-solid fa-route"></i>
                         <span class="block text-xs">行程</span>
                     </div>
-                    <div
-                        @click="currentTab = 'shopping'"
-                        class="tab flex-1 text-center py-3 cursor-pointer"
-                        :class="{ active: currentTab === 'shopping' }"
-                    >
+                    <div @click="currentTab = 'shopping'" class="tab flex-1 text-center py-3 cursor-pointer" :class="{ active: currentTab === 'shopping' }">
                         <i class="fa-solid fa-bag-shopping"></i>
                         <span class="block text-xs">購物</span>
                     </div>
-                    <div
-                        @click="currentTab = 'expenses'"
-                        class="tab flex-1 text-center py-3 cursor-pointer"
-                        :class="{ active: currentTab === 'expenses' }"
-                    >
+                    <div @click="currentTab = 'expenses'" class="tab flex-1 text-center py-3 cursor-pointer" :class="{ active: currentTab === 'expenses' }">
                         <i class="fa-solid fa-wallet"></i>
                         <span class="block text-xs">記帳</span>
                     </div>
                 </div>
-                <div
-                    class="tab-indicator"
-                    :style="{
-                        width: `${100 / 3}%`,
-                        transform: `translateX(${
-                            (currentTab === 'itinerary'
-                                ? 0
-                                : currentTab === 'shopping'
-                                ? 1
-                                : 2) * 100
-                        }%)`,
-                    }"
-                ></div>
+                <div class="tab-indicator" :style="{ width: `${100 / 3}%`, transform: `translateX(${(currentTab === 'itinerary' ? 0 : currentTab === 'shopping' ? 1 : 2) * 100}%)` }"></div>
             </footer>
         </template>
     </div>
@@ -631,14 +526,13 @@
         const { createApp, ref, computed, onMounted, nextTick } = Vue;
 
         const firebaseConfig = {
-            // Your Firebase config object
+            // 這裡請填回您的 Firebase 設定
         };
 
         const appInstance = initializeApp(firebaseConfig);
         const db = getFirestore(appInstance);
 
         const INITIAL_ITINERARY = [
-             // Day 1
             [
                 { category: "transport", name: "抵達曼谷機場 (BKK)", startTime: "13:05", address: "Suvarnabhumi Airport", note: "下機後辦理通關、領行李，預計 14:00 出關。建議預約保母車或叫 2 台 Grab 前往飯店。", order: 1, transportType: "flight", travelTime: "" },
                 { category: "accommodation", name: "入住 Craftsman Bangkok", startTime: "15:00", address: "34-36 Phahon Yothin 11, Samsen Nai, Phaya Thai", note: "Check-in，放行李、分配房卡。稍作休息或在飯店泳池拍照。", order: 2, transportType: "car", travelTime: "機場 → 飯店約 40 分" },
@@ -646,7 +540,6 @@
                 { category: "food", name: "晚餐：Lay Lao (Ari)", startTime: "18:00", address: "65 Phahon Yothin 7, Samsen Nai", note: "米其林必比登推薦東北菜。就在 Ari 站附近，吃完可以直接散步。", order: 4, transportType: "walk", travelTime: "Ari 區步行" },
                 { category: "other", name: "按摩 / 放鬆 / 續攤", startTime: "20:00", address: "Ari Area", note: "飯後可找附近按摩店 (Chaari Spa)，或去酒吧/大麻店 chill 一下。結束叫車回飯店。", order: 5, transportType: "walk", travelTime: "步行約 10 分" },
             ],
-            // Day 2
             [
                 { category: "food", name: "早餐：FRAN'S Ari", startTime: "09:00", address: "58 Ngam Duphli Alley", note: "超紅早午餐，務必預約。叫車前往。", order: 1, transportType: "car", travelTime: "飯店 → FRAN'S 約 10 分" },
                 { category: "sightseeing", name: "臥佛寺 (Wat Pho)", startTime: "11:00", address: "2 Sanam Chai Rd", note: "從 Ari 叫車去舊城區，預留 40 分鐘車程避開塞車。參觀臥佛。", order: 2, transportType: "car", travelTime: "Ari → 臥佛寺 車程約 40 分" },
@@ -656,7 +549,6 @@
                 { category: "sightseeing", name: "碼頭夜市 Asiatique", startTime: "18:30", address: "2194 Charoen Krung Rd", note: "從 ICONSIAM 搭船至 Sathorn，轉免費接駁船。晚餐夜市解決，玩 Skyflyer。", order: 6, transportType: "public", travelTime: "船程約 30 分" },
                 { category: "other", name: "Nana 廣場 (夜生活)", startTime: "21:30", address: "Nana Plaza, Sukhumvit 4", note: "體驗曼谷紅燈區氛圍。結束後叫車回 Craftsman。", order: 7, transportType: "car", travelTime: "Asiatique → Nana 車程 30 分" },
             ],
-            // Day 3
             [
                 { category: "accommodation", name: "Craftsman 退房", startTime: "08:30", address: "Craftsman Bangkok", note: "起床吃早餐、收行李退房。包車司機預計 08:30 抵達接人。", order: 1, transportType: "walk", travelTime: "飯店門口上車" },
                 { category: "sightseeing", name: "美功鐵道市集", startTime: "10:45", address: "Mae Klong Railway Market", note: "08:45 準時出發，車程約 2 小時。看 11:10/11:30 火車。", order: 2, transportType: "car", travelTime: "曼谷 → 美功 約 2 小時" },
@@ -666,7 +558,6 @@
                 { category: "food", name: "晚餐：頌通酒家", startTime: "19:00", address: "2829 Rama IV Rd", note: "老牌海鮮餐廳，必吃咖哩蟹。叫車前往。", order: 6, transportType: "car", travelTime: "通羅 → 頌通 15 分" },
                 { category: "other", name: "Tichuca Rooftop Bar", startTime: "21:00", address: "T-One Building", note: "水母酒吧喝一杯。人多需排隊。", order: 7, transportType: "car", travelTime: "頌通 → Tichuca 15 分" },
             ],
-            // Day 4
             [
                 { category: "sightseeing", name: "四面佛", startTime: "10:00", address: "Erawan Shrine", note: "搭 BTS 從 Thong Lo 到 Chit Lom。參拜許願。", order: 1, transportType: "public", travelTime: "BTS 約 20 分" },
                 { category: "shopping", name: "Central World", startTime: "10:30", address: "Central World", note: "就在對面，過天橋即達。逛街吹冷氣。", order: 2, transportType: "walk", travelTime: "步行 5 分" },
@@ -676,7 +567,6 @@
                 { category: "food", name: "晚餐：Mungkorn Seafood", startTime: "18:30", address: "Pracha Songkhro Rd", note: "搭車前往海鮮吃到飽。大頭蝦無限夾。", order: 6, transportType: "car", travelTime: "Siam → 餐廳 車程 30 分" },
                 { category: "shopping", name: "Big C Ekkamai", startTime: "21:00", address: "Sukhumvit 63", note: "吃飽去 Ekkamai 的 Big C 採購伴手禮，人少好逛。離通羅近。", order: 7, transportType: "car", travelTime: "餐廳 → Ekkamai 車程 25 分" },
             ],
-            // Day 5
             [
                 { category: "food", name: "早餐 & 整理行李", startTime: "09:00", address: "Thonglor", note: "通羅附近咖啡廳早餐，最後打包。", order: 1, transportType: "walk", travelTime: "" },
                 { category: "accommodation", name: "退房 & 前往機場", startTime: "11:00", address: "Thonglor Airbnb", note: "11:00 準時退房，保母車接送。預留 1 小時車程。", order: 2, transportType: "walk", travelTime: "步行至樓下" },
@@ -695,15 +585,15 @@
                 const showShoppingModal = ref(false);
                 const showExpenseModal = ref(false);
                 const showItineraryModal = ref(false);
+                const showRolePasswordModal = ref(false); // Kept for safety
                 
-                // 新增 loginStep 用來控制原地的顯示狀態
-                const loginStep = ref("select"); // 'select' | 'password'
+                const loginStep = ref("select");
                 
                 const isEditMode = ref(false);
                 const inputTHB = ref(100);
                 const inputTWD = ref(92);
                 const rolePasswordInput = ref("");
-                const rolePasswordInputRef = ref(null); // DOM 參照
+                const rolePasswordInputRef = ref(null);
                 const passwordMode = ref("loginAdmin");
                 const targetLoginMember = ref(null);
                 const recentlyMovedId = ref(null);
@@ -767,8 +657,8 @@
                 });
 
                 const fetchWeatherData = async () => {
-                    const lat = 13.7563; // Bangkok Lat
-                    const lon = 100.5018; // Bangkok Lon
+                    const lat = 13.7563; 
+                    const lon = 100.5018; 
                     const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${WEATHER_API_KEY}&units=metric&lang=zh_tw`;
                     
                     const now = new Date();
@@ -776,7 +666,6 @@
                     const daysUntilTrip = Math.ceil((tripStart - now) / (1000 * 60 * 60 * 24));
 
                     if (daysUntilTrip > 5) {
-                        // Use historical data for Jan
                         weatherData.value = dates.value.map(() => ({
                             temp: "33/24",
                             feel: "36",
@@ -827,7 +716,6 @@
                 const fetchExchangeRate = async () => {
                     isRatesLoading.value = true;
                     try {
-                        // Using a free API, replace with a reliable one if possible
                         const response = await fetch('https://api.exchangerate-api.com/v4/latest/THB');
                         const data = await response.json();
                         EXCHANGE_RATE.value = data.rates.TWD;
@@ -845,11 +733,11 @@
                     if (member.role === "admin") {
                         passwordMode.value = "loginAdmin";
                         rolePasswordInput.value = "";
-                        loginStep.value = "password"; // 切換到密碼輸入模式
+                        loginStep.value = "password"; 
                     } else if (member.password) {
                         passwordMode.value = "loginPersonal";
                         rolePasswordInput.value = "";
-                        loginStep.value = "password"; // 切換到密碼輸入模式
+                        loginStep.value = "password"; 
                     } else {
                         performLogin(member);
                         return;
@@ -868,17 +756,17 @@
                     const input = rolePasswordInput.value;
                     if (passwordMode.value === "loginAdmin" && input === ROLE_PASSWORD) {
                         performLogin(targetLoginMember.value);
-                        loginStep.value = "select"; // 重置回列表
+                        loginStep.value = "select"; 
                     } else if (passwordMode.value === "loginPersonal" && input === targetLoginMember.value.password) {
                         performLogin(targetLoginMember.value);
-                        loginStep.value = "select"; // 重置回列表
+                        loginStep.value = "select"; 
                     } else {
                         triggerToast("密碼錯誤");
                     }
                 };
                 
                 const cancelRolePassword = () => {
-                    loginStep.value = "select"; // 返回成員列表
+                    loginStep.value = "select";
                     rolePasswordInput.value = "";
                 };
                 
@@ -1042,7 +930,7 @@
                 };
 
                 return {
-                    currentTab, selectedDateIndex, showShoppingModal, showExpenseModal, showItineraryModal,
+                    currentTab, selectedDateIndex, showShoppingModal, showExpenseModal, showItineraryModal, showRolePasswordModal,
                     dates, weatherData, currentItinerary, members, currentShoppingList,
                     newShoppingItem, newExpense, newItinerary, rolePasswordInput, rolePasswordInputRef, passwordMode, targetLoginMember,
                     currentUser, hasSelectedUser, currentUserRole, canEditItinerary, totalTHB, totalTWD, finalTotalTWD,
