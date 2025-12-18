@@ -234,7 +234,8 @@
                 <span class="text-xs text-slate-400">正在讀取成員...</span>
             </div>
 
-            <div v-else class="grid grid-cols-2 gap-4 w-full max-w-sm">
+            <!-- STEP 1: 成員列表 (預設顯示) -->
+            <div v-else-if="loginStep === 'select'" class="grid grid-cols-2 gap-4 w-full max-w-sm animate-fade-in">
                 <div
                     v-for="member in members"
                     :key="member.id"
@@ -269,44 +270,45 @@
                     }}</span>
                 </div>
             </div>
-        </div>
 
-        <teleport to="body">
-            <!-- Password Modal -->
-            <!-- 修正：使用 Teleport 確保在最上層，且 z-index 設為最高 -->
-            <div 
-                v-if="showRolePasswordModal" 
-                :key="targetLoginMember?.id || 'password-modal'"
-                class="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in"
-                @click.self="cancelRolePassword"
-            >
-                <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl border border-orange-100 relative z-[10000]">
-                    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deep-sea-blue shadow-inner">
-                        <i class="fa-solid fa-shield-cat text-xl"></i>
+            <!-- STEP 2: 密碼輸入 (取代原本地點) -->
+            <!-- 這樣就不用處理 Modal z-index 的問題，直接在頁面上顯示 -->
+            <div v-else-if="loginStep === 'password'" class="w-full max-w-xs animate-fade-in">
+                <div class="bg-white rounded-3xl p-6 shadow-xl border border-orange-100">
+                    <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deep-sea-blue shadow-inner">
+                         <i :class="`fa-solid ${targetLoginMember?.role === 'admin' ? 'fa-user-secret' : 'fa-user'} text-3xl`"></i>
                     </div>
-                    <h3 class="font-bold text-base mb-2 text-center text-slate-800">{{ passwordMode === "loginAdmin" ? "Admin 身份驗證" : passwordMode === "loginPersonal" ? `歡迎回來，${targetLoginMember?.name}` : "需要密碼" }}</h3>
+                    
+                    <h3 class="font-bold text-lg mb-2 text-center text-slate-800">
+                        {{ passwordMode === "loginAdmin" ? "Admin 身份驗證" : `歡迎回來，${targetLoginMember?.name}` }}
+                    </h3>
+                    <p class="text-xs text-center text-slate-400 mb-6">請輸入密碼以繼續</p>
                     
                     <input
                         ref="rolePasswordInputRef"
                         v-model="rolePasswordInput"
                         type="password"
                         placeholder="請輸入密碼"
-                        class="w-full bg-slate-50 rounded-xl p-3 text-center font-bold text-deep-sea-blue outline-none border-2 border-transparent focus:border-deep-sea-blue focus:bg-white transition-all mb-4 tracking-widest ring-1 ring-slate-100 focus:ring-deep-sea-blue/30"
+                        class="w-full bg-slate-50 rounded-xl p-4 text-center font-bold text-deep-sea-blue text-lg outline-none border-2 border-transparent focus:border-deep-sea-blue focus:bg-white transition-all mb-4 tracking-widest ring-1 ring-slate-100 focus:ring-deep-sea-blue/30"
                         @keyup.enter="confirmRolePassword"
                     />
                     
-                    <div class="flex space-x-3">
-                        <button @click="cancelRolePassword" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold hover:bg-slate-200 transition-colors">取消</button>
-                        <button @click="confirmRolePassword" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-deep-sea-blue to-orange-500 text-white text-sm font-bold hover:opacity-90 transition-opacity shadow-md shadow-orange-200">確認</button>
+                    <div class="flex space-x-3 mt-4">
+                        <button @click="cancelRolePassword" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold hover:bg-slate-200 transition-colors">
+                            <i class="fa-solid fa-arrow-left mr-1"></i> 返回
+                        </button>
+                        <button @click="confirmRolePassword" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-deep-sea-blue to-orange-500 text-white text-sm font-bold hover:opacity-90 transition-opacity shadow-lg shadow-orange-200">
+                            登入 <i class="fa-solid fa-arrow-right ml-1"></i>
+                        </button>
                     </div>
                 </div>
             </div>
-        </teleport>
+        </div>
 
         <!-- Main Content (only if user selected) -->
         <template v-if="hasSelectedUser">
             <!-- Header -->
-            <header class="p-4 bg-white border-b border-gray-100 flex justify-between items-center flex-shrink-0">
+            <header class="p-4 bg-white border-b border-gray-100 flex justify-between items-center flex-shrink-0 relative z-50">
                 <div>
                     <h1 class="font-black text-xl text-slate-800">
                         2026 曼谷之旅
@@ -326,20 +328,21 @@
                 <!-- Itinerary View -->
                 <div v-show="currentTab === 'itinerary'">
                     <!-- Date Tabs -->
+                    <!-- 修正：移除 backdrop-blur，改用 bg-slate-50 實色背景，避免穿圖 -->
                     <div
-                        class="sticky top-0 bg-slate-50/80 backdrop-blur-sm z-40 flex justify-between items-center px-2 py-2 border-b border-slate-200 no-scrollbar overflow-x-auto"
+                        class="sticky top-0 bg-slate-50 z-40 flex justify-between items-center px-2 py-2 border-b border-slate-200 no-scrollbar overflow-x-auto shadow-sm"
                     >
                         <div
                             v-for="(day, index) in dates"
                             :key="index"
                             @click="selectedDateIndex = index"
                             :class="{
-                                'border-deep-sea-blue text-deep-sea-blue':
+                                'border-deep-sea-blue text-deep-sea-blue bg-white shadow-sm':
                                     selectedDateIndex === index,
                                 'border-transparent text-slate-500':
                                     selectedDateIndex !== index,
                             }"
-                            class="text-center px-3 py-1 rounded-full cursor-pointer transition-all border-2"
+                            class="text-center px-3 py-1 rounded-full cursor-pointer transition-all border-2 flex-shrink-0 mx-1"
                         >
                             <div class="text-xs">{{ day.weekday }}</div>
                             <div class="font-bold text-sm">{{ day.date }}</div>
@@ -347,7 +350,7 @@
                     </div>
 
                     <!-- Weather Info -->
-                    <div v-if="weatherData[selectedDateIndex]" class="p-4 bg-white shadow-sm flex items-center space-x-4">
+                    <div v-if="weatherData[selectedDateIndex]" class="p-4 bg-white shadow-sm flex items-center space-x-4 relative z-30">
                         <div class="text-4xl">
                            <i :class="getWeatherIcon(weatherData[selectedDateIndex].condition)"></i>
                         </div>
@@ -367,40 +370,40 @@
                         </div>
                     </div>
                     
-                    <div v-if="dates[selectedDateIndex].hasCar" class="px-4 py-2 bg-blue-50 text-blue-700 text-sm font-bold flex items-center justify-center space-x-2">
+                    <div v-if="dates[selectedDateIndex].hasCar" class="px-4 py-2 bg-blue-50 text-blue-700 text-sm font-bold flex items-center justify-center space-x-2 relative z-30">
                         <i class="fa-solid fa-car"></i>
                         <span>租車日</span>
                     </div>
 
                     <!-- Itinerary List -->
-                    <div class="p-4 space-y-3">
+                    <div class="p-4 space-y-3 relative z-10">
                         <transition-group name="list" tag="div" class="space-y-3">
                             <div v-for="(item, index) in currentItinerary" :key="item.id"
                                 class="itinerary-item bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-start space-x-4 relative"
                                 :class="{ 'moved-item': item.id === recentlyMovedId }">
 
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white" :class="getCategoryColor(item.category)">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white flex-shrink-0" :class="getCategoryColor(item.category)">
                                     <i :class="getCategoryIcon(item.category)"></i>
                                 </div>
 
-                                <div class="flex-grow">
+                                <div class="flex-grow min-w-0"> <!-- min-w-0 防止文字溢出 -->
                                     <div class="flex justify-between items-start">
                                         <div>
                                             <div v-if="item.time" class="text-xs text-slate-400 font-bold">{{ item.time }}</div>
-                                            <h3 class="font-bold text-slate-800">{{ item.title }}</h3>
-                                            <p v-if="item.description" class="text-sm text-slate-500 mt-1">{{ item.description }}</p>
+                                            <h3 class="font-bold text-slate-800 break-words">{{ item.title }}</h3>
+                                            <p v-if="item.description" class="text-sm text-slate-500 mt-1 break-words">{{ item.description }}</p>
                                         </div>
-                                        <div v-if="item.transport" class="flex-shrink-0 ml-4 text-right">
-                                            <div class="text-xs text-slate-400">
+                                        <div v-if="item.transport" class="flex-shrink-0 ml-2 text-right">
+                                            <div class="text-xs text-slate-400 flex flex-col items-end">
                                                 <i :class="getTransportIcon(item.transport.method)"></i>
-                                                {{ item.transport.duration }}
+                                                <span>{{ item.transport.duration }}</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                                 
                                 <!-- Edit/Delete Buttons -->
-                                <div v-if="canEditItinerary" class="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div v-if="canEditItinerary" class="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/80 backdrop-blur-sm rounded-lg p-1">
                                     <button @click="moveItem(item, 'up')" :disabled="index === 0" class="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 disabled:opacity-30"><i class="fa-solid fa-arrow-up text-xs"></i></button>
                                     <button @click="moveItem(item, 'down')" :disabled="index === currentItinerary.length - 1" class="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 disabled:opacity-30"><i class="fa-solid fa-arrow-down text-xs"></i></button>
                                     <button @click="editItem(item, 'itinerary')" class="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-pencil text-xs"></i></button>
@@ -692,7 +695,10 @@
                 const showShoppingModal = ref(false);
                 const showExpenseModal = ref(false);
                 const showItineraryModal = ref(false);
-                const showRolePasswordModal = ref(false);
+                
+                // 新增 loginStep 用來控制原地的顯示狀態
+                const loginStep = ref("select"); // 'select' | 'password'
+                
                 const isEditMode = ref(false);
                 const inputTHB = ref(100);
                 const inputTWD = ref(92);
@@ -839,11 +845,11 @@
                     if (member.role === "admin") {
                         passwordMode.value = "loginAdmin";
                         rolePasswordInput.value = "";
-                        showRolePasswordModal.value = true;
+                        loginStep.value = "password"; // 切換到密碼輸入模式
                     } else if (member.password) {
                         passwordMode.value = "loginPersonal";
                         rolePasswordInput.value = "";
-                        showRolePasswordModal.value = true;
+                        loginStep.value = "password"; // 切換到密碼輸入模式
                     } else {
                         performLogin(member);
                         return;
@@ -862,16 +868,20 @@
                     const input = rolePasswordInput.value;
                     if (passwordMode.value === "loginAdmin" && input === ROLE_PASSWORD) {
                         performLogin(targetLoginMember.value);
-                        showRolePasswordModal.value = false;
+                        loginStep.value = "select"; // 重置回列表
                     } else if (passwordMode.value === "loginPersonal" && input === targetLoginMember.value.password) {
                         performLogin(targetLoginMember.value);
-                        showRolePasswordModal.value = false;
+                        loginStep.value = "select"; // 重置回列表
                     } else {
                         triggerToast("密碼錯誤");
                     }
                 };
                 
-                const cancelRolePassword = () => showRolePasswordModal.value = false;
+                const cancelRolePassword = () => {
+                    loginStep.value = "select"; // 返回成員列表
+                    rolePasswordInput.value = "";
+                };
+                
                 const updateTWD = () => inputTWD.value = Math.round(inputTHB.value * EXCHANGE_RATE.value);
                 const updateTHB = () => inputTHB.value = Math.round(inputTWD.value / EXCHANGE_RATE.value * 100) / 100;
 
@@ -1032,7 +1042,7 @@
                 };
 
                 return {
-                    currentTab, selectedDateIndex, showShoppingModal, showExpenseModal, showItineraryModal, showRolePasswordModal,
+                    currentTab, selectedDateIndex, showShoppingModal, showExpenseModal, showItineraryModal,
                     dates, weatherData, currentItinerary, members, currentShoppingList,
                     newShoppingItem, newExpense, newItinerary, rolePasswordInput, rolePasswordInputRef, passwordMode, targetLoginMember,
                     currentUser, hasSelectedUser, currentUserRole, canEditItinerary, totalTHB, totalTWD, finalTotalTWD,
@@ -1040,7 +1050,7 @@
                     attemptLogin, confirmRolePassword, cancelRolePassword,
                     getCategoryIcon, getTransportIcon, getCategoryColor, getWeatherIcon, getWeatherDescription, formatNumber,
                     handleAddClick, editItem, saveItineraryItem, addShoppingItem, toggleShoppingItem, removeShoppingItem, saveExpense, moveItem,
-                    updateTWD, updateTHB, fetchExchangeRate, performLogin
+                    updateTWD, updateTHB, fetchExchangeRate, performLogin, loginStep
                 };
             },
         });
