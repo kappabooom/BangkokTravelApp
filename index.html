@@ -12,15 +12,26 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-    <link rel="icon" type="image/png" href="apple-touch-icon.png" />
+    <link rel="icon" type="image/png" href="favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="favicon-16x16.png" sizes="16x16" />
+    <link rel="manifest" href="site.webmanifest" />
+    <link rel="mask-icon" href="safari-pinned-tab.svg" color="#5bbad5" />
+    <meta name="msapplication-TileColor" content="#da532c" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="apple-mobile-web-app-title" content="2026 BKK" />
+    <meta name="application-name" content="2026 BKK" />
 
-    <!-- UI 函式庫 -->
-    <script src="https://cdn.tailwindcss.com"></script>
     <link
         rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"
     />
-
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -39,111 +50,88 @@
     </script>
 
     <style>
-        @import url("https://fonts.googleapis.com/css?family=Noto+Sans+TC:wght@300;400;500;700&display=swap");
+        @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap");
         body {
-            background-color: #fff3e0;
-            -webkit-tap-highlight-color: transparent;
             font-family: "Noto Sans TC", sans-serif;
-            color: #334155;
-        }
-        .app-container {
-            max-width: 480px;
-            margin: 0 auto;
-            min-height: 100vh;
-            background-color: #ffffff;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.05);
-            position: relative;
-            padding-bottom: 90px;
-            /* 確保 container 不會成為意外的 stacking context */
-            isolation: isolate; 
+            background-color: #f8f9fa;
         }
 
-        .login-screen {
-            position: fixed;
-            inset: 0;
-            z-index: 60;
-            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .header-bg {
-            background-color: #ffffff;
-            padding: 0;
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-            border-bottom-left-radius: 35px;
-            border-bottom-right-radius: 35px;
-            z-index: 50;
-        }
-        .header-image-container {
-            width: 100%;
-            height: 250px;
-            overflow: hidden;
-            background-color: transparent;
-            border-bottom-left-radius: 35px;
-            border-bottom-right-radius: 35px;
-        }
-        .header-image-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .side-tab-bar {
-            position: absolute;
-            bottom: 15px;
-            right: 16px;
-            z-index: 60;
-            display: flex;
-            flex-direction: row;
-            gap: 8px;
-        }
-        .tab-button {
-            width: 40px;
-            height: 40px;
-            border-radius: 9999px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.125rem;
-            transition: all 0.2s ease;
-            cursor: pointer;
-            border-width: 1px;
-        }
-        .tab-button.active {
-            background-color: #e65100;
-            color: #ffffff;
-            border-color: #e65100;
-            box-shadow: 0 6px 15px rgba(230, 81, 0, 0.4);
-            transform: scale(1.05);
-        }
-        .tab-button:not(.active) {
-            background-color: #FFF3E0;
-            color: #E65100;
-            border-color: #FFCC80;
-            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .app-main {
-            padding-top: 25px !important;
-            position: relative;
-            z-index: 5;
-        }
-        .hide-scrollbar::-webkit-scrollbar {
+        /* 隱藏滾動條但保留滾動功能 */
+        .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        .no-scrollbar {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
         }
-        .card-shadow {
-            box-shadow: 0 4px 20px rgba(230, 81, 0, 0.1);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        /* 美化滾動條 */
+        .pretty-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .pretty-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .pretty-scrollbar::-webkit-scrollbar-thumb {
+            background: #e0e0e0;
+            border-radius: 4px;
+        }
+        .pretty-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #bdbdbd;
+        }
+
+        .tab-indicator {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background-color: #e65100;
+            border-radius: 3px 3px 0 0;
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55),
+                width 0.3s ease;
+        }
+        .tab.active {
+            color: #e65100;
+        }
+
+        /* 解決 iOS 上的 100vh 問題 */
+        html,
+        body {
+            height: 100%;
+            overflow: hidden;
+        }
+        #app {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-content {
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+        .footer-nav {
+            flex-shrink: 0;
+        }
+        
+        .main-container {
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            height: 100%;
+            overflow: hidden;
+        }
+        .main-content {
+            overflow-y: auto;
+        }
+        .footer-nav {
+            z-index: 50;
+        }
+
+        .group:hover .group-hover-visible {
+            opacity: 1;
+        }
+
+        .itinerary-item {
+            transition: transform 0.2s ease, opacity 0.2s ease, box-shadow 0.2s ease;
         }
         .animate-fade-in {
             animation: fadeIn 0.4s ease-out;
@@ -158,144 +146,78 @@
                 transform: translateY(0);
             }
         }
-        .fab-shadow {
-            box-shadow: 0 4px 15px rgba(255, 179, 0, 0.5);
+        .animate-slide-up {
+            animation: slideUp 0.3s ease-out;
         }
-        .expenses-banner {
-            background: linear-gradient(135deg, #ff7043 0%, #ab47bc 100%);
-        }
-        .date-selector-sticky {
-            background-color: #ffffff;
-            border-bottom: 1px solid #f0f0f0;
-            z-index: 40;
-            top: 0;
-            position: sticky;
-            padding-top: env(safe-area-inset-top, 20px);
-        }
-        .rotate-180 {
-            transform: rotate(180deg);
-        }
-        .custom-select-wrapper {
-            position: relative;
-        }
-        .custom-select-wrapper select {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            position: absolute;
-            left: 0;
-            top: 0;
-            cursor: pointer;
-            z-index: 10;
-        }
-        .pulse-arrow {
-            animation: pulse-x 1.5s infinite ease-in-out;
-        }
-        @keyframes pulse-x {
-            0%,
-            100% {
-                transform: translateX(0);
-                opacity: 0.8;
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(100%);
             }
-            50% {
-                transform: translateX(5px);
+            to {
                 opacity: 1;
+                transform: translateY(0);
             }
+        }
+        
+        /* 處理 item 移動的動畫 */
+        .list-move {
+            transition: transform 0.5s cubic-bezier(0.55, 0, 0.1, 1);
         }
 
-        .flip-list-move {
-            transition: transform 0.5s cubic-bezier(0.2, 0, 0, 1);
-            z-index: 1;
-            position: relative;
-        }
-        .flip-list-enter-active,
-        .flip-list-leave-active {
-            transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
-        }
-        .flip-list-enter-from,
-        .flip-list-leave-to {
-            opacity: 0;
-            transform: scale(0.95);
-        }
-        .highlight-bg {
-            animation: highlight 1s ease-out forwards;
-        }
-        @keyframes highlight {
-            0% {
-                background-color: #fff8e1;
-                transform: scale(1.02);
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            }
-            100% {
-                background-color: #ffffff;
-                transform: scale(1);
-                box-shadow: 0 4px 20px rgba(230, 81, 0, 0.1);
-            }
+        .moved-item {
+            animation: pulse-bg 1.5s ease-out;
         }
 
-        .loader-container {
+        @keyframes pulse-bg {
+            0% { background-color: transparent; }
+            30% { background-color: #fff8e1; }
+            100% { background-color: transparent; }
+        }
+        
+        /* Login Screen */
+        .login-screen {
             position: fixed;
             inset: 0;
-            z-index: 9999;
-            background-color: #fff3e0;
+            z-index: 60;
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
+            isolation: isolate; /* 創建新的堆疊上下文 */
         }
-        .loader-container.hidden {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
+        
+        .toast {
+            position: fixed;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10001; /* 比密碼modal更高 */
+            animation: toast-in 0.3s ease-out forwards;
         }
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(230, 81, 0, 0.2);
-            border-top-color: #e65100;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 1rem;
-        }
-        .loader-logo {
-            font-size: 3rem;
-            color: #e65100;
-            margin-bottom: 1rem;
-            animation: pulse-logo 1.5s infinite ease-in-out;
-        }
-        @keyframes spin {
+
+        @keyframes toast-in {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -20px);
+            }
             to {
-                transform: rotate(360deg);
-            }
-        }
-        @keyframes pulse-logo {
-            0%,
-            100% {
-                transform: scale(1);
                 opacity: 1;
-            }
-            50% {
-                transform: scale(1.1);
-                opacity: 0.8;
+                transform: translate(-50%, 0);
             }
         }
     </style>
 </head>
-<body>
-    <!-- Loading Screen -->
-    <div id="loading-screen" class="loader-container">
-        <i class="fa-solid fa-plane-departure loader-logo"></i>
-        <div class="spinner"></div>
-        <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
-            Loading...
-        </p>
-    </div>
 
-    <div id="app" class="app-container">
-        <!-- 登入畫面 -->
+<body class="bg-slate-50 overflow-hidden">
+    <div id="app" class="h-full w-full max-w-lg mx-auto bg-white shadow-xl main-container">
+        <!-- Toast Notification -->
+        <div v-if="showToast" class="toast bg-slate-800 text-white text-sm font-bold py-3 px-6 rounded-full shadow-lg animate-fade-in">
+            {{ toastMessage }}
+        </div>
+
+        <!-- Login Screen -->
         <div v-if="!hasSelectedUser" class="login-screen animate-fade-in p-6">
             <div class="text-center mb-8">
                 <div
@@ -303,10 +225,12 @@
                 >
                     <i class="fa-solid fa-plane-up text-4xl text-deep-sea-blue"></i>
                 </div>
+                <h1 class="text-2xl font-black text-slate-700">2026 曼谷之旅</h1>
+                <p class="text-sm text-slate-500 mt-1">請選擇您的身份以繼續</p>
             </div>
 
             <div v-if="members.length === 0" class="flex flex-col items-center">
-                <div class="spinner w-8 h-8 border-2"></div>
+                <i class="fa-solid fa-spinner fa-spin text-2xl text-slate-400"></i>
                 <span class="text-xs text-slate-400">正在讀取成員...</span>
             </div>
 
@@ -321,478 +245,394 @@
                         class="absolute top-0 right-0 p-2"
                         v-if="member.role === 'admin' || member.password"
                     >
-                        <i
-                            v-if="member.role === 'admin'"
-                            class="fa-solid fa-crown text-[10px] text-yellow-500 bg-yellow-100 p-1 rounded-full"
-                        ></i>
-                        <i
-                            v-else-if="member.password"
-                            class="fa-solid fa-lock text-[10px] text-slate-400 bg-slate-100 p-1 rounded-full"
-                        ></i>
+                        <i class="fa-solid fa-lock text-xs text-orange-300"></i>
                     </div>
-
                     <div
-                        class="w-12 h-12 rounded-full mb-2 flex items-center justify-center text-lg font-bold text-white shadow-inner"
-                        :class="member.role === 'admin'
-                                ? 'bg-gradient-to-br from-orange-400 to-deep-sea-blue'
-                                : 'bg-gradient-to-br from-ice-blue to-teal-500'"
+                        v-if="member.role === 'admin'"
+                        class="absolute top-1 left-1 bg-deep-sea-blue text-white text-[8px] font-bold px-2 py-0.5 rounded-full"
                     >
-                        {{ member.name.substring(0, 1).toUpperCase() }}
+                        ADMIN
                     </div>
-                    <span
-                        class="font-bold text-slate-700 text-sm truncate w-full text-center"
-                        >{{ member.name }}</span
+                    <div
+                        class="w-14 h-14 rounded-full bg-orange-50 mb-3 flex items-center justify-center"
                     >
+                        <i
+                            :class="`fa-solid ${
+                                member.role === 'admin'
+                                    ? 'fa-user-secret'
+                                    : 'fa-user'
+                            } text-2xl text-orange-400`"
+                        ></i>
+                    </div>
+                    <span class="font-bold text-slate-700 text-sm">{{
+                        member.name
+                    }}</span>
                 </div>
             </div>
         </div>
 
-        <!-- 主畫面 -->
-        <div v-else>
-            <div class="header-bg relative">
-                <div class="header-image-container">
-                    <img
-                        src="banner.png"
-                        alt="曼谷家族旅行計畫"
-                        onerror="this.src='https://images.unsplash.com/photo-1596422846543-e1275c6fc197?auto=format&fit=crop&w=800&q=80'"
+        <teleport to="body">
+            <!-- Password Modal -->
+            <!-- 修正：使用 Teleport 確保在最上層，且 z-index 設為最高 -->
+            <div 
+                v-if="showRolePasswordModal" 
+                :key="targetLoginMember?.id || 'password-modal'"
+                class="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in"
+                @click.self="cancelRolePassword"
+            >
+                <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl border border-orange-100 relative z-[10000]">
+                    <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deep-sea-blue shadow-inner">
+                        <i class="fa-solid fa-shield-cat text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-base mb-2 text-center text-slate-800">{{ passwordMode === "loginAdmin" ? "Admin 身份驗證" : passwordMode === "loginPersonal" ? `歡迎回來，${targetLoginMember?.name}` : "需要密碼" }}</h3>
+                    
+                    <input
+                        ref="rolePasswordInputRef"
+                        v-model="rolePasswordInput"
+                        type="password"
+                        placeholder="請輸入密碼"
+                        class="w-full bg-slate-50 rounded-xl p-3 text-center font-bold text-deep-sea-blue outline-none border-2 border-transparent focus:border-deep-sea-blue focus:bg-white transition-all mb-4 tracking-widest ring-1 ring-slate-100 focus:ring-deep-sea-blue/30"
+                        @keyup.enter="confirmRolePassword"
                     />
-                </div>
-                <div class="side-tab-bar">
-                    <button
-                        @click="currentTab = 'itinerary'"
-                        title="行程"
-                        :class="{ active: currentTab === 'itinerary' }"
-                        class="tab-button"
-                    >
-                        <i class="fa-solid fa-map-location-dot"></i>
-                    </button>
-                    <button
-                        @click="currentTab = 'info'"
-                        title="資訊"
-                        :class="{ active: currentTab === 'info' }"
-                        class="tab-button"
-                    >
-                        <i class="fa-solid fa-circle-info"></i>
-                    </button>
-                    <button
-                        @click="currentTab = 'shopping'"
-                        title="購物"
-                        :class="{ active: currentTab === 'shopping' }"
-                        class="tab-button"
-                    >
-                        <i class="fa-solid fa-basket-shopping"></i>
-                    </button>
-                    <button
-                        @click="currentTab = 'expenses'"
-                        title="花費"
-                        :class="{ active: currentTab === 'expenses' }"
-                        class="tab-button"
-                    >
-                        <i class="fa-solid fa-coins"></i>
-                    </button>
+                    
+                    <div class="flex space-x-3">
+                        <button @click="cancelRolePassword" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold hover:bg-slate-200 transition-colors">取消</button>
+                        <button @click="confirmRolePassword" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-deep-sea-blue to-orange-500 text-white text-sm font-bold hover:opacity-90 transition-opacity shadow-md shadow-orange-200">確認</button>
+                    </div>
                 </div>
             </div>
+        </teleport>
 
-            <main class="p-4 app-main">
-                <!-- 行程 Tab -->
-                <div v-if="currentTab === 'itinerary'" class="animate-fade-in">
+        <!-- Main Content (only if user selected) -->
+        <template v-if="hasSelectedUser">
+            <!-- Header -->
+            <header class="p-4 bg-white border-b border-gray-100 flex justify-between items-center flex-shrink-0">
+                <div>
+                    <h1 class="font-black text-xl text-slate-800">
+                        2026 曼谷之旅
+                    </h1>
+                    <div class="text-xs text-slate-400">
+                        {{ dates[0].date }} - {{ dates[dates.length - 1].date }}
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="font-bold text-slate-600 text-sm">{{ currentUser }}</div>
+                    <div v-if="currentUserRole === 'admin'" class="text-xs font-bold bg-deep-sea-blue text-white px-2 py-0.5 rounded-full inline-block mt-1">ADMIN</div>
+                </div>
+            </header>
+
+            <!-- Main Content Area -->
+            <main class="main-content bg-slate-50 no-scrollbar">
+                <!-- Itinerary View -->
+                <div v-show="currentTab === 'itinerary'">
+                    <!-- Date Tabs -->
                     <div
-                        class="flex overflow-x-auto hide-scrollbar space-x-3 pb-4 mb-2 snap-x sticky date-selector-sticky pt-1 -mx-4 px-4"
+                        class="sticky top-0 bg-slate-50/80 backdrop-blur-sm z-40 flex justify-between items-center px-2 py-2 border-b border-slate-200 no-scrollbar overflow-x-auto"
                     >
                         <div
                             v-for="(day, index) in dates"
                             :key="index"
                             @click="selectedDateIndex = index"
-                            class="snap-center flex-shrink-0 w-[58px] h-[68px] rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 border-2 shadow-sm"
-                            :class="selectedDateIndex === index
-                                    ? 'bg-deep-sea-blue text-white border-deep-sea-blue shadow-lg scale-105'
-                                    : 'bg-white text-slate-400 border-white hover:bg-soft-gray'"
+                            :class="{
+                                'border-deep-sea-blue text-deep-sea-blue':
+                                    selectedDateIndex === index,
+                                'border-transparent text-slate-500':
+                                    selectedDateIndex !== index,
+                            }"
+                            class="text-center px-3 py-1 rounded-full cursor-pointer transition-all border-2"
                         >
-                            <span
-                                class="text-sm font-bold uppercase tracking-wider"
-                                >{{ day.weekday }}</span
-                            >
-                            <span
-                                class="text-xs font-medium opacity-70"
-                                >{{ day.date }}</span
-                            >
+                            <div class="text-xs">{{ day.weekday }}</div>
+                            <div class="font-bold text-sm">{{ day.date }}</div>
                         </div>
                     </div>
 
-                    <!-- 天氣 -->
-                    <div
-                        v-if="weatherData[selectedDateIndex]"
-                        class="mb-4 bg-sky-50 border border-sky-200 rounded-2xl p-4 flex justify-between items-center shadow-md animate-fade-in"
-                    >
-                        <div class="flex items-start text-sky-700 space-x-4">
-                            <i
-                                :class="
-                                    getWeatherIcon(
-                                        weatherData[selectedDateIndex].condition
-                                    )
-                                "
-                                class="text-5xl text-accent-yellow"
-                            ></i>
-                            <div class="pt-1">
-                                <span class="text-3xl font-extrabold leading-none"
-                                    >{{ weatherData[selectedDateIndex].temp.split('/')[0]
-                                    }}°</span
-                                >
-                                <span
-                                    class="text-sm font-light text-slate-500 ml-1"
-                                    >/ {{
-                                        weatherData[selectedDateIndex].temp.split(
-                                            "/"
-                                        )[1]
-                                    }}°C</span
-                                >
-                                <span class="block text-xs text-slate-600 mt-1"
-                                    >體感:
-                                    {{
-                                        weatherData[selectedDateIndex].feel
-                                    }}°C</span
-                                >
+                    <!-- Weather Info -->
+                    <div v-if="weatherData[selectedDateIndex]" class="p-4 bg-white shadow-sm flex items-center space-x-4">
+                        <div class="text-4xl">
+                           <i :class="getWeatherIcon(weatherData[selectedDateIndex].condition)"></i>
+                        </div>
+                        <div class="flex-grow">
+                            <div class="font-bold text-xl text-slate-800">
+                                {{ weatherData[selectedDateIndex].temp.split('/')[0] }}° / {{ weatherData[selectedDateIndex].temp.split("/")[1] }}°C
+                                <span class="text-sm font-normal text-slate-500 ml-2">體感: {{ weatherData[selectedDateIndex].feel }}°C</span>
+                            </div>
+                            <div class="text-sm text-slate-500">
+                                {{ getWeatherDescription(weatherData[selectedDateIndex].condition) }}
                             </div>
                         </div>
-                        <div class="text-right text-xs text-slate-600 pl-3">
-                            <span
-                                class="font-bold block text-slate-700"
-                                >{{
-                                    getWeatherDescription(
-                                        weatherData[selectedDateIndex].condition
-                                    )
-                                }}</span
-                            >
-                            <span
-                                v-if="weatherData[selectedDateIndex].isFallback"
-                                class="block text-[11px] text-orange-500 mt-1 bg-orange-100 px-2 py-1 rounded inline-block"
-                                >1月歷史平均<br />(距出發大於5天)</span
-                            >
-                            <span
-                                v-else
-                                class="block text-[11px] text-emerald-600 mt-1 bg-emerald-100 px-2 py-1 rounded inline-block"
-                                >即時天氣預報<br />(出發前5天更新)</span
-                            >
-                            <span
-                                v-if="dates[selectedDateIndex].hasCar"
-                                class="mt-1 block text-deep-sea-blue font-bold"
-                                ><i
-                                    class="fa-solid fa-car-side mr-1 text-accent-yellow"
-                                ></i>
-                                租車日</span
-                            >
+                        <div class="text-right text-xs text-slate-400">
+                            <div>1月歷史平均</div>
+                            <div v-if="weatherData[selectedDateIndex].is_realtime" class="text-green-500 font-bold">(距出發大於5天) 即時天氣預報</div>
+                            <div v-else class="text-blue-500 font-bold">(出發前5天更新)</div>
                         </div>
                     </div>
+                    
+                    <div v-if="dates[selectedDateIndex].hasCar" class="px-4 py-2 bg-blue-50 text-blue-700 text-sm font-bold flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-car"></i>
+                        <span>租車日</span>
+                    </div>
 
-                    <!-- 行程列表 -->
-                    <TransitionGroup
-                        name="flip-list"
-                        tag="div"
-                        class="space-y-4 relative"
-                    >
-                        <div
-                            v-for="(item, idx) in currentItinerary"
-                            :key="item.id"
-                            class="relative group"
-                        >
-                            <!-- 交通連線 -->
-                            <div
-                                v-if="idx > 0"
-                                class="pl-10 pb-2 flex items-center text-xs text-slate-400"
-                            >
-                                <div
-                                    class="h-6 w-0.5 bg-slate-200 absolute left-8 -top-3"
-                                ></div>
-                                <i
-                                    :class="getTransportIcon(item.transportType)"
-                                    class="mr-2 text-slate-300"
-                                ></i>
-                                <span class="font-bold"
-                                    >{{ item.travelTime || "約15分鐘" }}</span
-                                >
-                            </div>
+                    <!-- Itinerary List -->
+                    <div class="p-4 space-y-3">
+                        <transition-group name="list" tag="div" class="space-y-3">
+                            <div v-for="(item, index) in currentItinerary" :key="item.id"
+                                class="itinerary-item bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-start space-x-4 relative"
+                                :class="{ 'moved-item': item.id === recentlyMovedId }">
 
-                            <!-- 卡片 -->
-                            <div
-                                class="bg-white rounded-3xl p-3 pr-4 card-shadow flex border border-ice-blue/50 overflow-hidden items-stretch"
-                                :class="{
-                                    'highlight-bg': recentlyMovedId === item.id,
-                                }"
-                            >
-                                <div
-                                    class="flex flex-col items-center justify-center mr-3 w-10 shrink-0 space-y-1"
-                                >
-                                    <button
-                                        v-if="canEditItinerary"
-                                        @click.stop="
-                                            moveItem(idx, -1, item.id)
-                                        "
-                                        class="w-8 h-6 text-slate-300 hover:text-deep-sea-blue hover:bg-orange-50 rounded-lg transition-colors flex items-center justify-center active:scale-90"
-                                        :class="{ invisible: idx === 0 }"
-                                    >
-                                        <i
-                                            class="fa-solid fa-chevron-up text-xs"
-                                        ></i>
-                                    </button>
-                                    <div
-                                        class="w-10 h-10 rounded-full text-white shadow-md flex items-center justify-center text-lg z-10"
-                                        :style="{
-                                            backgroundColor:
-                                                getCategoryColor(item.category),
-                                        }"
-                                    >
-                                        <i
-                                            :class="
-                                                getCategoryIcon(item.category)
-                                            "
-                                        ></i>
-                                    </div>
-                                    <button
-                                        v-if="canEditItinerary"
-                                        @click.stop="
-                                            moveItem(idx, 1, item.id)
-                                        "
-                                        class="w-8 h-6 text-slate-300 hover:text-deep-sea-blue hover:bg-orange-50 rounded-lg transition-colors flex items-center justify-center active:scale-90"
-                                        :class="{
-                                            invisible:
-                                                idx ===
-                                                currentItinerary.length - 1,
-                                        }"
-                                    >
-                                        <i
-                                            class="fa-solid fa-chevron-down text-xs"
-                                        ></i>
-                                    </button>
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center text-white" :class="getCategoryColor(item.category)">
+                                    <i :class="getCategoryIcon(item.category)"></i>
                                 </div>
 
-                                <div
-                                    class="flex-1 min-w-0 flex flex-col justify-center py-1"
-                                >
-                                    <div class="flex items-baseline mb-1">
-                                        <span
-                                            v-if="item.startTime"
-                                            class="text-sm font-bold text-deep-sea-blue mr-2"
-                                            >{{ item.startTime }}</span
-                                        >
-                                        <h3
-                                            class="text-lg font-bold text-slate-800 leading-tight break-words"
-                                        >
-                                            {{ item.name }}
-                                        </h3>
-                                    </div>
-                                    <div
-                                        class="text-sm text-slate-500 space-y-1"
-                                    >
-                                        <p
-                                            v-if="item.hours"
-                                            class="truncate"
-                                        >
-                                            <i
-                                                class="fa-regular fa-clock w-3.5 text-center mr-1 text-ice-blue text-xs"
-                                            ></i>
-                                            {{ item.hours }}
-                                        </p>
-                                        <p
-                                            v-if="item.price"
-                                            class="truncate"
-                                        >
-                                            <i
-                                                class="fa-solid fa-ticket w-3.5 text-center mr-1 text-ice-blue text-xs"
-                                            ></i>
-                                            {{ item.price }}
-                                        </p>
-                                        <p
-                                            v-if="item.address"
-                                            class="break-words line-clamp-2 text-xs"
-                                        >
-                                            <i
-                                                class="fa-solid fa-location-dot w-3.5 text-center mr-1 text-ice-blue text-xs"
-                                            ></i>
-                                            {{ item.address }}
-                                        </p>
-                                    </div>
-                                    <div
-                                        v-if="item.note && item.note.length > 0"
-                                        class="mt-2 text-xs bg-slate-50 p-2 rounded-lg border border-slate-100 break-words whitespace-normal text-slate-600 leading-relaxed"
-                                    >
-                                        {{ item.note }}
+                                <div class="flex-grow">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <div v-if="item.time" class="text-xs text-slate-400 font-bold">{{ item.time }}</div>
+                                            <h3 class="font-bold text-slate-800">{{ item.title }}</h3>
+                                            <p v-if="item.description" class="text-sm text-slate-500 mt-1">{{ item.description }}</p>
+                                        </div>
+                                        <div v-if="item.transport" class="flex-shrink-0 ml-4 text-right">
+                                            <div class="text-xs text-slate-400">
+                                                <i :class="getTransportIcon(item.transport.method)"></i>
+                                                {{ item.transport.duration }}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-
-                                <div
-                                    class="flex flex-col justify-center items-end pl-2 ml-1 space-y-3 shrink-0 border-l border-slate-100 border-dashed"
-                                >
-                                    <button
-                                        v-if="canEditItinerary"
-                                        @click.stop="editItem(item)"
-                                        class="w-9 h-9 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center hover:bg-slate-200 hover:text-slate-600 transition-colors shadow-sm"
-                                    >
-                                        <i
-                                            class="fa-solid fa-pencil text-sm"
-                                        ></i>
-                                    </button>
-                                    <a
-                                        :href="`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address || item.name)}`"
-                                        target="_blank"
-                                        class="w-9 h-9 bg-ice-blue text-white rounded-full flex items-center justify-center hover:bg-deep-sea-blue transition-colors shadow-md shadow-ice-blue/30"
-                                        @click.stop
-                                    >
-                                        <i
-                                            class="fa-solid fa-location-arrow text-sm"
-                                        ></i>
-                                    </a>
+                                
+                                <!-- Edit/Delete Buttons -->
+                                <div v-if="canEditItinerary" class="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button @click="moveItem(item, 'up')" :disabled="index === 0" class="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 disabled:opacity-30"><i class="fa-solid fa-arrow-up text-xs"></i></button>
+                                    <button @click="moveItem(item, 'down')" :disabled="index === currentItinerary.length - 1" class="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200 disabled:opacity-30"><i class="fa-solid fa-arrow-down text-xs"></i></button>
+                                    <button @click="editItem(item, 'itinerary')" class="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-pencil text-xs"></i></button>
                                 </div>
                             </div>
+                        </transition-group>
+
+                        <div v-if="currentItinerary.length === 0" class="text-center py-10">
+                            <i class="fa-solid fa-calendar-day text-4xl text-slate-300"></i>
+                            <p class="mt-2 text-sm text-slate-400">本日無行程</p>
                         </div>
-                    </TransitionGroup>
+                    </div>
                 </div>
 
-                <!-- Info Tab -->
-                <div v-if="currentTab === 'info'" class="space-y-5 animate-fade-in">
-                   <div class="bg-gradient-to-br from-orange-400 to-amber-500 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden border border-orange-200/20">
-                        <h3 class="font-bold text-lg mb-4 flex items-center relative z-10 text-white"><i class="fa-solid fa-coins mr-2 text-yellow-200"></i> 匯率換算</h3>
-                        <div class="flex items-center justify-between space-x-3 relative z-10">
-                            <div class="flex-1"><label class="text-[10px] text-orange-50 block mb-1 uppercase tracking-wider font-bold">THB</label><input type="number" v-model.number="inputTHB" @input="updateTWD" class="w-full bg-white/20 border border-white/20 rounded-xl px-3 py-2.5 text-white placeholder-white/50 focus:outline-none focus:bg-white/30 text-lg font-bold shadow-sm font-mono" /></div>
-                            <i class="fa-solid fa-arrow-right-arrow-left text-white/80 mt-5"></i>
-                            <div class="flex-1"><label class="text-[10px] text-orange-50 block mb-1 uppercase tracking-wider font-bold">TWD</label><input type="number" v-model.number="inputTWD" @input="updateTHB" class="w-full bg-white/20 border border-white/20 rounded-xl px-3 py-2.5 text-white placeholder-white/50 focus:outline-none focus:bg-white/30 text-lg font-bold shadow-sm font-mono" /></div>
+                <!-- Shopping List View -->
+                <div v-show="currentTab === 'shopping'">
+                    <div class="p-4">
+                        <h2 class="font-bold text-lg text-slate-800 mb-2">
+                            匯率換算
+                        </h2>
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center space-x-4">
+                            <div class="flex-1">
+                                <label class="text-xs text-slate-500">泰銖 THB</label>
+                                <input type="number" v-model="inputTHB" @input="updateTWD" class="w-full font-bold text-2xl bg-transparent outline-none">
+                            </div>
+                            <div class="text-2xl text-slate-300">
+                                <i class="fa-solid fa-right-left"></i>
+                            </div>
+                            <div class="flex-1 text-right">
+                                <label class="text-xs text-slate-500">台幣 TWD</label>
+                                <input type="number" v-model="inputTWD" @input="updateTHB" class="w-full font-bold text-2xl bg-transparent outline-none text-right">
+                            </div>
                         </div>
-                        <div class="mt-4 flex justify-between items-center relative z-10 border-t border-white/20 pt-2">
-                            <button @click="fetchExchangeRate" class="text-[10px] text-white/70 hover:text-white flex items-center transition-colors">
-                                <i class="fa-solid fa-rotate mr-1" :class="{ 'animate-spin': isRatesLoading }"></i> {{ isRatesLoading ? "更新中..." : "點擊更新匯率" }}
+                        <div class="text-right text-xs mt-2 text-slate-400">
+                            1 THB = {{ EXCHANGE_RATE.toFixed(4) }} TWD
+                             <button @click="fetchExchangeRate" :disabled="isRatesLoading" class="ml-2 text-blue-500 disabled:text-slate-300">
+                                <i :class="isRatesLoading ? 'fa-solid fa-spinner fa-spin' : 'fa-solid fa-arrows-rotate'"></i> 更新
                             </button>
-                            <p class="text-xs text-white font-bold tracking-wide">1 THB = {{ EXCHANGE_RATE.toFixed(4) }} TWD</p>
                         </div>
-                   </div>
-                </div>
-
-                <!-- Shopping Tab -->
-                <div v-if="currentTab === 'shopping'" class="animate-fade-in">
-                    <div class="bg-white rounded-3xl p-6 card-shadow min-h-[60vh]">
-                        <h3 class="font-bold text-slate-800 mb-4 flex items-center justify-between"><span class="flex items-center"><i class="fa-solid fa-basket-shopping text-accent-yellow mr-2"></i> {{ currentUser }} 的清單</span></h3>
-                        <ul class="space-y-3" v-if="currentShoppingList.length > 0">
-                            <li v-for="item in currentShoppingList" :key="item.id" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 transition-all hover:shadow-sm">
-                                <div class="flex items-center flex-1 mr-2"><input type="checkbox" :checked="item.checked" @change="toggleShoppingItem(item)" class="w-5 h-5 text-deep-sea-blue rounded mr-3 accent-deep-sea-blue cursor-pointer" /><span :class="{'line-through text-slate-400': item.checked, 'text-slate-700 font-medium': !item.checked}" class="break-all">{{ item.name }}</span></div>
-                                <button @click="removeShoppingItem(item.id)" class="text-slate-300 hover:text-red-500 transition-colors p-2"><i class="fa-solid fa-trash-can"></i></button>
-                            </li>
-                        </ul>
                     </div>
-                </div>
-                
-                <!-- Expenses Tab -->
-                <div v-if="currentTab === 'expenses'" class="animate-fade-in space-y-6">
-                    <div class="expenses-banner text-white rounded-3xl p-6 relative overflow-hidden">
-                        <p class="text-sm text-orange-100 mb-2 relative z-10 flex items-center"><i class="fa-solid fa-user-circle mr-1"></i> {{ currentUser }} 的個人總支出</p>
-                        <h2 class="text-4xl font-bold relative z-10 tracking-tight">約 NT$ {{ formatNumber(finalTotalTWD) }}</h2>
-                        <div class="text-xs mt-3 opacity-90 leading-relaxed relative z-10 bg-white/10 p-3 rounded-lg border border-white/20">
-                            <div class="flex justify-between"><span>THB 小計:</span><span class="font-semibold">฿ {{ formatNumber(totalTHB) }}</span></div>
-                            <div class="flex justify-between"><span>TWD 小計:</span><span class="font-semibold">NT$ {{ formatNumber(totalTWD) }}</span></div>
+                    <div class="p-4">
+                        <h2 class="font-bold text-lg text-slate-800 mb-2">
+                           {{ currentUser }} 的清單
+                        </h2>
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+                           <div v-for="item in currentShoppingList" :key="item.id" class="p-4 flex items-center">
+                               <input type="checkbox" :checked="item.checked" @change="toggleShoppingItem(item)" class="w-5 h-5 rounded-md border-gray-300 text-deep-sea-blue focus:ring-deep-sea-blue/50">
+                               <span :class="{'line-through text-slate-400': item.checked}" class="ml-3 text-slate-700 flex-grow">{{ item.name }}</span>
+                               <button @click="removeShoppingItem(item.id)" class="text-slate-300 hover:text-red-500 ml-4"><i class="fa-solid fa-trash-can"></i></button>
+                           </div>
+                           <div v-if="currentShoppingList.length === 0" class="p-6 text-center text-sm text-slate-400">
+                               <i class="fa-solid fa-cart-shopping text-2xl mb-2"></i>
+                               <p>目前沒有任何項目</p>
+                           </div>
+                        </div>
+                        <div class="mt-3 flex space-x-2">
+                            <input v-model="newShoppingItem.name" @keyup.enter="addShoppingItem" type="text" placeholder="新增項目..." class="flex-grow bg-white p-3 rounded-xl border border-gray-200 outline-none focus:border-deep-sea-blue">
+                            <button @click="addShoppingItem" class="bg-deep-sea-blue text-white w-12 h-12 rounded-xl flex-shrink-0"><i class="fa-solid fa-plus"></i></button>
                         </div>
                     </div>
                 </div>
 
-                <!-- 浮動新增按鈕 -->
-                <button v-if="currentTab === 'itinerary' && canEditItinerary" @click="handleAddClick" class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-40"><i class="fa-solid fa-plus"></i></button>
-                <button v-if="currentTab === 'shopping'" @click="handleAddClick" class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-40"><i class="fa-solid fa-plus"></i></button>
-                <button v-if="currentTab === 'expenses'" @click="handleAddClick" class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-40"><i class="fa-solid fa-plus"></i></button>
-
-                <!-- Modals -->
-                <Teleport to="body">
-                    <!-- Shopping Modal -->
-                    <div v-if="showShoppingModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-                        <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
-                            <input v-model="newShoppingItem.name" type="text" placeholder="商品名稱" class="w-full bg-slate-50 border-none rounded-xl p-4 mb-4 focus:ring-2 focus:ring-deep-sea-blue text-sm outline-none" />
-                            <div class="flex space-x-3">
-                                <button @click="showShoppingModal = false" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
-                                <button @click="addShoppingItem" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm">新增</button>
-                            </div>
+                <!-- Expenses View -->
+                <div v-show="currentTab === 'expenses'">
+                     <div class="p-4">
+                        <h2 class="font-bold text-lg text-slate-800 mb-2">
+                           個人記帳
+                        </h2>
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+                           <div class="text-center">
+                               <p class="text-sm text-slate-500">已付總額 (TWD)</p>
+                               <p class="text-3xl font-black text-deep-sea-blue my-1">{{ formatNumber(finalTotalTWD) }}</p>
+                               <div class="text-xs text-slate-400">
+                                   THB {{ formatNumber(totalTHB) }} + TWD {{ formatNumber(totalTWD) }}
+                               </div>
+                           </div>
                         </div>
                     </div>
 
-                    <!-- Expense Modal -->
-                    <div v-if="showExpenseModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-                        <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-                            <div class="space-y-3">
-                                <input v-model="newExpense.date" type="date" class="w-full bg-slate-50 rounded-xl p-3 text-sm" />
-                                <input v-model="newExpense.name" type="text" placeholder="項目名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm" />
-                                <input v-model.number="newExpense.amount" type="number" placeholder="金額" class="w-full bg-slate-50 rounded-xl p-3 text-sm" />
-                                <select v-model="newExpense.payer" class="w-full bg-slate-50 rounded-xl p-3 text-sm"><option v-for="m in members" :key="m.id" :value="m.name">{{ m.name }} 先付</option></select>
-                            </div>
-                            <div class="flex space-x-3 mt-6">
-                                <button @click="showExpenseModal = false" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
-                                <button @click="saveExpense" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm">儲存</button>
-                            </div>
+                    <div class="p-4 pt-0">
+                         <div class="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100">
+                           <div v-for="expense in expenses.filter(e => e.payer === currentUser)" :key="expense.id" class="p-4 flex items-center">
+                               <div class="w-10 h-10 rounded-full flex items-center justify-center text-white" :class="getCategoryColor(expense.category)">
+                                    <i :class="getCategoryIcon(expense.category)"></i>
+                                </div>
+                               <div class="ml-3 flex-grow">
+                                   <div class="font-bold text-slate-700">{{ expense.item }}</div>
+                                   <div class="text-xs text-slate-400">{{ expense.date }}</div>
+                               </div>
+                               <div class="text-right">
+                                   <div class="font-bold text-slate-800">{{ formatNumber(expense.amount) }} <span class="text-xs text-slate-500">{{ expense.currency }}</span></div>
+                               </div>
+                               <button @click="editItem(expense, 'expense')" class="ml-4 text-slate-300 hover:text-deep-sea-blue"><i class="fa-solid fa-pencil"></i></button>
+                           </div>
+                           <div v-if="expenses.filter(e => e.payer === currentUser).length === 0" class="p-6 text-center text-sm text-slate-400">
+                                <i class="fa-solid fa-receipt text-2xl mb-2"></i>
+                                <p>目前沒有任何記帳</p>
+                           </div>
                         </div>
                     </div>
-
-                    <!-- Itinerary Modal -->
-                    <div v-if="showItineraryModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-                        <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-                            <div class="space-y-3">
-                                <input v-model="newItinerary.startTime" type="text" placeholder="時間" class="w-full bg-slate-50 rounded-xl p-3 text-sm" />
-                                <input v-model="newItinerary.name" type="text" placeholder="行程名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm" />
-                                <textarea v-model="newItinerary.note" rows="3" placeholder="備註" class="w-full bg-slate-50 rounded-xl p-3 text-sm"></textarea>
-                            </div>
-                            <div class="flex space-x-3 mt-6">
-                                <button @click="showItineraryModal = false" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
-                                <button @click="saveItineraryItem" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm">儲存</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Password Modal -->
-                    <!-- 修正：使用 Teleport 確保在最上層，且 z-index 設為最高 -->
-                    <div 
-                        v-if="showRolePasswordModal" 
-                        :key="targetLoginMember?.id || 'password-modal'"
-                        class="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in"
-                        @click.self="cancelRolePassword"
-                    >
-                        <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl border border-orange-100 relative z-[10000]">
-                            <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deep-sea-blue shadow-inner">
-                                <i class="fa-solid fa-shield-cat text-xl"></i>
-                            </div>
-                            <h3 class="font-bold text-base mb-2 text-center text-slate-800">{{ passwordMode === "loginAdmin" ? "Admin 身份驗證" : passwordMode === "loginPersonal" ? `歡迎回來，${targetLoginMember?.name}` : "需要密碼" }}</h3>
-                            
-                            <input
-                                ref="rolePasswordInputRef"
-                                v-model="rolePasswordInput"
-                                type="password"
-                                placeholder="請輸入密碼"
-                                class="w-full bg-slate-50 rounded-xl p-3 text-center font-bold text-deep-sea-blue outline-none border-2 border-transparent focus:border-deep-sea-blue focus:bg-white transition-all mb-4 tracking-widest ring-1 ring-slate-100 focus:ring-deep-sea-blue/30"
-                            />
-                            
-                            <div class="flex space-x-3">
-                                <button @click="cancelRolePassword" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold hover:bg-slate-200 transition-colors">取消</button>
-                                <button @click="confirmRolePassword" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-deep-sea-blue to-orange-500 text-white text-sm font-bold shadow-lg shadow-orange-200 hover:scale-105 transition-transform">確認</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Toast -->
-                    <div v-if="showToast" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-[10000] bg-slate-900/90 text-white text-sm px-4 py-2 rounded-full shadow-lg">{{ toastMessage }}</div>
-                </Teleport>
+                </div>
             </main>
-        </div>
+
+            <!-- Floating Action Button -->
+            <button @click="handleAddClick" v-if="hasSelectedUser" class="fixed bottom-24 right-6 z-40 w-16 h-16 rounded-full bg-gradient-to-r from-deep-sea-blue to-orange-500 text-white shadow-lg flex items-center justify-center text-2xl">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+
+
+            <!-- Itinerary Modal -->
+            <div v-if="showItineraryModal" class="fixed inset-0 bg-black/50 z-50 flex items-end justify-center" @click.self="showItineraryModal=false">
+                <div class="bg-white w-full rounded-t-3xl p-6 animate-slide-up">
+                    <h3 class="font-bold text-lg mb-4">{{ isEditMode ? '編輯' : '新增' }}行程</h3>
+                     <div class="space-y-4">
+                        <input v-model="newItinerary.title" type="text" placeholder="行程標題" class="w-full bg-slate-100 p-3 rounded-xl">
+                        <textarea v-model="newItinerary.description" placeholder="描述" class="w-full bg-slate-100 p-3 rounded-xl h-24"></textarea>
+                        <div class="grid grid-cols-2 gap-4">
+                            <input v-model="newItinerary.time" type="time" placeholder="時間" class="w-full bg-slate-100 p-3 rounded-xl">
+                             <select v-model="newItinerary.category" class="w-full bg-slate-100 p-3 rounded-xl">
+                                <option value="food">美食</option>
+                                <option value="attraction">景點</option>
+                                <option value="shopping">購物</option>
+                                <option value="activity">活動</option>
+                                <option value="transport">交通</option>
+                                <option value="hotel">住宿</option>
+                            </select>
+                        </div>
+                        <button @click="saveItineraryItem" class="w-full p-4 bg-deep-sea-blue text-white rounded-xl font-bold">儲存</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Expense Modal -->
+            <div v-if="showExpenseModal" class="fixed inset-0 bg-black/50 z-50 flex items-end justify-center" @click.self="showExpenseModal=false">
+                <div class="bg-white w-full rounded-t-3xl p-6 animate-slide-up">
+                    <h3 class="font-bold text-lg mb-4">{{ isEditMode ? '編輯' : '新增' }}記帳</h3>
+                     <div class="space-y-4">
+                        <input v-model="newExpense.item" type="text" placeholder="項目" class="w-full bg-slate-100 p-3 rounded-xl">
+                        <div class="grid grid-cols-3 gap-4">
+                            <input v-model="newExpense.amount" type="number" placeholder="金額" class="col-span-2 bg-slate-100 p-3 rounded-xl">
+                            <select v-model="newExpense.currency" class="w-full bg-slate-100 p-3 rounded-xl">
+                                <option>THB</option>
+                                <option>TWD</option>
+                            </select>
+                        </div>
+                         <div class="grid grid-cols-2 gap-4">
+                            <input v-model="newExpense.date" type="date" class="w-full bg-slate-100 p-3 rounded-xl">
+                            <select v-model="newExpense.category" class="w-full bg-slate-100 p-3 rounded-xl">
+                                <option value="food">美食</option>
+                                <option value="attraction">景點</option>
+                                <option value="shopping">購物</option>
+                                <option value="activity">活動</option>
+                                <option value="transport">交通</option>
+                                <option value="hotel">住宿</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                        <button @click="saveExpense" class="w-full p-4 bg-deep-sea-blue text-white rounded-xl font-bold">儲存</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Navigation -->
+            <footer class="footer-nav bg-white shadow-[-4px_0_15px_rgba(0,0,0,0.1)] relative">
+                <div class="flex justify-around">
+                    <div
+                        @click="currentTab = 'itinerary'"
+                        class="tab flex-1 text-center py-3 cursor-pointer"
+                        :class="{ active: currentTab === 'itinerary' }"
+                    >
+                        <i class="fa-solid fa-route"></i>
+                        <span class="block text-xs">行程</span>
+                    </div>
+                    <div
+                        @click="currentTab = 'shopping'"
+                        class="tab flex-1 text-center py-3 cursor-pointer"
+                        :class="{ active: currentTab === 'shopping' }"
+                    >
+                        <i class="fa-solid fa-bag-shopping"></i>
+                        <span class="block text-xs">購物</span>
+                    </div>
+                    <div
+                        @click="currentTab = 'expenses'"
+                        class="tab flex-1 text-center py-3 cursor-pointer"
+                        :class="{ active: currentTab === 'expenses' }"
+                    >
+                        <i class="fa-solid fa-wallet"></i>
+                        <span class="block text-xs">記帳</span>
+                    </div>
+                </div>
+                <div
+                    class="tab-indicator"
+                    :style="{
+                        width: `${100 / 3}%`,
+                        transform: `translateX(${
+                            (currentTab === 'itinerary'
+                                ? 0
+                                : currentTab === 'shopping'
+                                ? 1
+                                : 2) * 100
+                        }%)`,
+                    }"
+                ></div>
+            </footer>
+        </template>
     </div>
 
-    <!-- JS 主程式 -->
     <script type="module">
-        import { createApp, ref, computed, onMounted, nextTick } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        import {
+            getFirestore,
+            collection,
+            addDoc,
+            onSnapshot,
+            doc,
+            updateDoc,
+            deleteDoc,
+            writeBatch,
+            getDocs,
+            query,
+            orderBy,
+            serverTimestamp,
+        } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+
+        const { createApp, ref, computed, onMounted, nextTick } = Vue;
 
         const firebaseConfig = {
-            apiKey: "AIzaSyCyYCSGWQ0Wdf13AE62UG7W8WiwpqCHs_0",
-            authDomain: "bankoktrip2026.firebaseapp.com",
-            projectId: "bankoktrip2026",
-            storageBucket: "bankoktrip2026.firebasestorage.app",
-            messagingSenderId: "347622663908",
-            appId: "1:347622663908:web:6a514d1761f215a2ae6ef1",
-            measurementId: "G-ENHVD5XKF8",
+            // Your Firebase config object
         };
 
-        const firebaseApp = initializeApp(firebaseConfig);
-        const db = getFirestore(firebaseApp);
+        const appInstance = initializeApp(firebaseConfig);
+        const db = getFirestore(appInstance);
 
         const INITIAL_ITINERARY = [
              // Day 1
@@ -892,7 +732,7 @@
                 onMounted(async () => {
                     try {
                         const membersCol = collection(db, "members");
-                        onSnapshot(membersCol, (snapshot) => {
+                        onSnapshot(query(membersCol, orderBy("name")), (snapshot) => {
                             if (!snapshot.empty) {
                                 members.value = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
                             } else {
@@ -914,30 +754,85 @@
                             onSnapshot(itineraryCol, (snapshot) => itineraryData.value[i] = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
                         }
 
-                        try { await fetchExchangeRate(); } catch (e) { console.error("Rate error", e); }
-                        try { await fetchWeather(); } catch (e) { console.error("Weather error", e); }
+                        try { await fetchWeatherData(); } catch (e) { console.error("Weather fetch failed:", e); }
+                        try { await fetchExchangeRate(); } catch (e) { console.error("Rates fetch failed:", e); }
 
-                    } catch (error) {
-                        console.error("Initialization error:", error);
-                        triggerToast("初始化發生錯誤，請重整頁面");
-                    } finally {
-                        setTimeout(() => {
-                            const loader = document.getElementById("loading-screen");
-                            if (loader) loader.classList.add("hidden");
-                        }, 500);
-                    }
+                    } catch (e) { console.error("Firebase init error: ", e); }
                 });
+
+                const fetchWeatherData = async () => {
+                    const lat = 13.7563; // Bangkok Lat
+                    const lon = 100.5018; // Bangkok Lon
+                    const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${WEATHER_API_KEY}&units=metric&lang=zh_tw`;
+                    
+                    const now = new Date();
+                    const tripStart = new Date(`${TRIP_YEAR}-01-16`);
+                    const daysUntilTrip = Math.ceil((tripStart - now) / (1000 * 60 * 60 * 24));
+
+                    if (daysUntilTrip > 5) {
+                        // Use historical data for Jan
+                        weatherData.value = dates.value.map(() => ({
+                            temp: "33/24",
+                            feel: "36",
+                            condition: "Clear",
+                            is_realtime: false,
+                        }));
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(url);
+                        const data = await response.json();
+                        const dailyData = {};
+                        data.list.forEach(item => {
+                            const date = new Date(item.dt * 1000).toLocaleDateString('en-CA');
+                            if (!dailyData[date]) {
+                                dailyData[date] = { temps: [], feels: [], conditions: [], icons: [] };
+                            }
+                            dailyData[date].temps.push(item.main.temp);
+                            dailyData[date].feels.push(item.main.feels_like);
+                            dailyData[date].conditions.push(item.weather[0].main);
+                            dailyData[date].icons.push(item.weather[0].icon);
+                        });
+
+                        const tripDates = dates.value.map(d => `${TRIP_YEAR}-${d.date.replace('/', '-')}`);
+                        weatherData.value = tripDates.map(d_str => {
+                            const d_obj = new Date(d_str);
+                            const key = d_obj.toLocaleDateString('en-CA');
+                            if (dailyData[key]) {
+                                const day = dailyData[key];
+                                const max_temp = Math.round(Math.max(...day.temps));
+                                const min_temp = Math.round(Math.min(...day.temps));
+                                const avg_feel = Math.round(day.feels.reduce((a,b) => a+b, 0) / day.feels.length);
+                                return {
+                                    temp: `${max_temp}/${min_temp}`,
+                                    feel: `${avg_feel}`,
+                                    condition: day.conditions[Math.floor(day.conditions.length/2)], // Mid-day condition
+                                    is_realtime: true,
+                                };
+                            }
+                            return { temp: "?/?", feel: "?", condition: "Unknown", is_realtime: false };
+                        });
+                    } catch (error) {
+                        console.error("Error fetching weather:", error);
+                    }
+                };
 
                 const fetchExchangeRate = async () => {
                     isRatesLoading.value = true;
                     try {
-                        const r = await fetch("https://open.er-api.com/v6/latest/THB");
-                        const d = await r.json();
-                        if (d && d.rates && d.rates.TWD) EXCHANGE_RATE.value = Number(d.rates.TWD);
-                    } catch (e) { console.error(e); } finally { isRatesLoading.value = false; }
+                        // Using a free API, replace with a reliable one if possible
+                        const response = await fetch('https://api.exchangerate-api.com/v4/latest/THB');
+                        const data = await response.json();
+                        EXCHANGE_RATE.value = data.rates.TWD;
+                        updateTWD();
+                    } catch (error) {
+                        console.error("Error fetching exchange rate:", error);
+                        triggerToast("匯率更新失敗");
+                    } finally {
+                        isRatesLoading.value = false;
+                    }
                 };
-
-                const fetchWeather = async () => { /* 簡化：天氣邏輯略 */ };
 
                 const attemptLogin = (member) => {
                     targetLoginMember.value = member;
@@ -954,11 +849,11 @@
                         return;
                     }
                     
-                    setTimeout(() => {
+                    nextTick(() => {
                         if (rolePasswordInputRef.value) {
                             rolePasswordInputRef.value.focus();
                         }
-                    }, 100);
+                    });
                 };
 
                 const performLogin = (member) => { currentUser.value = member.name; hasSelectedUser.value = true; };
@@ -978,43 +873,174 @@
                 
                 const cancelRolePassword = () => showRolePasswordModal.value = false;
                 const updateTWD = () => inputTWD.value = Math.round(inputTHB.value * EXCHANGE_RATE.value);
-                const updateTHB = () => inputTHB.value = Math.round(inputTWD.value / EXCHANGE_RATE.value);
+                const updateTHB = () => inputTHB.value = Math.round(inputTWD.value / EXCHANGE_RATE.value * 100) / 100;
+
+                const getCategoryIcon = (category) => ({
+                    food: "fa-solid fa-utensils",
+                    attraction: "fa-solid fa-camera-retro",
+                    shopping: "fa-solid fa-bag-shopping",
+                    activity: "fa-solid fa-person-swimming",
+                    transport: "fa-solid fa-train-subway",
+                    hotel: "fa-solid fa-bed",
+                    other: "fa-solid fa-circle"
+                }[category] || "fa-solid fa-question-circle");
+
+                const getCategoryColor = (category) => ({
+                    food: "bg-red-400",
+                    attraction: "bg-blue-400",
+                    shopping: "bg-purple-400",
+                    activity: "bg-yellow-500",
+                    transport: "bg-green-400",
+                    hotel: "bg-indigo-400",
+                    other: "bg-gray-400"
+                }[category] || "bg-gray-400");
                 
+                const getTransportIcon = (method) => ({
+                    walk: "fa-solid fa-person-walking",
+                    car: "fa-solid fa-car",
+                    train: "fa-solid fa-train-subway"
+                }[method] || "fa-solid fa-circle-question");
+
+                const getWeatherIcon = (condition) => {
+                    const c = condition.toLowerCase();
+                    if (c.includes('rain')) return 'fa-solid fa-cloud-showers-heavy';
+                    if (c.includes('cloud')) return 'fa-solid fa-cloud';
+                    if (c.includes('clear')) return 'fa-solid fa-sun';
+                    if (c.includes('storm')) return 'fa-solid fa-cloud-bolt';
+                    return 'fa-solid fa-smog';
+                };
+                const getWeatherDescription = (condition) => {
+                    const c = condition.toLowerCase();
+                    if (c.includes('rain')) return '有雨';
+                    if (c.includes('cloud')) return '多雲';
+                    if (c.includes('clear')) return '晴朗';
+                    if (c.includes('storm')) return '風暴';
+                    return '未知';
+                };
+
                 const handleAddClick = () => {
+                    isEditMode.value = false;
                     if (currentTab.value === 'itinerary') {
-                        if (!canEditItinerary.value) return triggerToast("權限不足");
-                        newItinerary.value = {}; showItineraryModal.value = true;
-                    } else if (currentTab.value === 'shopping') {
-                        newShoppingItem.value = { name: "", checked: false }; showShoppingModal.value = true;
+                        newItinerary.value = { category: 'food', order: currentItinerary.value.length };
+                        showItineraryModal.value = true;
                     } else if (currentTab.value === 'expenses') {
-                        newExpense.value = { date: new Date().toISOString().split('T')[0], currency: 'THB', payer: currentUser.value }; showExpenseModal.value = true;
+                        newExpense.value = { 
+                            currency: 'THB',
+                            category: 'food', 
+                            payer: currentUser.value,
+                            date: new Date().toISOString().split('T')[0]
+                        };
+                        showExpenseModal.value = true;
                     }
                 };
 
-                // UI Helpers
-                const getCategoryIcon = (c) => ({ sightseeing: "fa-solid fa-camera", food: "fa-solid fa-utensils", shopping: "fa-solid fa-bag-shopping", accommodation: "fa-solid fa-bed", transport: "fa-solid fa-van-shuttle", ticket: "fa-solid fa-ticket", flight: "fa-solid fa-plane", other: "fa-solid fa-circle-dot" }[c] || "fa-solid fa-circle-dot");
-                const getTransportIcon = (t) => ({ car: "fa-solid fa-car", walk: "fa-solid fa-person-walking", public: "fa-solid fa-train-subway", flight: "fa-solid fa-plane-up" }[t] || "fa-solid fa-arrow-right");
-                const getCategoryColor = (c) => ({ sightseeing: "#FF7043", food: "#FFA726", shopping: "#EC407A", accommodation: "#5C6BC0", transport: "#78909C", ticket: "#8D6E63", flight: "#29B6F6", other: "#9E9E9E" }[c] || "#BDBDBD");
-                const getWeatherIcon = (c) => ({ sunny: "fa-solid fa-sun", cloudy: "fa-solid fa-cloud-sun", rain: "fa-solid fa-cloud-showers-heavy" }[c] || "fa-solid fa-sun");
-                const getWeatherDescription = (c) => ({ sunny: "晴朗炎熱", cloudy: "多雲偶晴", rain: "午後雷陣雨" }[c] || "晴朗");
-                const editItem = (i) => { newItinerary.value = {...i}; showItineraryModal.value = true; };
-                const saveItineraryItem = async () => { /* 儲存邏輯略 */ showItineraryModal.value = false; };
-                const addShoppingItem = async () => { if(newShoppingItem.value.name) await addDoc(collection(db, "shopping_list"), { ...newShoppingItem.value, owner: currentUser.value }); showShoppingModal.value = false; };
-                const toggleShoppingItem = async (item) => await updateDoc(doc(db, "shopping_list", item.id), { checked: !item.checked });
-                const removeShoppingItem = async (id) => await deleteDoc(doc(db, "shopping_list", id));
-                const saveExpense = async () => { if(newExpense.value.amount) await addDoc(collection(db, "expenses"), newExpense.value); showExpenseModal.value = false; };
-                const moveItem = () => {};
+                const editItem = (item, type) => {
+                    isEditMode.value = true;
+                    if (type === 'itinerary') {
+                        newItinerary.value = { ...item };
+                        showItineraryModal.value = true;
+                    } else if (type === 'expense') {
+                        newExpense.value = { ...item };
+                        showExpenseModal.value = true;
+                    }
+                };
+
+                const saveItineraryItem = async () => {
+                    if (!newItinerary.value.title) return;
+                    const colRef = collection(db, `itinerary_day_${selectedDateIndex.value}`);
+                    try {
+                        if (isEditMode.value) {
+                            const docRef = doc(colRef, newItinerary.value.id);
+                            await updateDoc(docRef, newItinerary.value);
+                            triggerToast("行程已更新");
+                        } else {
+                            await addDoc(colRef, newItinerary.value);
+                            triggerToast("行程已新增");
+                        }
+                        showItineraryModal.value = false;
+                    } catch (e) {
+                        console.error(e);
+                        triggerToast("儲存失敗");
+                    }
+                };
+                
+                const moveItem = async (item, direction) => {
+                    const list = currentItinerary.value;
+                    const fromIndex = list.findIndex(i => i.id === item.id);
+                    if (fromIndex === -1) return;
+                    
+                    const toIndex = direction === 'up' ? fromIndex - 1 : fromIndex + 1;
+                    if (toIndex < 0 || toIndex >= list.length) return;
+
+                    const batch = writeBatch(db);
+                    const colRef = collection(db, `itinerary_day_${selectedDateIndex.value}`);
+                    
+                    const itemToMove = list[fromIndex];
+                    const otherItem = list[toIndex];
+
+                    const newOrderForMoved = otherItem.order;
+                    const newOrderForOther = itemToMove.order;
+
+                    batch.update(doc(colRef, itemToMove.id), { order: newOrderForMoved });
+                    batch.update(doc(colRef, otherItem.id), { order: newOrderForOther });
+
+                    try {
+                        await batch.commit();
+                        recentlyMovedId.value = itemToMove.id;
+                        setTimeout(() => recentlyMovedId.value = null, 1500);
+                    } catch (e) {
+                        console.error("Move failed:", e);
+                        triggerToast("移動失敗");
+                    }
+                };
+
+                const addShoppingItem = async () => {
+                    if (!newShoppingItem.value.name.trim()) return;
+                    await addDoc(collection(db, "shopping_list"), {
+                        name: newShoppingItem.value.name,
+                        checked: false,
+                        owner: currentUser.value
+                    });
+                    newShoppingItem.value.name = "";
+                };
+
+                const toggleShoppingItem = async (item) => {
+                    const docRef = doc(db, "shopping_list", item.id);
+                    await updateDoc(docRef, { checked: !item.checked });
+                };
+
+                const removeShoppingItem = async (id) => {
+                    await deleteDoc(doc(db, "shopping_list", id));
+                };
+
+                const saveExpense = async () => {
+                    if (!newExpense.value.item || !newExpense.value.amount) return;
+                    try {
+                        if (isEditMode.value) {
+                            const docRef = doc(db, "expenses", newExpense.value.id);
+                            await updateDoc(docRef, newExpense.value);
+                             triggerToast("記帳已更新");
+                        } else {
+                            await addDoc(collection(db, "expenses"), newExpense.value);
+                             triggerToast("記帳已新增");
+                        }
+                        showExpenseModal.value = false;
+                    } catch(e) {
+                        console.error(e);
+                        triggerToast("儲存失敗");
+                    }
+                };
 
                 return {
                     currentTab, selectedDateIndex, showShoppingModal, showExpenseModal, showItineraryModal, showRolePasswordModal,
                     dates, weatherData, currentItinerary, members, currentShoppingList,
                     newShoppingItem, newExpense, newItinerary, rolePasswordInput, rolePasswordInputRef, passwordMode, targetLoginMember,
-                    currentUser, hasSelectedUser, canEditItinerary, totalTHB, totalTWD, finalTotalTWD,
-                    inputTHB, inputTWD, EXCHANGE_RATE, isRatesLoading, showToast, toastMessage,
+                    currentUser, hasSelectedUser, currentUserRole, canEditItinerary, totalTHB, totalTWD, finalTotalTWD,
+                    inputTHB, inputTWD, EXCHANGE_RATE, isRatesLoading, showToast, toastMessage, recentlyMovedId,
                     attemptLogin, confirmRolePassword, cancelRolePassword,
                     getCategoryIcon, getTransportIcon, getCategoryColor, getWeatherIcon, getWeatherDescription, formatNumber,
                     handleAddClick, editItem, saveItineraryItem, addShoppingItem, toggleShoppingItem, removeShoppingItem, saveExpense, moveItem,
-                    updateTWD, updateTHB, fetchExchangeRate
+                    updateTWD, updateTHB, fetchExchangeRate, performLogin
                 };
             },
         });
