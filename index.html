@@ -38,10 +38,10 @@
         };
     </script>
 
-    <style>
+        <style>
         @import url("https://fonts.googleapis.com/css?family=Noto+Sans+TC:wght@300;400;500;700&display=swap");
 
-        /* 讓 body 不滾動，由 .app-container 負責滾動，避免 iOS sticky header 跟狀態列錯位 [web:21][web:69] */
+        /* 讓 body 不滾動，由 .app-container 負責滾動，避免 iOS sticky header 跟狀態列錯位 */
         html, body {
             height: 100%;
             margin: 0;
@@ -55,7 +55,7 @@
             overflow: hidden;
         }
 
-        /* 真正滾動容器，並處理 safe area [web:3][web:70] */
+        /* 真正滾動容器，並處理 safe area */
         .app-container {
             max-width: 480px;
             margin: 0 auto;
@@ -180,7 +180,10 @@
             background: linear-gradient(135deg, #ff7043 0%, #ab47bc 100%);
         }
 
-        /* sticky 日期列：因 app-container 已有 safe area padding，這裡 top:0 即貼在狀態列下方 [web:22] */
+        /* 
+           修正重點：sticky 日期列 
+           使用 env(safe-area-inset-top) 確保固定時位於狀態列下方
+        */
         .date-selector-sticky {
             position: sticky;
             position: -webkit-sticky;
@@ -189,7 +192,9 @@
             -webkit-backdrop-filter: blur(10px);
             border-bottom: 1px solid #f0f0f0;
             z-index: 40;
-            top: 0;
+            /* 修正：同時設定 0 與 env 以相容不同裝置 */
+            top: 0; 
+            top: env(safe-area-inset-top); 
         }
 
         .rotate-180 {
@@ -201,7 +206,7 @@
         .custom-select-wrapper select {
             -webkit-appearance: none;
             appearance: none;
-            width: 100%;
+            width: 100%;\
             height: 100%;
             opacity: 0;
             position: absolute;
@@ -230,11 +235,11 @@
             z-index: 20;
             position: relative;
         }
-        .flip-list-enter-active,
+        .flip-list-enter-active,\
         .flip-list-leave-active {
             transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
         }
-        .flip-list-enter-from,
+        .flip-list-enter-from,\
         .flip-list-leave-to {
             opacity: 0;
             transform: scale(0.95);
@@ -276,7 +281,7 @@
             height: 50px;
             border: 4px solid rgba(230, 81, 0, 0.2);
             border-top-color: #e65100;
-            border-radius: 50%;
+            border-radius: 50%;\
             animation: spin 1s linear infinite;
             margin-bottom: 1rem;
         }
@@ -303,6 +308,7 @@
             }
         }
     </style>
+
 </head>
 <body>
     <!-- Loading -->
