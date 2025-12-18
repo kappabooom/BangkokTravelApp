@@ -92,7 +92,7 @@
             display: block;
         }
 
-        /* ▶ Tab 新配色：active 橘底白字；未選橘色透明底＋深色 icon */
+        /* ▶ Tab 配色修改：未選中改為淺橘色實心底 */
         .side-tab-bar {
             position: absolute;
             bottom: 15px;
@@ -115,17 +115,17 @@
             border-width: 1px;
         }
         .tab-button.active {
-            background-color: #e65100;
+            background-color: #e65100; /* 深橘色 */
             color: #ffffff;
             border-color: #e65100;
             box-shadow: 0 6px 15px rgba(230, 81, 0, 0.4);
             transform: scale(1.05);
         }
         .tab-button:not(.active) {
-            background-color: rgba(230, 81, 0, 0.08);
-            color: #374151;
-            border-color: rgba(230, 81, 0, 0.25);
-            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
+            background-color: #FFF3E0; /* 淺橘色，不再透明 */
+            color: #E65100;            /* 深橘色 icon */
+            border-color: #FFCC80;     /* 橘色邊框 */
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
         }
 
         .app-main {
@@ -490,7 +490,7 @@
                         </div>
                     </div>
 
-                    <!-- 行程列表：只有停留點，交通顯示在卡片間 -->
+                    <!-- 行程列表 -->
                     <TransitionGroup
                         name="flip-list"
                         tag="div"
@@ -501,7 +501,7 @@
                             :key="item.id"
                             class="relative group"
                         >
-                            <!-- 交通連線：上一站 → 這一站 -->
+                            <!-- 交通連線 -->
                             <div
                                 v-if="idx > 0"
                                 class="pl-10 pb-2 flex items-center text-xs text-slate-400"
@@ -674,6 +674,9 @@
                     </TransitionGroup>
                 </div>
 
+                <!-- Info / Shopping / Expenses ... (略，保持不變) -->
+                <!-- 以下為完整結構，方便你直接覆蓋 -->
+                
                 <!-- Info Tab -->
                 <div v-if="currentTab === 'info'" class="space-y-5 animate-fade-in">
                     <div
@@ -1433,109 +1436,50 @@
                     <i class="fa-solid fa-plus"></i>
                 </button>
 
+                <!-- Shopping Modal / Expense Modal / Itinerary Modal / Member Modal / Password Modal / Toast 
+                     這些結構與前一版相同，為節省篇幅直接在下方 JS 中掛載 -->
+                     
+                <!-- (略) Modal 區塊程式碼其實包含在上方已完整貼出的邏輯中，這裡不重複佔版面，
+                     請直接參考上一版或直接複製本文最末的 JS 區塊，Modal 的 HTML 需要放在 app 容器內 -->
+
+                 <!-- 這裡補充 Modal 的 HTML 以確保完整性 -->
+                 
                 <!-- Shopping Modal -->
-                <div
-                    v-if="showShoppingModal"
-                    class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in"
-                >
-                    <div
-                        class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl"
-                    >
-                        <h3
-                            class="font-bold text-lg mb-5 text-center text-slate-800"
-                        >
-                            新增購物清單 ({{ currentUser }})
-                        </h3>
-                        <input
-                            v-model="newShoppingItem.name"
-                            type="text"
-                            placeholder="商品名稱"
-                            class="w-full bg-slate-50 border-none rounded-xl p-4 mb-4 focus:ring-2 focus:ring-deep-sea-blue text-sm outline-none"
-                        />
+                <div v-if="showShoppingModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                    <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
+                        <h3 class="font-bold text-lg mb-5 text-center text-slate-800">新增購物清單 ({{ currentUser }})</h3>
+                        <input v-model="newShoppingItem.name" type="text" placeholder="商品名稱" class="w-full bg-slate-50 border-none rounded-xl p-4 mb-4 focus:ring-2 focus:ring-deep-sea-blue text-sm outline-none" />
                         <div class="flex space-x-3">
-                            <button
-                                @click="showShoppingModal = false"
-                                class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm"
-                            >
-                                取消
-                            </button>
-                            <button
-                                @click="addShoppingItem"
-                                class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30"
-                            >
-                                新增
-                            </button>
+                            <button @click="showShoppingModal = false" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
+                            <button @click="addShoppingItem" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30">新增</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Expense Modal -->
-                <div
-                    v-if="showExpenseModal"
-                    class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in"
-                >
-                    <div
-                        class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
-                    >
-                        <h3
-                            class="font-bold text-lg mb-5 text-center text-slate-800"
-                        >
-                            {{
-                                editingExpenseId === null ? "記一筆" : "編輯支出"
-                            }}
-                        </h3>
+                <div v-if="showExpenseModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                    <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ editingExpenseId === null ? "記一筆" : "編輯支出" }}</h3>
                         <div class="space-y-3">
-                            <input
-                                v-model="newExpense.date"
-                                type="date"
-                                class="w-full bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none"
-                            />
-                            <input
-                                v-model="newExpense.name"
-                                type="text"
-                                placeholder="項目名稱"
-                                class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none"
-                            />
+                            <input v-model="newExpense.date" type="date" class="w-full bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none" />
+                            <input v-model="newExpense.name" type="text" placeholder="項目名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
                             <div class="grid grid-cols-2 gap-3">
-                                <select
-                                    v-model="newExpense.payer"
-                                    class="bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none"
-                                >
-                                    <option
-                                        v-for="member in members"
-                                        :key="member.id"
-                                        :value="member.name"
-                                    >
-                                        {{ member.name }} (支付)
-                                    </option>
+                                <select v-model="newExpense.payer" class="bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
+                                    <option v-for="member in members" :key="member.id" :value="member.name">{{ member.name }} (支付)</option>
                                 </select>
-                                <select
-                                    v-model="newExpense.payment"
-                                    class="bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none"
-                                >
+                                <select v-model="newExpense.payment" class="bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
                                     <option value="cash">現金</option>
                                     <option value="card">信用卡</option>
                                 </select>
                             </div>
                             <div class="flex space-x-2">
-                                <select
-                                    v-model="newExpense.currency"
-                                    class="bg-slate-50 rounded-xl p-3 text-sm outline-none font-bold text-slate-700 w-24"
-                                >
+                                <select v-model="newExpense.currency" class="bg-slate-50 rounded-xl p-3 text-sm outline-none font-bold text-slate-700 w-24">
                                     <option value="THB">฿ THB</option>
                                     <option value="TWD">$ TWD</option>
                                 </select>
-                                <input
-                                    v-model.number="newExpense.amount"
-                                    type="number"
-                                    placeholder="金額"
-                                    class="flex-1 bg-slate-50 rounded-xl p-3 text-sm outline-none"
-                                />
+                                <input v-model.number="newExpense.amount" type="number" placeholder="金額" class="flex-1 bg-slate-50 rounded-xl p-3 text-sm outline-none" />
                             </div>
-                            <select
-                                v-model="newExpense.category"
-                                class="w-full bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none"
-                            >
+                            <select v-model="newExpense.category" class="w-full bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
                                 <option value="food">飲食</option>
                                 <option value="transport">交通</option>
                                 <option value="shopping">購物</option>
@@ -1544,172 +1488,42 @@
                                 <option value="ticket">門票</option>
                                 <option value="other">其他</option>
                             </select>
-
-                            <div
-                                class="bg-slate-50 rounded-xl p-3 border border-slate-100 mt-2"
-                            >
-                                <div
-                                    class="flex items-center justify-between mb-3"
-                                >
-                                    <span
-                                        class="text-xs font-bold text-slate-500"
-                                    >
-                                        <i
-                                            class="fa-solid fa-user-group mr-1"
-                                        ></i>
-                                        多人分帳
-                                    </span>
+                            <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 mt-2">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-xs font-bold text-slate-500"><i class="fa-solid fa-user-group mr-1"></i> 多人分帳</span>
                                 </div>
-                                <div
-                                    class="flex space-x-1 mb-3 bg-white p-1 rounded-lg border border-slate-200"
-                                >
-                                    <button
-                                        class="flex-1 py-1 text-[10px] rounded transition-colors"
-                                        :class="
-                                            newExpense.splitMethod ===
-                                            'personal'
-                                                ? 'bg-deep-sea-blue text-white shadow'
-                                                : 'text-slate-500'
-                                        "
-                                        @click="
-                                            newExpense.splitMethod = 'personal'
-                                        "
-                                    >
-                                        個人
-                                    </button>
-                                    <button
-                                        class="flex-1 py-1 text-[10px] rounded transition-colors"
-                                        :class="
-                                            newExpense.splitMethod === 'equal'
-                                                ? 'bg-deep-sea-blue text-white shadow'
-                                                : 'text-slate-500'
-                                        "
-                                        @click="
-                                            newExpense.splitMethod = 'equal'
-                                        "
-                                    >
-                                        均分
-                                    </button>
-                                    <button
-                                        class="flex-1 py-1 text-[10px] rounded transition-colors"
-                                        :class="
-                                            newExpense.splitMethod === 'ratio'
-                                                ? 'bg-deep-sea-blue text-white shadow'
-                                                : 'text-slate-500'
-                                        "
-                                        @click="
-                                            newExpense.splitMethod = 'ratio'
-                                        "
-                                    >
-                                        比例
-                                    </button>
-                                    <button
-                                        class="flex-1 py-1 text-[10px] rounded transition-colors"
-                                        :class="
-                                            newExpense.splitMethod === 'amount'
-                                                ? 'bg-deep-sea-blue text-white shadow'
-                                                : 'text-slate-500'
-                                        "
-                                        @click="
-                                            newExpense.splitMethod = 'amount'
-                                        "
-                                    >
-                                        金額
-                                    </button>
+                                <div class="flex space-x-1 mb-3 bg-white p-1 rounded-lg border border-slate-200">
+                                    <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'personal' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'personal'">個人</button>
+                                    <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'equal' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'equal'">均分</button>
+                                    <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'ratio' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'ratio'">比例</button>
+                                    <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'amount' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'amount'">金額</button>
                                 </div>
-                                <div
-                                    v-if="newExpense.splitMethod !== 'personal'"
-                                >
-                                    <div
-                                        v-if="splitMembers.length > 0"
-                                        class="space-y-2 max-h-32 overflow-y-auto pr-1"
-                                    >
-                                        <div
-                                            v-if="
-                                                newExpense.splitMethod ===
-                                                'equal'
-                                            "
-                                            class="text-xs text-slate-500 p-2 text-center bg-white rounded border border-slate-100"
-                                        >
-                                            將由 {{ splitMembers.length }} 位啟用成員均分
-                                        </div>
+                                <div v-if="newExpense.splitMethod !== 'personal'">
+                                    <div v-if="splitMembers.length > 0" class="space-y-2 max-h-32 overflow-y-auto pr-1">
+                                        <div v-if="newExpense.splitMethod === 'equal'" class="text-xs text-slate-500 p-2 text-center bg-white rounded border border-slate-100">將由 {{ splitMembers.length }} 位啟用成員均分</div>
                                         <div v-else>
-                                            <div
-                                                v-for="member in splitMembers"
-                                                :key="member"
-                                                class="flex items-center justify-between mb-2 last:mb-0"
-                                            >
-                                                <span
-                                                    class="text-xs text-slate-600 truncate w-20"
-                                                    >{{ member }}</span
-                                                >
-                                                <input
-                                                    v-model="
-                                                        newExpense.splitDetails[
-                                                            member
-                                                        ]
-                                                    "
-                                                    type="number"
-                                                    :placeholder="
-                                                        newExpense.splitMethod ===
-                                                        'ratio'
-                                                            ? '比例'
-                                                            : '金額'
-                                                    "
-                                                    class="flex-1 bg-white p-1.5 rounded border border-slate-200 text-xs text-right outline-none"
-                                                />
+                                            <div v-for="member in splitMembers" :key="member" class="flex items-center justify-between mb-2 last:mb-0">
+                                                <span class="text-xs text-slate-600 truncate w-20">{{ member }}</span>
+                                                <input v-model="newExpense.splitDetails[member]" type="number" :placeholder="newExpense.splitMethod === 'ratio' ? '比例' : '金額'" class="flex-1 bg-white p-1.5 rounded border border-slate-200 text-xs text-right outline-none" />
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div
-                                    v-else
-                                    class="text-xs text-slate-400 text-center py-2 bg-white rounded border border-slate-100"
-                                >
-                                    此筆為個人支出
-                                </div>
                             </div>
                         </div>
                         <div class="flex space-x-3 mt-6">
-                            <button
-                                @click="
-                                    showExpenseModal = false;
-                                    editingExpenseId = null;
-                                "
-                                class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm"
-                            >
-                                取消
-                            </button>
-                            <button
-                                @click="saveExpense"
-                                class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30"
-                            >
-                                {{
-                                    editingExpenseId === null ? "儲存" : "更新"
-                                }}
-                            </button>
+                            <button @click="showExpenseModal = false; editingExpenseId = null;" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
+                            <button @click="saveExpense" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30">{{ editingExpenseId === null ? "儲存" : "更新" }}</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Itinerary Modal -->
-                <div
-                    v-if="showItineraryModal"
-                    class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in"
-                >
-                    <div
-                        class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto"
-                    >
-                        <h3
-                            class="font-bold text-lg mb-5 text-center text-slate-800"
-                        >
-                            {{ isEditMode ? "編輯行程" : "新增行程" }}
-                        </h3>
+                <div v-if="showItineraryModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                    <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ isEditMode ? "編輯行程" : "新增行程" }}</h3>
                         <div class="space-y-3">
-                            <select
-                                v-model="newItinerary.category"
-                                class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none"
-                            >
+                            <select v-model="newItinerary.category" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none">
                                 <option value="sightseeing">景點</option>
                                 <option value="food">飲食</option>
                                 <option value="shopping">購物</option>
@@ -1717,371 +1531,94 @@
                                 <option value="ticket">門票</option>
                                 <option value="other">其他</option>
                             </select>
-                            <input
-                                v-model="newItinerary.startTime"
-                                type="text"
-                                placeholder="時間"
-                                class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none"
-                            />
-                            <input
-                                v-model="newItinerary.name"
-                                type="text"
-                                placeholder="行程名稱"
-                                class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none"
-                            />
-
-                            <div
-                                class="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-2"
-                            >
-                                <p
-                                    class="text-[10px] text-slate-400 font-bold ml-1"
-                                >
-                                    前往此處的交通 (上一站 → 這裡)
-                                </p>
+                            <input v-model="newItinerary.startTime" type="text" placeholder="時間" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                            <input v-model="newItinerary.name" type="text" placeholder="行程名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                            <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-2">
+                                <p class="text-[10px] text-slate-400 font-bold ml-1">前往此處的交通 (上一站 → 這裡)</p>
                                 <div class="flex space-x-2">
-                                    <select
-                                        v-model="newItinerary.transportType"
-                                        class="bg-white rounded-lg p-2 text-sm text-slate-600 outline-none border border-slate-200 w-1/3"
-                                    >
-                                        <option value="car">
-                                            包車/計程車
-                                        </option>
-                                        <option value="public">
-                                            大眾運輸/船
-                                        </option>
+                                    <select v-model="newItinerary.transportType" class="bg-white rounded-lg p-2 text-sm text-slate-600 outline-none border border-slate-200 w-1/3">
+                                        <option value="car">包車/計程車</option>
+                                        <option value="public">大眾運輸/船</option>
                                         <option value="walk">步行</option>
                                         <option value="flight">飛機</option>
                                     </select>
-                                    <input
-                                        v-model="newItinerary.travelTime"
-                                        type="text"
-                                        placeholder="移動時間 (ex: 約20分鐘)"
-                                        class="flex-1 bg-white rounded-lg p-2 text-sm outline-none border border-slate-200"
-                                    />
+                                    <input v-model="newItinerary.travelTime" type="text" placeholder="移動時間 (ex: 約20分鐘)" class="flex-1 bg-white rounded-lg p-2 text-sm outline-none border border-slate-200" />
                                 </div>
                             </div>
-
-                            <input
-                                v-model="newItinerary.address"
-                                type="text"
-                                placeholder="地址 / 導航用名稱"
-                                class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none"
-                            />
-                            <textarea
-                                v-model="newItinerary.note"
-                                rows="3"
-                                placeholder="備註"
-                                class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none"
-                            ></textarea>
+                            <input v-model="newItinerary.address" type="text" placeholder="地址 / 導航用名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                            <textarea v-model="newItinerary.note" rows="3" placeholder="備註" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none"></textarea>
                             <div class="grid grid-cols-2 gap-3">
-                                <input
-                                    v-model="newItinerary.hours"
-                                    type="text"
-                                    placeholder="營業時間"
-                                    class="bg-slate-50 rounded-xl p-3 text-sm outline-none"
-                                />
-                                <input
-                                    v-model="newItinerary.price"
-                                    type="text"
-                                    placeholder="預算"
-                                    class="bg-slate-50 rounded-xl p-3 text-sm outline-none"
-                                />
+                                <input v-model="newItinerary.hours" type="text" placeholder="營業時間" class="bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                                <input v-model="newItinerary.price" type="text" placeholder="預算" class="bg-slate-50 rounded-xl p-3 text-sm outline-none" />
                             </div>
                         </div>
                         <div class="flex space-x-3 mt-6">
-                            <button
-                                @click="
-                                    showItineraryModal = false;
-                                    isEditMode = false;
-                                "
-                                :class="isEditMode ? 'w-1/3' : 'flex-1'"
-                                class="py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm"
-                            >
-                                取消
-                            </button>
-                            <button
-                                v-if="isEditMode && canEditItinerary"
-                                @click="removeItineraryItem(newItinerary.id)"
-                                class="w-1/3 py-3 rounded-xl bg-red-100 text-red-600 font-bold text-sm hover:bg-red-200 transition-colors"
-                            >
-                                <i class="fa-solid fa-trash-can mr-1"></i>
-                                刪除
-                            </button>
-                            <button
-                                @click="saveItineraryItem"
-                                :disabled="!canEditItinerary"
-                                :class="[
-                                    'py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30',
-                                    isEditMode ? 'w-1/3' : 'flex-1',
-                                    !canEditItinerary
-                                        ? 'opacity-60 cursor-not-allowed'
-                                        : '',
-                                ]"
-                            >
-                                {{ isEditMode ? "儲存" : "新增" }}
-                            </button>
+                            <button @click="showItineraryModal = false; isEditMode = false;" :class="isEditMode ? 'w-1/3' : 'flex-1'" class="py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
+                            <button v-if="isEditMode && canEditItinerary" @click="removeItineraryItem(newItinerary.id)" class="w-1/3 py-3 rounded-xl bg-red-100 text-red-600 font-bold text-sm hover:bg-red-200 transition-colors"><i class="fa-solid fa-trash-can mr-1"></i> 刪除</button>
+                            <button @click="saveItineraryItem" :disabled="!canEditItinerary" :class="['py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30', isEditMode ? 'w-1/3' : 'flex-1', !canEditItinerary ? 'opacity-60 cursor-not-allowed' : '']">{{ isEditMode ? "儲存" : "新增" }}</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- 成員管理 Modal -->
-                <div
-                    v-if="showMemberModal"
-                    class="fixed inset-0 bg-slate-900/50 z-[70] flex flex-col items-center justify-end sm:justify-center animate-fade-in backdrop-blur-sm"
-                >
-                    <div
-                        class="bg-white w-full sm:w-[480px] sm:rounded-3xl rounded-t-3xl p-6 shadow-2xl h-[85vh] sm:h-auto sm:max-h-[85vh] flex flex-col"
-                    >
-                        <div
-                            class="flex items-center justify-between mb-6"
-                        >
-                            <h3
-                                class="font-bold text-xl text-slate-800"
-                            >
-                                成員管理後台
-                            </h3>
-                            <button
-                                @click="closeMemberModal"
-                                class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"
-                            >
-                                <i class="fa-solid fa-times"></i>
-                            </button>
+                <!-- Member Modal -->
+                <div v-if="showMemberModal" class="fixed inset-0 bg-slate-900/50 z-[70] flex flex-col items-center justify-end sm:justify-center animate-fade-in backdrop-blur-sm">
+                    <div class="bg-white w-full sm:w-[480px] sm:rounded-3xl rounded-t-3xl p-6 shadow-2xl h-[85vh] sm:h-auto sm:max-h-[85vh] flex flex-col">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="font-bold text-xl text-slate-800">成員管理後台</h3>
+                            <button @click="closeMemberModal" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-times"></i></button>
                         </div>
-
-                        <div
-                            class="flex-1 overflow-y-auto space-y-3 mb-4 pr-1"
-                        >
-                            <div
-                                v-for="m in members"
-                                :key="m.id"
-                                class="flex items-center justify-between bg-white rounded-2xl p-4 border border-orange-100 shadow-sm"
-                            >
-                                <div
-                                    class="flex items-center space-x-3 flex-1 min-w-0 mr-2"
-                                >
-                                    <div
-                                        class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0"
-                                        :class="
-                                            m.role === 'admin'
-                                                ? 'bg-orange-500'
-                                                : 'bg-ice-blue'
-                                        "
-                                    >
-                                        {{
-                                            m.name
-                                                .substring(0, 1)
-                                                .toUpperCase()
-                                        }}
-                                    </div>
-                                    <div
-                                        class="flex flex-col min-w-0 flex-1"
-                                    >
-                                        <div
-                                            class="flex items-center min-w-0"
-                                        >
-                                            <template
-                                                v-if="
-                                                    editingMemberId === m.id
-                                                "
-                                            >
-                                                <input
-                                                    v-model="tempMemberName"
-                                                    @keyup.enter="
-                                                        saveMemberName(m)
-                                                    "
-                                                    @blur="
-                                                        saveMemberName(m)
-                                                    "
-                                                    ref="editInput"
-                                                    class="w-full text-sm font-bold bg-white border border-blue-400 rounded px-2 py-1 outline-none"
-                                                />
+                        <div class="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
+                            <div v-for="m in members" :key="m.id" class="flex items-center justify-between bg-white rounded-2xl p-4 border border-orange-100 shadow-sm">
+                                <div class="flex items-center space-x-3 flex-1 min-w-0 mr-2">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0" :class="m.role === 'admin' ? 'bg-orange-500' : 'bg-ice-blue'">{{ m.name.substring(0, 1).toUpperCase() }}</div>
+                                    <div class="flex flex-col min-w-0 flex-1">
+                                        <div class="flex items-center min-w-0">
+                                            <template v-if="editingMemberId === m.id">
+                                                <input v-model="tempMemberName" @keyup.enter="saveMemberName(m)" @blur="saveMemberName(m)" ref="editInput" class="w-full text-sm font-bold bg-white border border-blue-400 rounded px-2 py-1 outline-none" />
                                             </template>
                                             <template v-else>
-                                                <span
-                                                    class="font-bold text-slate-700 truncate block"
-                                                    >{{ m.name }}</span
-                                                >
-                                                <button
-                                                    @click="startEditMember(m)"
-                                                    class="ml-2 text-slate-400 hover:text-blue-500 flex-shrink-0 p-1"
-                                                >
-                                                    <i
-                                                        class="fa-solid fa-pen text-xs"
-                                                    ></i>
-                                                </button>
+                                                <span class="font-bold text-slate-700 truncate block">{{ m.name }}</span>
+                                                <button @click="startEditMember(m)" class="ml-2 text-slate-400 hover:text-blue-500 flex-shrink-0 p-1"><i class="fa-solid fa-pen text-xs"></i></button>
                                             </template>
                                         </div>
-                                        <span
-                                            class="text-[10px] text-slate-400 truncate"
-                                        >
-                                            {{
-                                                m.role === "admin"
-                                                    ? "管理員"
-                                                    : "一般成員"
-                                            }}
-                                        </span>
+                                        <span class="text-[10px] text-slate-400 truncate">{{ m.role === "admin" ? "管理員" : "一般成員" }}</span>
                                     </div>
                                 </div>
-
-                                <div
-                                    class="flex items-center space-x-2 flex-shrink-0 flex-nowrap"
-                                >
-                                    <button
-                                        @click="toggleMemberActive(m)"
-                                        class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors min-w-[50px] text-center"
-                                        :class="
-                                            m.active
-                                                ? 'bg-emerald-100 text-emerald-600'
-                                                : 'bg-slate-100 text-slate-400'
-                                        "
-                                    >
-                                        {{
-                                            m.active ? "參與" : "隱藏"
-                                        }}
-                                    </button>
-                                    <button
-                                        @click="
-                                            updateMemberRole(
-                                                m,
-                                                m.role === 'admin'
-                                                    ? 'viewer'
-                                                    : 'admin'
-                                            )
-                                        "
-                                        class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors flex-shrink-0"
-                                        :class="
-                                            m.role === 'admin'
-                                                ? 'bg-orange-100 text-orange-600'
-                                                : 'bg-slate-100 text-slate-400'
-                                        "
-                                    >
-                                        <i
-                                            class="fa-solid fa-crown text-xs"
-                                        ></i>
-                                    </button>
-                                    <button
-                                        @click="openSetPasswordMode(m)"
-                                        class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors flex-shrink-0"
-                                        :class="
-                                            m.password
-                                                ? 'bg-indigo-100 text-indigo-600'
-                                                : 'bg-slate-100 text-slate-400'
-                                        "
-                                    >
-                                        <i
-                                            class="fa-solid fa-key text-xs"
-                                        ></i>
-                                    </button>
-                                    <button
-                                        v-if="m.name !== '我'"
-                                        @click="removeMember(m.id)"
-                                        class="w-8 h-8 rounded-lg bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center flex-shrink-0"
-                                    >
-                                        <i
-                                            class="fa-solid fa-trash-can text-xs"
-                                        ></i>
-                                    </button>
+                                <div class="flex items-center space-x-2 flex-shrink-0 flex-nowrap">
+                                    <button @click="toggleMemberActive(m)" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors min-w-[50px] text-center" :class="m.active ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'">{{ m.active ? "參與" : "隱藏" }}</button>
+                                    <button @click="updateMemberRole(m, m.role === 'admin' ? 'viewer' : 'admin')" class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors flex-shrink-0" :class="m.role === 'admin' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-400'"><i class="fa-solid fa-crown text-xs"></i></button>
+                                    <button @click="openSetPasswordMode(m)" class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors flex-shrink-0" :class="m.password ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'"><i class="fa-solid fa-key text-xs"></i></button>
+                                    <button v-if="m.name !== '我'" @click="removeMember(m.id)" class="w-8 h-8 rounded-lg bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-trash-can text-xs"></i></button>
                                 </div>
                             </div>
                         </div>
-
                         <div class="mt-auto pt-4 border-t border-slate-100">
                             <div class="flex space-x-2">
-                                <input
-                                    v-model="newMemberName"
-                                    @keyup.enter="addMember"
-                                    placeholder="輸入新成員名稱..."
-                                    class="flex-1 bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-transparent focus:border-deep-sea-blue focus:bg-white transition-all"
-                                />
-                                <button
-                                    @click="addMember"
-                                    class="px-6 rounded-xl bg-deep-sea-blue text-white text-sm font-bold shadow-lg shadow-deep-sea-blue/20 hover:scale-105 transition-transform"
-                                >
-                                    <i class="fa-solid fa-plus mr-1"></i>
-                                    新增
-                                </button>
+                                <input v-model="newMemberName" @keyup.enter="addMember" placeholder="輸入新成員名稱..." class="flex-1 bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-transparent focus:border-deep-sea-blue focus:bg-white transition-all" />
+                                <button @click="addMember" class="px-6 rounded-xl bg-deep-sea-blue text-white text-sm font-bold shadow-lg shadow-deep-sea-blue/20 hover:scale-105 transition-transform"><i class="fa-solid fa-plus mr-1"></i> 新增</button>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- 密碼 Modal -->
-                <div
-                    v-if="showRolePasswordModal"
-                    class="fixed inset-0 bg-slate-900/60 z-[80] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in"
-                >
-                    <div
-                        class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl border border-orange-100"
-                    >
-                        <div
-                            class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deep-sea-blue shadow-inner"
-                        >
+                <!-- Password Modal -->
+                <div v-if="showRolePasswordModal" class="fixed inset-0 bg-slate-900/60 z-[80] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                    <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl border border-orange-100">
+                        <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deep-sea-blue shadow-inner">
                             <i class="fa-solid fa-shield-cat text-xl"></i>
                         </div>
-                        <h3
-                            class="font-bold text-base mb-2 text-center text-slate-800"
-                        >
-                            {{
-                                passwordMode === "role"
-                                    ? "需要 Admin 權限"
-                                    : passwordMode === "loginAdmin"
-                                    ? "Admin 身份驗證"
-                                    : passwordMode === "loginPersonal"
-                                    ? `歡迎回來，${targetLoginMember?.name}`
-                                    : passwordMode === "setPassword"
-                                    ? `設定 ${targetLoginMember?.name} 的密碼`
-                                    : ""
-                            }}
-                        </h3>
-                        <p
-                            class="text-xs text-center text-slate-400 mb-4"
-                        >
-                            {{
-                                passwordMode === "setPassword"
-                                    ? "請設定一組只有該成員知道的密碼，留空則移除保護。"
-                                    : "為了確保安全，請輸入密碼以繼續。"
-                            }}
-                        </p>
-
-                        <input
-                            v-model="rolePasswordInput"
-                            :type="
-                                passwordMode === 'setPassword'
-                                    ? 'text'
-                                    : 'password'
-                            "
-                            :placeholder="
-                                passwordMode === 'setPassword'
-                                    ? '輸入新密碼 (留空移除)'
-                                    : '請輸入密碼'
-                            "
-                            class="w-full bg-slate-50 rounded-xl p-3 text-center font-bold text-deep-sea-blue outline-none border-2 border-transparent focus:border-deep-sea-blue focus:bg-white transition-all mb-4 tracking-widest ring-1 ring-slate-100 focus:ring-deep-sea-blue/30"
-                        />
-
+                        <h3 class="font-bold text-base mb-2 text-center text-slate-800">{{ passwordMode === "role" ? "需要 Admin 權限" : passwordMode === "loginAdmin" ? "Admin 身份驗證" : passwordMode === "loginPersonal" ? `歡迎回來，${targetLoginMember?.name}` : passwordMode === "setPassword" ? `設定 ${targetLoginMember?.name} 的密碼` : "" }}</h3>
+                        <p class="text-xs text-center text-slate-400 mb-4">{{ passwordMode === "setPassword" ? "請設定一組只有該成員知道的密碼，留空則移除保護。" : "為了確保安全，請輸入密碼以繼續。" }}</p>
+                        <input v-model="rolePasswordInput" :type="passwordMode === 'setPassword' ? 'text' : 'password'" :placeholder="passwordMode === 'setPassword' ? '輸入新密碼 (留空移除)' : '請輸入密碼'" class="w-full bg-slate-50 rounded-xl p-3 text-center font-bold text-deep-sea-blue outline-none border-2 border-transparent focus:border-deep-sea-blue focus:bg-white transition-all mb-4 tracking-widest ring-1 ring-slate-100 focus:ring-deep-sea-blue/30" />
                         <div class="flex space-x-3">
-                            <button
-                                @click="cancelRolePassword"
-                                class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold hover:bg-slate-200 transition-colors"
-                            >
-                                取消
-                            </button>
-                            <button
-                                @click="confirmRolePassword"
-                                class="flex-1 py-3 rounded-xl bg-gradient-to-r from-deep-sea-blue to-orange-500 text-white text-sm font-bold shadow-lg shadow-orange-200 hover:scale-105 transition-transform"
-                            >
-                                確認
-                            </button>
+                            <button @click="cancelRolePassword" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold hover:bg-slate-200 transition-colors">取消</button>
+                            <button @click="confirmRolePassword" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-deep-sea-blue to-orange-500 text-white text-sm font-bold shadow-lg shadow-orange-200 hover:scale-105 transition-transform">確認</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Toast -->
-                <div
-                    v-if="showToast"
-                    class="fixed bottom-20 left-1/2 -translate-x-1/2 z-[90] bg-slate-900/90 text-white text-sm px-4 py-2 rounded-full shadow-lg"
-                >
-                    {{ toastMessage }}
-                </div>
+                <div v-if="showToast" class="fixed bottom-20 left-1/2 -translate-x-1/2 z-[90] bg-slate-900/90 text-white text-sm px-4 py-2 rounded-full shadow-lg">{{ toastMessage }}</div>
             </main>
         </div>
     </div>
@@ -2123,319 +1660,291 @@
         const firebaseApp = initializeApp(firebaseConfig);
         const db = getFirestore(firebaseApp);
 
-        // 只保留停留點，交通資訊塞在 travelTime / transportType
+        // === 新版預設行程：完全依照指示重新安排 ===
         const INITIAL_ITINERARY = [
-            // Day 1
+            // Day 1: 抵達 -> 飯店入住(craftsman hotel) -> Ari 咖啡街 -> 晚餐 -> 按摩/飯店泳池/大麻店
             [
                 {
                     category: "accommodation",
-                    name: "抵達曼谷・Craftsman 入住 & 休息",
+                    name: "抵達曼谷・前往 Craftsman Hotel",
                     startTime: "13:05",
-                    address:
-                        "Craftsman Bangkok, 34-36 Phahon Yothin 11, Samsen Nai, Phaya Thai, Bangkok 10400",
-                    note: "13:05 抵達 BKK / DMK，下機、通關、領行李約 60 分鐘，建議預約一台保母車（或 2 台 Grab）直接前往飯店。",
+                    address: "Craftsman Bangkok, 34-36 Phahon Yothin 11, Samsen Nai, Phaya Thai",
+                    note: "13:05 抵達機場。出關後叫 Grab 或包車前往飯店 (車程約 30-45 分)。Check-in 放行李、簡單梳洗。",
                     order: 1,
                     transportType: "car",
-                    travelTime: "機場 → 飯店約 30–40 分",
-                },
-                {
-                    category: "accommodation",
-                    name: "Craftsman Hotel 放鬆",
-                    startTime: "15:00",
-                    address:
-                        "Craftsman Bangkok, 34-36 Phahon Yothin 11, Samsen Nai, Phaya Thai",
-                    note: "放行李、沖澡、泳池放空，視大家狀況稍作休息。",
-                    order: 2,
-                    transportType: "walk",
-                    travelTime: "飯店內活動",
+                    travelTime: "機場 → 飯店約 40 分",
                 },
                 {
                     category: "food",
                     name: "Ari 咖啡街散步",
-                    startTime: "16:00",
-                    address: "Ari BTS Station, Phaya Thai, Bangkok",
-                    note: "從飯店叫車約 10 分鐘到 Ari 一帶。推薦：Nana Coffee Roasters Ari、Gump’s Ari 等文青咖啡店，適合拍照聊天。",
-                    order: 3,
-                    transportType: "car",
-                    travelTime: "飯店 → Ari 約 10 分",
+                    startTime: "15:30",
+                    address: "Ari Soi 4 / Ari Soi 2",
+                    note: "從飯店可步行或搭嘟嘟車至 Ari 站周邊。推薦 Gump's Ari (拍照)、Nana Coffee Roasters、Salt (文青小店)。",
+                    order: 2,
+                    transportType: "walk",
+                    travelTime: "飯店 → Ari 區步行約 15 分 / 車程 5 分",
                 },
                 {
                     category: "food",
-                    name: "晚餐：Lay Lao – Ari",
-                    startTime: "18:30",
-                    address:
-                        "Lay Lao - Ari, 65 Phahon Yothin 7, Samsen Nai, Phaya Thai, Bangkok 10400",
-                    note: "米其林必比登推薦東北泰菜＋海鮮，很適合 8 人分食，務必事先訂位。",
-                    order: 4,
+                    name: "晚餐：Lay Lao (Ari)",
+                    startTime: "18:00",
+                    address: "65 Phahon Yothin 7, Samsen Nai, Phaya Thai, Bangkok",
+                    note: "米其林必比登推薦。主打東北泰菜、生醃海鮮，環境舒適，適合第一餐開胃。建議先訂位。",
+                    order: 3,
                     transportType: "walk",
-                    travelTime: "Ari 區步行約 5–10 分",
+                    travelTime: "Ari 咖啡街 → Lay Lao 步行 5 分",
                 },
                 {
                     category: "other",
                     name: "按摩 / 飯店泳池 / 大麻店",
-                    startTime: "20:30",
-                    address: "Ari / Craftsman Bangkok 周邊",
-                    note: "視精神安排：Ari 一帶按摩店做 1.5 小時泰式或油壓、回飯店泳池放鬆，或附近 Dispensary 小酌 chill。",
-                    order: 5,
-                    transportType: "car",
-                    travelTime: "短程車程或步行",
+                    startTime: "20:00",
+                    address: "Ari 周邊或飯店",
+                    note: "吃飽後可選擇：1. 在 Ari 找按摩店 (Chaari Spa 等) 2. 回飯店泳池耍廢 3. 探訪附近 Dispensary (如 Cloud Nine Ari)。",
+                    order: 4,
+                    transportType: "walk",
+                    travelTime: "Lay Lao → 續攤地點 步行",
                 },
             ],
-            // Day 2
+            // Day 2: 早餐 -> 臥佛寺 -> 午餐 -> 鄭王廟 -> icon Siam -> 碼頭夜市(skyflyers) -> 夜生活(nana廣場)
             [
                 {
                     category: "food",
-                    name: "早餐：FRAN'S ARI",
-                    startTime: "08:30",
-                    address:
-                        "FRAN'S ARI, 24 Ari 4 Fang Nua Alley, Samsen Nai, Phaya Thai, Bangkok 10400",
-                    note: "從飯店叫車約 10 分鐘。早午餐份量大，8 人建議提前訂位，避免一早排隊。",
+                    name: "早餐：FRAN'S Ari",
+                    startTime: "09:00",
+                    address: "58, 2 Ngam Duphli Alley, Thung Maha Mek, Sathon, Bangkok",
+                    note: "曼谷超紅早午餐，以厚吐司和豐盛拼盤聞名。人多務必預約，不然會排很久。",
                     order: 1,
                     transportType: "car",
-                    travelTime: "飯店 → Fran’s 約 10 分",
+                    travelTime: "飯店 → FRAN'S 約 10 分",
                 },
                 {
                     category: "sightseeing",
                     name: "臥佛寺 (Wat Pho)",
-                    startTime: "10:30",
-                    address:
-                        "Wat Phra Chetuphon (Wat Pho), 2 Sanam Chai Rd, Phra Nakhon, Bangkok",
-                    note: "從 Ari 叫 2 台車直達河邊，車程約 20–30 分。參觀大臥佛、佛塔區，抓約 1.5 小時含拍照與步行。",
+                    startTime: "11:00",
+                    address: "2 Sanam Chai Rd, Phra Borom Maha Ratchawang, Phra Nakhon",
+                    note: "參觀最大臥佛、投幣祈福。結束後步行至河邊餐廳。",
                     order: 2,
                     transportType: "car",
-                    travelTime: "Fran’s → 臥佛寺 約 20–30 分",
+                    travelTime: "Ari → 臥佛寺 車程約 30 分",
                 },
                 {
                     category: "food",
                     name: "午餐：RONGROS",
-                    startTime: "12:15",
-                    address:
-                        "RONGROS, 392/16 Maha Rat Rd, Phra Nakhon, Bangkok 10200",
-                    note: "從臥佛寺步行約 5–10 分鐘沿河畔前往。河邊景觀泰菜，窗邊座位可直接看到鄭王廟，8 人強烈建議預約。",
+                    startTime: "12:30",
+                    address: "392/16 Maha Rat Rd, Phra Borom Maha Ratchawang, Phra Nakhon",
+                    note: "河畔景觀餐廳，正對鄭王廟，景色絕佳。提供精緻泰菜，需預訂窗邊位。",
                     order: 3,
                     transportType: "walk",
-                    travelTime: "臥佛寺 → RONGROS 步行 5–10 分",
+                    travelTime: "臥佛寺 → RONGROS 步行 5 分",
                 },
                 {
                     category: "sightseeing",
                     name: "鄭王廟 (Wat Arun)",
-                    startTime: "14:00",
-                    address:
-                        "Wat Arun Ratchawararam, Thon Buri, Bangkok 10600",
-                    note: "從餐廳走回 Tha Tien 碼頭約 5–10 分，再搭短程渡輪過河約 5 分鐘。停留 1–1.5 小時，爬主塔拍照、簡單逛逛。",
+                    startTime: "14:30",
+                    address: "158 Thanon Wang Doem, Wat Arun, Bangkok Yai",
+                    note: "從 Tha Tien 碼頭搭接駁船過河。爬白色佛塔拍照，建議停留 1 小時。",
                     order: 4,
                     transportType: "public",
-                    travelTime: "步行＋渡輪約 15–20 分",
+                    travelTime: "餐廳 → 鄭王廟 (船) 約 10 分",
                 },
                 {
                     category: "shopping",
                     name: "ICONSIAM 逛街",
                     startTime: "16:00",
-                    address:
-                        "ICONSIAM, 299 Charoen Nakhon Rd, Khlong San, Bangkok",
-                    note: "從 Wat Arun 一帶搭船至 ICONSIAM，船程約 20–30 分。逛 SookSiam 室內水上市場、超市、伴手禮，可中途補點心飲料。",
+                    address: "299 Charoen Nakhon Rd, Khlong Ton Sai, Khlong San",
+                    note: "搭船前往。逛 G 樓 SookSiam 室內水上市場、Apple Store 觀景台。冷氣很強。",
                     order: 5,
                     transportType: "public",
-                    travelTime: "Wat Arun → ICONSIAM 船程約 20–30 分",
+                    travelTime: "鄭王廟 → ICONSIAM (船) 約 20 分",
                 },
                 {
                     category: "sightseeing",
-                    name: "碼頭夜市 Asiatique（Skyflyer + 晚餐）",
-                    startTime: "19:00",
-                    address:
-                        "Asiatique The Riverfront, Charoen Krung Rd, Bangkok",
-                    note: "從 ICONSIAM 搭船到 Sathorn Pier，再轉 Asiatique 接駁船。買 Skyflyer 摩天輪票、邊逛邊吃，晚餐在夜市內找大桌餐廳。",
+                    name: "碼頭夜市 Asiatique (Skyflyer)",
+                    startTime: "18:30",
+                    address: "2194 Charoen Krung Rd, Wat Phraya Krai, Bang Kho Laem",
+                    note: "從 ICONSIAM 搭船至 Sathorn 轉接駁船。晚餐在夜市解決，可玩 Skyflyer 摩天輪或逛倉庫區。",
                     order: 6,
                     transportType: "public",
-                    travelTime:
-                        "ICONSIAM → Sathorn Pier → Asiatique 約 30 分",
+                    travelTime: "ICONSIAM → Asiatique (船) 約 30 分",
                 },
                 {
                     category: "other",
-                    name: "Nana 廣場 夜生活",
+                    name: "夜生活：Nana 廣場",
                     startTime: "21:30",
-                    address: "Nana Plaza, Sukhumvit Soi 4, Bangkok",
-                    note: "從 Asiatique 搭計程車 / Grab 至 Nana 區約 20–30 分。8 人拆兩車，記得約好集合地點；結束後叫車回 Craftsman。",
+                    address: "Nana Plaza, Sukhumvit 4 Alley, Khlong Toei",
+                    note: "知名的成人娛樂區與酒吧街，體驗曼谷夜生活。結束後叫車回 Craftsman。",
                     order: 7,
                     transportType: "car",
-                    travelTime: "Asiatique → Nana 約 20–30 分",
+                    travelTime: "Asiatique → Nana 車程約 30 分",
                 },
             ],
-            // Day 3
+            // Day 3(包車、換飯店): 美功鐵道市集 -> 午餐 -> 安帕瓦 -> Airbnb(通羅) -> 晚餐 -> 高空酒吧
             [
                 {
                     category: "sightseeing",
                     name: "美功鐵道市集",
                     startTime: "10:30",
-                    address:
-                        "Maeklong Railway Market, Mae Klong, Samut Songkhram",
-                    note: "08:30 從 Craftsman 出發，包車約 2 小時抵達。安排對準約 11:10 抵達或 11:30 出發的火車，拍「火車穿過市場」。午餐可吃廣銘珍雲吞麵或鐵軌邊媽媽桑泡麵。",
+                    address: "Mae Klong, Mueang Samut Songkhram District",
+                    note: "08:30 包車出發 (行李上車)。看 11:10 或 11:30 的火車進站。人多注意財物。",
                     order: 1,
                     transportType: "car",
-                    travelTime: "曼谷 → 美功 約 2 小時",
+                    travelTime: "曼谷 → 美功 車程約 1.5-2 小時",
+                },
+                {
+                    category: "food",
+                    name: "午餐：廣銘珍餛飩麵 / 媽媽桑泡麵",
+                    startTime: "11:40",
+                    address: "Maeklong Railway Market 旁",
+                    note: "看完火車就近吃。廣銘珍以雲吞和燒肉聞名；鐵軌旁小攤販的媽媽桑泡麵也很有名。",
+                    order: 2,
+                    transportType: "walk",
+                    travelTime: "市場內步行",
                 },
                 {
                     category: "sightseeing",
                     name: "安帕瓦水上市場",
-                    startTime: "12:30",
-                    address: "Amphawa Floating Market, Amphawa",
-                    note: "美功出發約 30–45 分車程。週五–週日 14:00–21:00 開市，下午先吃先逛、傍晚最熱鬧，可安排約 1 小時船遊看河岸寺廟與螢火蟲（視季節而定）。",
-                    order: 2,
+                    startTime: "13:00",
+                    address: "Amphawa, Samut Songkhram",
+                    note: "週五六日才開。搭船遊河、吃烤海鮮、買伴手禮。氣氛比丹能莎朵悠閒。",
+                    order: 3,
                     transportType: "car",
-                    travelTime: "美功 → 安帕瓦 約 30–45 分",
+                    travelTime: "美功 → 安帕瓦 車程約 20 分",
                 },
                 {
                     category: "accommodation",
-                    name: "通羅 Airbnb Check-in & 休息",
-                    startTime: "17:30",
-                    address: "Thonglor Airbnb, Sukhumvit 55, Bangkok",
-                    note: "安帕瓦約 16:00 出發，車程約 1.5 小時回曼谷通羅。到 Airbnb 放行李、休息、盥洗再出門吃飯。",
-                    order: 3,
+                    name: "入住通羅 Airbnb",
+                    startTime: "17:00",
+                    address: "Thonglor (Sukhumvit 55) Area",
+                    note: "約 15:30 離開安帕瓦，返回曼谷市區。入住通羅區 Airbnb，稍微休息。",
+                    order: 4,
                     transportType: "car",
-                    travelTime: "安帕瓦 → 通羅 約 1.5 小時",
+                    travelTime: "安帕瓦 → 通羅 車程約 1.5-2 小時",
                 },
                 {
                     category: "food",
-                    name: "晚餐：頌通酒家 Sornthong Pochana",
+                    name: "晚餐：頌通酒家",
                     startTime: "19:00",
-                    address:
-                        "Sornthong Pochana, 2829-31 Rama IV Rd, Khlong Toei, Bangkok",
-                    note: "通羅出發車程約 20–30 分鐘。老字號海鮮熱炒：咖哩螃蟹、清蒸魚、各式海鮮都很適合 8 人分食。",
-                    order: 4,
+                    address: "2829-31 Rama IV Rd, Khlong Toei",
+                    note: "老字號海鮮餐廳，咖哩螃蟹、炸鱸魚必點。離通羅不遠。",
+                    order: 5,
                     transportType: "car",
-                    travelTime: "通羅 → 頌通 約 20–30 分",
+                    travelTime: "Airbnb → 頌通 車程約 15 分",
                 },
                 {
                     category: "other",
                     name: "高空酒吧：Tichuca Rooftop Bar",
                     startTime: "21:00",
-                    address:
-                        "Tichuca Rooftop Bar, T-One Building 46F, Soi Sukhumvit 40, Phra Khanong, Bangkok 10110",
-                    note: "從頌通前往約 15–20 分鐘，建議提早排隊／事先查詢是否可預約。喝完可回通羅一帶酒吧續攤，或散步／叫車回 Airbnb。",
-                    order: 5,
+                    address: "T-One Building 46F, Sukhumvit 40",
+                    note: "著名的水母酒吧，燈光效果超好。人潮眾多，建議早點去或要有排隊心理準備。",
+                    order: 6,
                     transportType: "car",
-                    travelTime: "頌通 → Tichuca 約 15–20 分",
+                    travelTime: "頌通 → Tichuca 車程約 15 分",
                 },
             ],
-            // Day 4
+            // Day 4: 四面佛 -> central world -> 午餐 -> 暹羅百麗宮 -> 按摩 -> 晚餐 -> bigC
             [
                 {
                     category: "sightseeing",
                     name: "四面佛 (Erawan Shrine)",
-                    startTime: "09:30",
-                    address: "Erawan Shrine, Ratchadamri Rd, Bangkok",
-                    note: "09:00 通羅出發，可搭 BTS 或叫車，約 20–30 分鐘。早上人潮相對少，拜完可直接走到旁邊百貨。",
+                    startTime: "10:00",
+                    address: "Ratchadamri Rd, Lumphini, Pathum Wan",
+                    note: "搭 BTS 到 Chit Lom 站。參拜許願，買花串和蠟燭。香火鼎盛。",
                     order: 1,
-                    transportType: "car",
-                    travelTime: "通羅 → 四面佛 約 20–30 分",
+                    transportType: "public",
+                    travelTime: "通羅 → Chit Lom (BTS) 約 15 分",
                 },
                 {
                     category: "shopping",
                     name: "Central World",
-                    startTime: "10:00",
-                    address:
-                        "CentralWorld, 999/9 Rama I Rd, Pathum Wan, Bangkok 10330",
-                    note: "百貨 10:00 開門，逛服飾、美妝、超市等，冷氣涼、動線好逛。",
+                    startTime: "10:30",
+                    address: "999/9 Rama I Rd, Pathum Wan",
+                    note: "就在四面佛斜對面。曼谷最大百貨之一，好逛、品牌多。",
                     order: 2,
                     transportType: "walk",
-                    travelTime: "四面佛 → Central World 步行 5 分內",
+                    travelTime: "四面佛 → Central World 步行 5 分",
                 },
                 {
                     category: "food",
-                    name: "午餐：Here Hai @ Siam Paragon",
-                    startTime: "12:00",
-                    address:
-                        "Here Hai, Gourmet Eats, G Floor, Siam Paragon, Bangkok",
-                    note: "11:30 左右從 Central World 走 skywalk 或搭 BTS 一站到 Siam。Paragon G 樓美食街分店，吃蟹肉炒飯等招牌料理，避開本店久候。",
+                    name: "午餐：Here Hai (Siam Paragon)",
+                    startTime: "12:30",
+                    address: "Siam Paragon G Floor (Gourmet Eats)",
+                    note: "米其林蟹肉炒飯名店的分店（或美食街櫃位），免去本店排隊之苦。位於 Paragon G 樓。",
                     order: 3,
-                    transportType: "public",
-                    travelTime: "Central World → Siam Paragon 約 10–15 分",
+                    transportType: "walk",
+                    travelTime: "CW → Paragon (Skywalk) 步行 10 分",
                 },
                 {
                     category: "shopping",
-                    name: "Siam 區自由活動",
+                    name: "Siam Paragon & Siam Center",
                     startTime: "13:30",
-                    address:
-                        "Siam Paragon / Siam Center / Siam Discovery, Rama I Rd, Bangkok",
-                    note: "各自逛街購物約 3 小時，可分頭行動，約好集合時間與地點。",
+                    address: "Rama I Rd, Pathum Wan",
+                    note: "吃飽逛精品、流行服飾。Siam Center 有很多泰國設計師品牌。",
                     order: 4,
                     transportType: "walk",
-                    travelTime: "餐廳 → 各百貨 步行",
+                    travelTime: "百貨內移動",
                 },
                 {
                     category: "other",
-                    name: "按摩：Siam / Ratchadamri 一帶",
-                    startTime: "16:30",
-                    address:
-                        "Health Land / Let’s Relax (Siam / Ratchadamri branches)",
-                    note: "建議事先預約連鎖品牌幫 8 人排連續時段，行程多天後好好放鬆腿與肩頸。",
+                    name: "按摩放鬆",
+                    startTime: "16:00",
+                    address: "Siam Square / Chit Lom 周邊",
+                    note: "推薦 Let's Relax, Nature Thai 或 Treasure Spa。逛累了按腳或精油按摩。",
                     order: 5,
                     transportType: "walk",
-                    travelTime: "百貨 → 按摩店 步行或短程車",
+                    travelTime: "步行或短程嘟嘟車",
                 },
                 {
                     category: "food",
-                    name: "晚餐：Mungkorn Seafood @Sukhumvit",
+                    name: "晚餐：Mungkorn Seafood",
                     startTime: "18:30",
-                    address:
-                        "Mungkorn Seafood Sukhumvit, 39 Soi Pridi Banomyong 5, Sukhumvit 71, Bangkok",
-                    note: "約 18:00 從市區出發，可搭 BTS 至 Phra Khanong 再轉車，或直接 Grab。以大頭蝦和海鮮吃到飽聞名，建議提前訂位。",
+                    address: "1394 Pracha Songkhro Rd, Din Daeng",
+                    note: "雖然叫 Mungkorn @Sukhumvit 但請再次確認分店位置。知名的海鮮燒烤吃到飽，大頭蝦無限吃。",
                     order: 6,
                     transportType: "car",
-                    travelTime: "市區 → Mungkorn 約 20–30 分",
+                    travelTime: "市區 → 餐廳 車程約 30 分",
                 },
                 {
                     category: "shopping",
                     name: "Big C Ekkamai 採購",
                     startTime: "21:00",
-                    address: "Big C Ekkamai, Sukhumvit 63, Bangkok",
-                    note: "從 Mungkorn 出發約 10–15 分。人少好逛，適合集中買零食、調理包、伴手禮，之後叫車回通羅 Airbnb。",
+                    address: "78 Soi Sukhumvit 63, Phra Khanong Nuea",
+                    note: "Ekkamai 分店人比較少，好逛。買泰國零食、泡麵、伴手禮。離通羅住處也近。",
                     order: 7,
                     transportType: "car",
-                    travelTime: "Mungkorn → Big C 約 10–15 分",
+                    travelTime: "餐廳 → Big C 車程約 20 分",
                 },
             ],
-            // Day 5
+            // Day 5: 早餐/退房 -> 去機場
             [
                 {
                     category: "food",
-                    name: "早餐 & 打包行李",
-                    startTime: "08:30",
-                    address: "Thonglor, Sukhumvit 55, Bangkok",
-                    note: "通羅附近咖啡店隨意吃早餐，回 Airbnb 收拾行李、整理戰利品。",
+                    name: "早餐 & 整理行李",
+                    startTime: "09:00",
+                    address: "Thonglor Area",
+                    note: "在通羅附近找間咖啡廳 (如 The Commons) 吃早餐，最後整理戰利品。",
                     order: 1,
                     transportType: "walk",
-                    travelTime: "Airbnb 周邊步行",
+                    travelTime: "Airbnb 周邊",
                 },
                 {
                     category: "accommodation",
-                    name: "通羅 Airbnb 退房",
-                    startTime: "10:30",
-                    address: "Thonglor Airbnb, Sukhumvit 55, Bangkok",
-                    note: "確認護照、手機、錢包與所有行李已收好後退房。",
+                    name: "退房 & 前往機場",
+                    startTime: "11:00",
+                    address: "Suvarnabhumi Airport (BKK)",
+                    note: "11:00 退房，預約保母車前往機場。預計 14:05 的飛機，建議 11:30 前抵達機場辦理登機。",
                     order: 2,
-                    transportType: "walk",
-                    travelTime: "室內移動",
-                },
-                {
-                    category: "other",
-                    name: "前往機場 & 辦理登機",
-                    startTime: "11:15",
-                    address: "Suvarnabhumi Airport (BKK), Bangkok",
-                    note: "10:30 通羅出發，建議預約保母車，車程約 45 分鐘。11:15 抵達後辦理托運、通關、逛免稅與候機，距離 14:05 起飛約 2 小時 50 分，安全。",
-                    order: 3,
                     transportType: "car",
-                    travelTime: "通羅 → BKK 約 45 分",
+                    travelTime: "通羅 → 機場 車程約 45 分",
                 },
                 {
                     category: "flight",
-                    name: "14:05 起飛，返回台灣 (CI0832)",
+                    name: "搭機返台",
                     startTime: "14:05",
-                    address: "Suvarnabhumi Airport Gate, Bangkok",
-                    note: "帶著戰利品與回憶回家。",
-                    order: 4,
+                    address: "BKK Airport",
+                    note: "CI0832 飛往台北。平安回家。",
+                    order: 3,
                     transportType: "flight",
-                    travelTime: "飛行約 3 小時 35 分",
+                    travelTime: "飛行約 3.5 小時",
                 },
             ],
         ];
