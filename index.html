@@ -40,13 +40,25 @@
 
     <style>
         @import url("https://fonts.googleapis.com/css?family=Noto+Sans+TC:wght@300;400;500;700&display=swap");
+        html, body {
+            height: 100%;
+        }
         body {
             background-color: #fff3e0;
             -webkit-tap-highlight-color: transparent;
             font-family: "Noto Sans TC", sans-serif;
             color: #334155;
+            margin: 0;
+            padding: 0;
             padding-bottom: env(safe-area-inset-bottom);
         }
+        /* iOS safe area：把頂部 padding 給 body */
+        @supports (padding-top: env(safe-area-inset-top)) {
+            body {
+                padding-top: env(safe-area-inset-top);
+            }
+        }
+
         .app-container {
             max-width: 480px;
             margin: 0 auto;
@@ -163,18 +175,19 @@
         .expenses-banner {
             background: linear-gradient(135deg, #ff7043 0%, #ab47bc 100%);
         }
-        
-        /* 修正重點：提高 z-index 並加入背景模糊 */
+
+        /* 日期列 sticky：安全區由 body 處理，這裡只 sticky + 背景 */
         .date-selector-sticky {
+            position: sticky;
+            position: -webkit-sticky;
             background-color: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border-bottom: 1px solid #f0f0f0;
-            z-index: 40; /* 提高層級，原為 20 */
+            z-index: 40;
             top: 0;
-            padding-top: env(safe-area-inset-top, 20px);
         }
-        
+
         .rotate-180 {
             transform: rotate(180deg);
         }
@@ -210,7 +223,7 @@
 
         .flip-list-move {
             transition: transform 0.5s cubic-bezier(0.2, 0, 0, 1);
-            z-index: 20; /* 保持較低，讓 sticky (40) 蓋過它 */
+            z-index: 20;
             position: relative;
         }
         .flip-list-enter-active,
@@ -268,6 +281,11 @@
             color: #e65100;
             margin-bottom: 1rem;
             animation: pulse-logo 1.5s infinite ease-in-out;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
         @keyframes pulse-logo {
             0%,
@@ -395,7 +413,7 @@
                 <!-- 行程 Tab -->
                 <div v-if="currentTab === 'itinerary'" class="animate-fade-in">
                     <div
-                        class="flex overflow-x-auto hide-scrollbar space-x-3 pb-4 mb-2 snap-x sticky date-selector-sticky pt-1 -mx-4 px-4"
+                        class="flex overflow-x-auto hide-scrollbar space-x-3 pb-4 mb-2 snap-x date-selector-sticky pt-1 -mx-4 px-4"
                     >
                         <div
                             v-for="(day, index) in dates"
@@ -610,6 +628,7 @@
                                         </p>
                                     </div>
                                     
+                                    <!-- 備註：完整顯示，不裁切 -->
                                     <div
                                         v-if="item.note && item.note.length > 0"
                                         class="mt-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100 text-slate-600 leading-relaxed"
@@ -647,7 +666,6 @@
                     </TransitionGroup>
                 </div>
 
-                
                 <!-- Info Tab -->
                 <div v-if="currentTab === 'info'" class="space-y-5 animate-fade-in">
                     <div
@@ -1384,7 +1402,7 @@
                     </div>
                 </div>
 
-                <!-- 浮動新增按鈕 (z-index 提高到 50) -->
+                <!-- 浮動新增按鈕 -->
                 <button
                     v-if="currentTab === 'itinerary' && canEditItinerary"
                     @click="handleAddClick"
@@ -1407,14 +1425,6 @@
                     <i class="fa-solid fa-plus"></i>
                 </button>
 
-                <!-- Shopping Modal / Expense Modal / Itinerary Modal / Member Modal / Password Modal / Toast 
-                     這些結構與前一版相同，為節省篇幅直接在下方 JS 中掛載 -->
-                     
-                <!-- (略) Modal 區塊程式碼其實包含在上方已完整貼出的邏輯中，這裡不重複佔版面，
-                     請直接參考上一版或直接複製本文最末的 JS 區塊，Modal 的 HTML 需要放在 app 容器內 -->
-
-                 <!-- 這裡補充 Modal 的 HTML 以確保完整性 -->
-                 
                 <!-- Shopping Modal -->
                 <div v-if="showShoppingModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[70] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
@@ -1572,30 +1582,28 @@
                     </div>
                 </div>
 
-                
             </main>
         </div>
-    
-<!-- Password Modal -->
-                <div v-if="showRolePasswordModal" class="fixed inset-0 bg-slate-900/60 z-[80] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-                    <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl border border-orange-100">
-                        <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deep-sea-blue shadow-inner">
-                            <i class="fa-solid fa-shield-cat text-xl"></i>
-                        </div>
-                        <h3 class="font-bold text-base mb-2 text-center text-slate-800">{{ passwordMode === "role" ? "需要 Admin 權限" : passwordMode === "loginAdmin" ? "Admin 身份驗證" : passwordMode === "loginPersonal" ? `歡迎回來，${targetLoginMember?.name}` : passwordMode === "setPassword" ? `設定 ${targetLoginMember?.name} 的密碼` : "" }}</h3>
-                        <p class="text-xs text-center text-slate-400 mb-4">{{ passwordMode === "setPassword" ? "請設定一組只有該成員知道的密碼，留空則移除保護。" : "為了確保安全，請輸入密碼以繼續。" }}</p>
-                        <input v-model="rolePasswordInput" :type="passwordMode === 'setPassword' ? 'text' : 'password'" :placeholder="passwordMode === 'setPassword' ? '輸入新密碼 (留空移除)' : '請輸入密碼'" class="w-full bg-slate-50 rounded-xl p-3 text-center font-bold text-deep-sea-blue outline-none border-2 border-transparent focus:border-deep-sea-blue focus:bg-white transition-all mb-4 tracking-widest ring-1 ring-slate-100 focus:ring-deep-sea-blue/30" />
-                        <div class="flex space-x-3">
-                            <button @click="cancelRolePassword" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold hover:bg-slate-200 transition-colors">取消</button>
-                            <button @click="confirmRolePassword" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-deep-sea-blue to-orange-500 text-white text-sm font-bold shadow-lg shadow-orange-200 hover:scale-105 transition-transform">確認</button>
-                        </div>
-                    </div>
-                </div>
 
-                
-<!-- Toast -->
-                <div v-if="showToast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] bg-slate-900/90 text-white text-sm px-4 py-2 rounded-full shadow-lg">{{ toastMessage }}</div>
-</div>
+        <!-- Password Modal -->
+        <div v-if="showRolePasswordModal" class="fixed inset-0 bg-slate-900/60 z-[80] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+            <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl border border-orange-100">
+                <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deep-sea-blue shadow-inner">
+                    <i class="fa-solid fa-shield-cat text-xl"></i>
+                </div>
+                <h3 class="font-bold text-base mb-2 text-center text-slate-800">{{ passwordMode === "role" ? "需要 Admin 權限" : passwordMode === "loginAdmin" ? "Admin 身份驗證" : passwordMode === "loginPersonal" ? `歡迎回來，${targetLoginMember?.name}` : passwordMode === "setPassword" ? `設定 ${targetLoginMember?.name} 的密碼` : "" }}</h3>
+                <p class="text-xs text-center text-slate-400 mb-4">{{ passwordMode === "setPassword" ? "請設定一組只有該成員知道的密碼，留空則移除保護。" : "為了確保安全，請輸入密碼以繼續。" }}</p>
+                <input v-model="rolePasswordInput" :type="passwordMode === 'setPassword' ? 'text' : 'password'" :placeholder="passwordMode === 'setPassword' ? '輸入新密碼 (留空移除)' : '請輸入密碼'" class="w-full bg-slate-50 rounded-xl p-3 text-center font-bold text-deep-sea-blue outline-none border-2 border-transparent focus:border-deep-sea-blue focus:bg-white transition-all mb-4 tracking-widest ring-1 ring-slate-100 focus:ring-deep-sea-blue/30" />
+                <div class="flex space-x-3">
+                    <button @click="cancelRolePassword" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold hover:bg-slate-200 transition-colors">取消</button>
+                    <button @click="confirmRolePassword" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-deep-sea-blue to-orange-500 text-white text-sm font-bold shadow-lg shadow-orange-200 hover:scale-105 transition-transform">確認</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast -->
+        <div v-if="showToast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] bg-slate-900/90 text-white text-sm px-4 py-2 rounded-full shadow-lg">{{ toastMessage }}</div>
+    </div>
 
     <!-- JS 主程式 -->
     <script type="module">
@@ -1634,7 +1642,7 @@
         const firebaseApp = initializeApp(firebaseConfig);
         const db = getFirestore(firebaseApp);
 
-        // === 新版預設行程：完全依照指示重新安排 ===
+        // 預設行程 JSON
         const INITIAL_ITINERARY = [
             // Day 1
             [
