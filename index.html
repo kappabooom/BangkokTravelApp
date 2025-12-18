@@ -75,7 +75,7 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
             border-bottom-left-radius: 35px;
             border-bottom-right-radius: 35px;
-            z-index: 50;
+            z-index: 10;
         }
         .header-image-container {
             width: 100%;
@@ -92,11 +92,12 @@
             display: block;
         }
 
+        /* ▶ Tab 配色修改：未選中改為淺橘色實心底 */
         .side-tab-bar {
             position: absolute;
             bottom: 15px;
             right: 16px;
-            z-index: 60;
+            z-index: 30;
             display: flex;
             flex-direction: row;
             gap: 8px;
@@ -114,16 +115,16 @@
             border-width: 1px;
         }
         .tab-button.active {
-            background-color: #e65100;
+            background-color: #e65100; /* 深橘色 */
             color: #ffffff;
             border-color: #e65100;
             box-shadow: 0 6px 15px rgba(230, 81, 0, 0.4);
             transform: scale(1.05);
         }
         .tab-button:not(.active) {
-            background-color: #FFF3E0;
-            color: #E65100;
-            border-color: #FFCC80;
+            background-color: #FFF3E0; /* 淺橘色，不再透明 */
+            color: #E65100;            /* 深橘色 icon */
+            border-color: #FFCC80;     /* 橘色邊框 */
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
         }
 
@@ -159,15 +160,22 @@
         .fab-shadow {
             box-shadow: 0 4px 15px rgba(255, 179, 0, 0.5);
         }
+        .note-content {
+            max-height: 2.5rem;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .note-content.expanded {
+            max-height: 500px;
+        }
         .expenses-banner {
             background: linear-gradient(135deg, #ff7043 0%, #ab47bc 100%);
         }
         .date-selector-sticky {
             background-color: #ffffff;
             border-bottom: 1px solid #f0f0f0;
-            z-index: 40;
+            z-index: 20;
             top: 0;
-            position: sticky;
             padding-top: env(safe-area-inset-top, 20px);
         }
         .rotate-180 {
@@ -205,7 +213,7 @@
 
         .flip-list-move {
             transition: transform 0.5s cubic-bezier(0.2, 0, 0, 1);
-            z-index: 1;
+            z-index: 20;
             position: relative;
         }
         .flip-list-enter-active,
@@ -283,7 +291,7 @@
     </style>
 </head>
 <body>
-    <!-- Loading Screen -->
+    <!-- Loading -->
     <div id="loading-screen" class="loader-container">
         <i class="fa-solid fa-plane-departure loader-logo"></i>
         <div class="spinner"></div>
@@ -611,9 +619,30 @@
                                     </div>
                                     <div
                                         v-if="item.note && item.note.length > 0"
-                                        class="mt-2 text-xs bg-slate-50 p-2 rounded-lg border border-slate-100 break-words whitespace-normal text-slate-600 leading-relaxed"
+                                        class="mt-2 text-xs bg-slate-50 p-2 rounded-lg border border-slate-100"
                                     >
-                                        {{ item.note }}
+                                        <div
+                                            class="note-content"
+                                            :class="{
+                                                expanded: item.isNoteExpanded,
+                                            }"
+                                        >
+                                            {{ item.note }}
+                                        </div>
+                                        <button
+                                            v-if="item.note.length > 50"
+                                            @click="
+                                                item.isNoteExpanded =
+                                                    !item.isNoteExpanded
+                                            "
+                                            class="text-deep-sea-blue font-bold mt-1"
+                                        >
+                                            {{
+                                                item.isNoteExpanded
+                                                    ? "收合"
+                                                    : "展開"
+                                            }}
+                                        </button>
                                     </div>
                                 </div>
 
@@ -645,62 +674,784 @@
                     </TransitionGroup>
                 </div>
 
+                <!-- Info / Shopping / Expenses ... (略，保持不變) -->
+                <!-- 以下為完整結構，方便你直接覆蓋 -->
+                
                 <!-- Info Tab -->
                 <div v-if="currentTab === 'info'" class="space-y-5 animate-fade-in">
-                   <div class="bg-gradient-to-br from-orange-400 to-amber-500 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden border border-orange-200/20">
-                        <h3 class="font-bold text-lg mb-4 flex items-center relative z-10 text-white"><i class="fa-solid fa-coins mr-2 text-yellow-200"></i> 匯率換算</h3>
-                        <div class="flex items-center justify-between space-x-3 relative z-10">
-                            <div class="flex-1"><label class="text-[10px] text-orange-50 block mb-1 uppercase tracking-wider font-bold">THB</label><input type="number" v-model.number="inputTHB" @input="updateTWD" class="w-full bg-white/20 border border-white/20 rounded-xl px-3 py-2.5 text-white placeholder-white/50 focus:outline-none focus:bg-white/30 text-lg font-bold shadow-sm font-mono" /></div>
-                            <i class="fa-solid fa-arrow-right-arrow-left text-white/80 mt-5"></i>
-                            <div class="flex-1"><label class="text-[10px] text-orange-50 block mb-1 uppercase tracking-wider font-bold">TWD</label><input type="number" v-model.number="inputTWD" @input="updateTHB" class="w-full bg-white/20 border border-white/20 rounded-xl px-3 py-2.5 text-white placeholder-white/50 focus:outline-none focus:bg-white/30 text-lg font-bold shadow-sm font-mono" /></div>
-                        </div>
-                        <div class="mt-4 flex justify-between items-center relative z-10 border-t border-white/20 pt-2">
-                            <button @click="fetchExchangeRate" class="text-[10px] text-white/70 hover:text-white flex items-center transition-colors">
-                                <i class="fa-solid fa-rotate mr-1" :class="{ 'animate-spin': isRatesLoading }"></i> {{ isRatesLoading ? "更新中..." : "點擊更新匯率" }}
-                            </button>
-                            <p class="text-xs text-white font-bold tracking-wide">1 THB = {{ EXCHANGE_RATE.toFixed(4) }} TWD</p>
-                        </div>
-                   </div>
-                </div>
+                    <div
+                        class="bg-gradient-to-br from-orange-400 to-amber-500 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden border border-orange-200/20"
+                    >
+                        <h3
+                            class="font-bold text-lg mb-4 flex items-center relative z-10 text-white"
+                        >
+                            <i
+                                class="fa-solid fa-coins mr-2 text-yellow-200"
+                            ></i>
+                            匯率換算
+                        </h3>
 
-                <!-- Shopping Tab -->
-                <div v-if="currentTab === 'shopping'" class="animate-fade-in">
-                    <div class="bg-white rounded-3xl p-6 card-shadow min-h-[60vh]">
-                        <h3 class="font-bold text-slate-800 mb-4 flex items-center justify-between"><span class="flex items-center"><i class="fa-solid fa-basket-shopping text-accent-yellow mr-2"></i> {{ currentUser }} 的清單</span></h3>
-                        <ul class="space-y-3" v-if="currentShoppingList.length > 0">
-                            <li v-for="item in currentShoppingList" :key="item.id" class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 transition-all hover:shadow-sm">
-                                <div class="flex items-center flex-1 mr-2"><input type="checkbox" :checked="item.checked" @change="toggleShoppingItem(item)" class="w-5 h-5 text-deep-sea-blue rounded mr-3 accent-deep-sea-blue cursor-pointer" /><span :class="{'line-through text-slate-400': item.checked, 'text-slate-700 font-medium': !item.checked}" class="break-all">{{ item.name }}</span></div>
-                                <button @click="removeShoppingItem(item.id)" class="text-slate-300 hover:text-red-500 transition-colors p-2"><i class="fa-solid fa-trash-can"></i></button>
+                        <div
+                            class="flex items-center justify-between space-x-3 relative z-10"
+                        >
+                            <div class="flex-1">
+                                <label
+                                    class="text-[10px] text-orange-50 block mb-1 uppercase tracking-wider font-bold"
+                                    >THB</label
+                                >
+                                <input
+                                    type="number"
+                                    v-model.number="inputTHB"
+                                    @input="updateTWD"
+                                    class="w-full bg-white/20 border border-white/20 rounded-xl px-3 py-2.5 text-white placeholder-white/50 focus:outline-none focus:bg-white/30 text-lg font-bold shadow-sm font-mono"
+                                />
+                            </div>
+                            <i
+                                class="fa-solid fa-arrow-right-arrow-left text-white/80 mt-5"
+                            ></i>
+                            <div class="flex-1">
+                                <label
+                                    class="text-[10px] text-orange-50 block mb-1 uppercase tracking-wider font-bold"
+                                    >TWD</label
+                                >
+                                <input
+                                    type="number"
+                                    v-model.number="inputTWD"
+                                    @input="updateTHB"
+                                    class="w-full bg-white/20 border border-white/20 rounded-xl px-3 py-2.5 text-white placeholder-white/50 focus:outline-none focus:bg-white/30 text-lg font-bold shadow-sm font-mono"
+                                />
+                            </div>
+                        </div>
+
+                        <div
+                            class="mt-4 flex justify-between items-center relative z-10 border-t border-white/20 pt-2"
+                        >
+                            <button
+                                @click="fetchExchangeRate"
+                                class="text-[10px] text-white/70 hover:text-white flex items-center transition-colors"
+                            >
+                                <i
+                                    class="fa-solid fa-rotate mr-1"
+                                    :class="{ 'animate-spin': isRatesLoading }"
+                                ></i>
+                                {{ isRatesLoading ? "更新中..." : "點擊更新匯率" }}
+                            </button>
+                            <p
+                                class="text-xs text-white font-bold tracking-wide"
+                            >
+                                1 THB = {{ EXCHANGE_RATE.toFixed(4) }} TWD
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- 航班 -->
+                    <div class="bg-white rounded-3xl p-5 card-shadow">
+                        <h3
+                            class="font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2"
+                        >
+                            <i
+                                class="fa-solid fa-plane-departure text-blue-500 mr-2"
+                            ></i>
+                            航班資訊
+                        </h3>
+                        <div class="space-y-4">
+                            <div
+                                class="bg-blue-50 rounded-xl p-3 border border-blue-100"
+                            >
+                                <div
+                                    class="flex justify-between text-sm font-bold text-deep-sea-blue mb-1"
+                                >
+                                    <span>TPE 台北</span>
+                                    <i class="fa-solid fa-plane text-xs"></i>
+                                    <span>BKK 曼谷</span>
+                                </div>
+                                <div
+                                    class="flex justify-between text-xs text-slate-500"
+                                >
+                                    <span>10:05</span>
+                                    <span>CI0831 (1/16)</span>
+                                    <span>13:05</span>
+                                </div>
+                            </div>
+                            <div
+                                class="bg-orange-50 rounded-xl p-3 border border-orange-100"
+                            >
+                                <div
+                                    class="flex justify-between text-sm font-bold text-orange-800 mb-1"
+                                >
+                                    <span>BKK 曼谷</span>
+                                    <i class="fa-solid fa-plane text-xs"></i>
+                                    <span>TPE 台北</span>
+                                </div>
+                                <div
+                                    class="flex justify-between text-xs text-slate-500"
+                                >
+                                    <span>14:05</span>
+                                    <span>CI0832 (1/20)</span>
+                                    <span>18:40</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 住宿 -->
+                    <div class="bg-white rounded-3xl p-6 card-shadow">
+                        <h3
+                            class="font-bold text-slate-800 mb-3 border-b border-slate-100 pb-2"
+                        >
+                            <i
+                                class="fa-solid fa-hotel text-rose-500 mr-2"
+                            ></i>
+                            住宿資訊
+                        </h3>
+                        <ul class="space-y-4">
+                            <li
+                                v-for="hotel in hotels"
+                                :key="hotel.name"
+                                class="bg-rose-50 rounded-xl p-4 border border-rose-100 relative overflow-hidden"
+                            >
+                                <div
+                                    class="absolute right-0 top-0 p-2 opacity-10"
+                                >
+                                    <i class="fa-solid fa-bed text-4xl"></i>
+                                </div>
+                                <p
+                                    class="font-bold text-deep-sea-blue mb-2 text-lg"
+                                >
+                                    {{ hotel.name }}
+                                </p>
+                                <p
+                                    class="text-xs text-slate-500 mb-1 flex items-center font-bold"
+                                >
+                                    <i
+                                        class="fa-solid fa-calendar-days w-5 text-center mr-2 text-rose-400"
+                                    ></i>
+                                    {{ hotel.date }}
+                                </p>
+                                <p
+                                    class="text-xs text-slate-500 mb-1 flex items-center"
+                                >
+                                    <i
+                                        class="fa-solid fa-phone w-5 text-center mr-2 text-rose-400"
+                                    ></i>
+                                    {{ hotel.phone }}
+                                </p>
+                                <p
+                                    class="text-xs text-slate-500 flex items-center"
+                                >
+                                    <i
+                                        class="fa-solid fa-location-dot w-5 text-center mr-2 text-rose-400"
+                                    ></i>
+                                    {{ hotel.address }}
+                                </p>
                             </li>
                         </ul>
                     </div>
+
+                    <!-- 使用者切換 -->
+                    <div
+                        class="bg-white rounded-3xl p-4 card-shadow flex items-center justify-between"
+                    >
+                        <div class="flex items-center space-x-3 w-full">
+                            <div
+                                class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-100 to-white border border-indigo-50 flex items-center justify-center text-indigo-500 shadow-sm shrink-0"
+                            >
+                                <i class="fa-solid fa-user-gear text-xl"></i>
+                            </div>
+                            <div class="flex-1 custom-select-wrapper">
+                                <p
+                                    class="text-[10px] text-slate-400 font-medium tracking-wide"
+                                >
+                                    目前操作使用者
+                                </p>
+                                <select
+                                    :value="currentUser"
+                                    @change="switchUser($event.target.value)"
+                                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                >
+                                    <option
+                                        v-for="m in members"
+                                        :key="m.id"
+                                        :value="m.name"
+                                    >
+                                        {{ m.name }}
+                                    </option>
+                                </select>
+                                <div
+                                    class="flex items-center justify-between"
+                                >
+                                    <div class="min-w-0">
+                                        <p
+                                            class="text-lg font-bold text-slate-800 truncate"
+                                        >
+                                            {{ currentUser }}
+                                        </p>
+                                    </div>
+                                    <div
+                                        class="bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 flex items-center space-x-2 text-xs text-slate-500"
+                                    >
+                                        <span>切換</span>
+                                        <i
+                                            class="fa-solid fa-chevron-down text-[10px]"
+                                        ></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 管理員卡片 -->
+                    <div
+                        v-if="currentUserRole === 'admin'"
+                        class="bg-gradient-to-r from-orange-300 to-amber-200 rounded-3xl p-5 card-shadow text-deep-sea-blue"
+                    >
+                        <div class="flex justify-between items-center">
+                            <h3
+                                class="font-bold flex items-center text-orange-900"
+                            >
+                                <i
+                                    class="fa-solid fa-users-gear mr-2 text-orange-700"
+                                ></i>
+                                成員管理後台
+                            </h3>
+                            <button
+                                @click="showMemberModal = true"
+                                class="bg-white/40 hover:bg-white/60 px-4 py-2 rounded-xl text-sm font-bold transition-colors shadow-sm backdrop-blur-sm text-orange-900"
+                            >
+                                進入管理
+                            </button>
+                        </div>
+                    </div>
                 </div>
-                
-                <!-- Expenses Tab -->
-                <div v-if="currentTab === 'expenses'" class="animate-fade-in space-y-6">
-                    <div class="expenses-banner text-white rounded-3xl p-6 relative overflow-hidden">
-                        <p class="text-sm text-orange-100 mb-2 relative z-10 flex items-center"><i class="fa-solid fa-user-circle mr-1"></i> {{ currentUser }} 的個人總支出</p>
-                        <h2 class="text-4xl font-bold relative z-10 tracking-tight">約 NT$ {{ formatNumber(finalTotalTWD) }}</h2>
-                        <div class="text-xs mt-3 opacity-90 leading-relaxed relative z-10 bg-white/10 p-3 rounded-lg border border-white/20">
-                            <div class="flex justify-between"><span>THB 小計:</span><span class="font-semibold">฿ {{ formatNumber(totalTHB) }}</span></div>
-                            <div class="flex justify-between"><span>TWD 小計:</span><span class="font-semibold">NT$ {{ formatNumber(totalTWD) }}</span></div>
+
+                <!-- 購物 Tab -->
+                <div v-if="currentTab === 'shopping'" class="animate-fade-in">
+                    <div class="bg-white rounded-3xl p-6 card-shadow min-h-[60vh]">
+                        <h3
+                            class="font-bold text-slate-800 mb-4 flex items-center justify-between"
+                        >
+                            <span class="flex items-center">
+                                <i
+                                    class="fa-solid fa-basket-shopping text-accent-yellow mr-2"
+                                ></i>
+                                {{ currentUser }} 的清單
+                            </span>
+                            <span
+                                class="text-xs bg-slate-100 text-slate-500 px-2 py-1 rounded-lg"
+                                >{{ currentShoppingList.length }} 項</span
+                            >
+                        </h3>
+                        <ul
+                            class="space-y-3"
+                            v-if="currentShoppingList.length > 0"
+                        >
+                            <li
+                                v-for="item in currentShoppingList"
+                                :key="item.id"
+                                class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100 transition-all hover:shadow-sm"
+                            >
+                                <div
+                                    class="flex items-center flex-1 mr-2"
+                                >
+                                    <input
+                                        type="checkbox"
+                                        :checked="item.checked"
+                                        @change="toggleShoppingItem(item)"
+                                        class="w-5 h-5 text-deep-sea-blue rounded focus:ring-deep-sea-blue border-gray-300 mr-3 accent-deep-sea-blue cursor-pointer"
+                                    />
+                                    <span
+                                        :class="{
+                                            'line-through text-slate-400':
+                                                item.checked,
+                                            'text-slate-700 font-medium':
+                                                !item.checked,
+                                        }"
+                                        class="break-all"
+                                        >{{ item.name }}</span
+                                    >
+                                </div>
+                                <button
+                                    @click="removeShoppingItem(item.id)"
+                                    class="text-slate-300 hover:text-red-500 transition-colors p-2"
+                                >
+                                    <i
+                                        class="fa-solid fa-trash-can"
+                                    ></i>
+                                </button>
+                            </li>
+                        </ul>
+                        <div
+                            v-else
+                            class="text-center py-12 text-slate-300 flex flex-col items-center"
+                        >
+                            <div
+                                class="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mb-3"
+                            >
+                                <i
+                                    class="fa-solid fa-cart-plus text-2xl text-slate-200"
+                                ></i>
+                            </div>
+                            <p class="text-sm">
+                                尚無商品，幫 {{ currentUser }} 加一點？
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 花費 Tab -->
+                <div
+                    v-if="currentTab === 'expenses'"
+                    class="animate-fade-in space-y-6"
+                >
+                    <div
+                        class="expenses-banner text-white rounded-3xl p-6 relative overflow-hidden"
+                    >
+                        <p
+                            class="text-sm text-orange-100 mb-2 relative z-10 flex items-center"
+                        >
+                            <i class="fa-solid fa-user-circle mr-1"></i>
+                            {{ currentUser }} 的個人總支出
+                        </p>
+                        <h2
+                            class="text-4xl font-bold relative z-10 tracking-tight"
+                        >
+                            約 NT$ {{ formatNumber(finalTotalTWD) }}
+                        </h2>
+                        <div
+                            class="text-xs mt-3 opacity-90 leading-relaxed relative z-10 bg-white/10 p-3 rounded-lg border border-white/20"
+                        >
+                            <div class="flex justify-between">
+                                <span>THB 小計:</span>
+                                <span class="font-semibold"
+                                    >฿ {{ formatNumber(totalTHB) }}</span
+                                >
+                            </div>
+                            <div class="flex justify-between">
+                                <span>TWD 小計:</span>
+                                <span class="font-semibold"
+                                    >NT$ {{ formatNumber(totalTWD) }}</span
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 個人紀錄 -->
+                    <div class="bg-white rounded-3xl p-6 card-shadow">
+                        <h3
+                            class="font-bold text-slate-800 mb-4 flex items-center justify-between cursor-pointer"
+                            @click="toggleSection('expenses')"
+                        >
+                            <span>
+                                <i
+                                    class="fa-solid fa-user-pen mr-2 text-deep-sea-blue"
+                                ></i>
+                                {{ currentUser }} 的支出紀錄
+                            </span>
+                            <i
+                                class="fa-solid fa-chevron-down transition-transform duration-300 text-slate-400"
+                                :class="{
+                                    'rotate-180': !collapsedSections.expenses,
+                                }"
+                            ></i>
+                        </h3>
+                        <div v-show="!collapsedSections.expenses" class="animate-fade-in">
+                            <ul
+                                v-if="myExpenses.length > 0"
+                                class="space-y-4"
+                            >
+                                <li
+                                    v-for="(exp, idx) in myExpenses"
+                                    :key="idx"
+                                    class="flex items-center justify-between border-b border-slate-50 last:border-0 pb-3 last:pb-0 transition-colors rounded-lg px-2 -mx-2 hover:bg-slate-50"
+                                >
+                                    <div
+                                        class="flex items-center cursor-pointer flex-1"
+                                        @click="startEditExpense(exp.id, exp)"
+                                    >
+                                        <div
+                                            class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mr-3 text-slate-500 flex-shrink-0 self-center"
+                                        >
+                                            <i
+                                                :class="
+                                                    getCategoryIcon(
+                                                        exp.category
+                                                    )
+                                                "
+                                            ></i>
+                                        </div>
+                                        <div class="flex-1">
+                                            <p
+                                                class="font-bold text-slate-700 text-sm leading-tight"
+                                            >
+                                                {{ exp.name }}
+                                            </p>
+                                            <p
+                                                class="text-xs text-slate-400 mt-0.5"
+                                            >
+                                                {{ exp.date }}
+                                            </p>
+                                            <div
+                                                class="flex flex-wrap gap-1 mt-1"
+                                            >
+                                                <span
+                                                    v-if="
+                                                        exp.splitMethod !==
+                                                        'personal'
+                                                    "
+                                                    class="px-1.5 py-0.5 rounded-full bg-slate-200 text-[9px] font-medium text-slate-600"
+                                                    >分帳</span
+                                                >
+                                                <span
+                                                    v-if="
+                                                        exp.payer !==
+                                                        currentUser
+                                                    "
+                                                    class="px-1.5 py-0.5 rounded-full bg-orange-200 text-[9px] font-bold text-orange-800"
+                                                    >{{ exp.payer }}先付</span
+                                                >
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <div
+                                            class="text-right mr-3 cursor-pointer"
+                                            @click="
+                                                startEditExpense(exp.id, exp)
+                                            "
+                                        >
+                                            <p
+                                                class="font-bold text-deep-sea-blue"
+                                            >
+                                                {{
+                                                    exp.currency === "TWD"
+                                                        ? "NT$"
+                                                        : "฿"
+                                                }}{{ formatNumber(
+                                                    exp.displayAmount
+                                                ) }}
+                                            </p>
+                                            <p
+                                                class="text-xs text-slate-400 uppercase"
+                                            >
+                                                {{ exp.payment }}
+                                            </p>
+                                        </div>
+                                        <button
+                                            @click.stop="
+                                                removeExpense(exp.id)
+                                            "
+                                            class="w-8 h-8 flex items-center justify-center rounded-full text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors"
+                                        >
+                                            <i
+                                                class="fa-solid fa-trash-can"
+                                            ></i>
+                                        </button>
+                                    </div>
+                                </li>
+                            </ul>
+                            <div
+                                v-else
+                                class="text-center py-8 text-slate-400"
+                            >
+                                <i
+                                    class="fa-solid fa-file-invoice-dollar text-3xl text-slate-300 mb-2"
+                                ></i>
+                                <p>尚無款項</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 分帳 -->
+                    <div class="bg-white rounded-3xl p-6 card-shadow">
+                        <h3
+                            class="font-bold text-slate-800 mb-4 flex items-center justify-between cursor-pointer"
+                            @click="toggleSection('split')"
+                        >
+                            <span>
+                                <i
+                                    class="fa-solid fa-receipt mr-2 text-indigo-500"
+                                ></i>
+                                分帳總覽
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <span
+                                    class="text-[10px] text-slate-400 font-normal"
+                                    v-show="!collapsedSections.split"
+                                    >點擊成員查看明細</span
+                                >
+                                <i
+                                    class="fa-solid fa-chevron-down transition-transform duration-300 text-slate-400"
+                                    :class="{
+                                        'rotate-180': !collapsedSections.split,
+                                    }"
+                                ></i>
+                            </div>
+                        </h3>
+                        <div v-show="!collapsedSections.split" class="animate-fade-in">
+                            <ul
+                                v-if="Object.keys(memberBalances).length > 0"
+                                class="space-y-3"
+                            >
+                                <li
+                                    v-for="([name, balance]) in Object.entries(memberBalances)"
+                                    :key="name"
+                                    class="flex flex-col bg-slate-50 rounded-xl overflow-hidden transition-all duration-300 border border-transparent"
+                                    :class="{
+                                        'border-indigo-100 shadow-sm':
+                                            expandedMember === name,
+                                    }"
+                                >
+                                    <div
+                                        class="flex items-center justify-between p-3 cursor-pointer"
+                                        @click="toggleMemberDetails(name)"
+                                        :class="
+                                            balance > 0
+                                                ? 'bg-green-50'
+                                                : 'bg-red-50'
+                                        "
+                                    >
+                                        <span
+                                            class="font-bold text-sm flex items-center"
+                                            :class="
+                                                balance > 0
+                                                    ? 'text-green-700'
+                                                    : 'text-red-700'
+                                            "
+                                        >
+                                            <i
+                                                class="fa-solid mr-2 text-xs"
+                                                :class="
+                                                    expandedMember === name
+                                                        ? 'fa-chevron-down'
+                                                        : 'fa-chevron-right'
+                                                "
+                                            ></i>
+                                            {{ name }}
+                                        </span>
+                                        <div class="text-right">
+                                            <span
+                                                class="font-bold text-lg"
+                                                :class="
+                                                    balance > 0
+                                                        ? 'text-green-600'
+                                                        : 'text-red-600'
+                                                "
+                                                >{{
+                                                    balance > 0 ? "+" : ""
+                                                }}NT$
+                                                {{
+                                                    formatNumber(
+                                                        Math.round(balance)
+                                                    )
+                                                }}</span
+                                            >
+                                            <span
+                                                class="text-xs ml-1"
+                                                :class="
+                                                    balance > 0
+                                                        ? 'text-green-500'
+                                                        : 'text-red-500'
+                                                "
+                                                >{{
+                                                    balance > 0
+                                                        ? "應收"
+                                                        : balance < 0
+                                                        ? "應付"
+                                                        : "已結清"
+                                                }}</span
+                                            >
+                                        </div>
+                                    </div>
+                                    <div
+                                        v-if="expandedMember === name"
+                                        class="bg-white p-3 border-t border-slate-100 animate-fade-in"
+                                    >
+                                        <p
+                                            class="text-xs text-slate-400 mb-2 font-bold"
+                                        >
+                                            該成員支付的分帳項目：
+                                        </p>
+                                        <ul class="space-y-2">
+                                            <li
+                                                v-for="detail in getMemberPaidExpenses(name)"
+                                                :key="detail.id"
+                                                class="flex justify-between items-center text-xs text-slate-600 border-b border-slate-50 pb-1 last:border-0 last:pb-0"
+                                            >
+                                                <div
+                                                    class="flex-1 truncate pr-2"
+                                                >
+                                                    <span
+                                                        class="block text-slate-800"
+                                                        >{{ detail.name }}</span
+                                                    >
+                                                    <span
+                                                        class="text-[10px] text-slate-400"
+                                                        >{{
+                                                            detail.date
+                                                        }}</span
+                                                    >
+                                                </div>
+                                                <span
+                                                    class="font-medium whitespace-nowrap"
+                                                    >{{
+                                                        detail.currency ===
+                                                        "TWD"
+                                                            ? "NT$"
+                                                            : "฿"
+                                                    }}
+                                                    {{
+                                                        formatNumber(
+                                                            detail.amount
+                                                        )
+                                                    }}</span
+                                                >
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </li>
+                            </ul>
+                            <div
+                                v-else
+                                class="text-center py-8 text-slate-400"
+                            >
+                                <i
+                                    class="fa-solid fa-file-invoice-dollar text-3xl text-slate-300 mb-2"
+                                ></i>
+                                <p>尚無分帳款項</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 轉帳建議 -->
+                    <div class="bg-white rounded-3xl p-6 card-shadow">
+                        <h3
+                            class="font-bold text-slate-800 mb-4 flex items-center justify-between cursor-pointer"
+                            @click="toggleSection('transfer')"
+                        >
+                            <span>
+                                <i
+                                    class="fa-solid fa-money-bill-transfer mr-2 text-green-500"
+                                ></i>
+                                轉帳建議
+                            </span>
+                            <i
+                                class="fa-solid fa-chevron-down transition-transform duration-300 text-slate-400"
+                                :class="{
+                                    'rotate-180': !collapsedSections.transfer,
+                                }"
+                            ></i>
+                        </h3>
+                        <div
+                            v-show="!collapsedSections.transfer"
+                            class="animate-fade-in"
+                        >
+                            <div
+                                v-if="transferSuggestions.length > 0"
+                                class="grid grid-cols-1 gap-3"
+                            >
+                                <div
+                                    v-for="(item, idx) in transferSuggestions"
+                                    :key="idx"
+                                    class="bg-slate-50 rounded-xl p-4 border border-slate-100 flex items-center justify-between"
+                                >
+                                    <div
+                                        class="flex flex-col items-center w-[30%] max-w-[80px]"
+                                    >
+                                        <div
+                                            class="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-sm font-bold mb-1 border-2 border-white shadow-sm"
+                                        >
+                                            {{ item.from.substring(0, 1) }}
+                                        </div>
+                                        <span
+                                            class="text-xs font-bold text-slate-700 truncate w-full text-center"
+                                            >{{ item.from }}</span
+                                        >
+                                    </div>
+                                    <div
+                                        class="flex flex-col items-center justify-center px-2 flex-1"
+                                    >
+                                        <span
+                                            class="text-[10px] text-slate-400 mb-1 whitespace-nowrap"
+                                            >支付給</span
+                                        >
+                                        <i
+                                            class="fa-solid fa-arrow-right-long text-xl text-slate-300 pulse-arrow"
+                                        ></i>
+                                        <span
+                                            class="text-sm font-bold text-green-600 mt-1 whitespace-nowrap"
+                                            >NT$
+                                            {{ formatNumber(item.amount) }}</span
+                                        >
+                                    </div>
+                                    <div
+                                        class="flex flex-col items-center w-[30%] max-w-[80px]"
+                                    >
+                                        <div
+                                            class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-sm font-bold mb-1 border-2 border-white shadow-sm"
+                                        >
+                                            {{ item.to.substring(0, 1) }}
+                                        </div>
+                                        <span
+                                            class="text-xs font-bold text-slate-700 truncate w-full text-center"
+                                            >{{ item.to }}</span
+                                        >
+                                    </div>
+                                </div>
+                            </div>
+                            <div
+                                v-else
+                                class="text-center py-6 text-slate-400"
+                            >
+                                <i
+                                    class="fa-solid fa-circle-check text-4xl text-green-200 mb-2"
+                                ></i>
+                                <p class="text-sm">
+                                    帳務已平衡，無需轉帳
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 浮動新增按鈕 -->
-                <button v-if="currentTab === 'itinerary' && canEditItinerary" @click="handleAddClick" class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-40"><i class="fa-solid fa-plus"></i></button>
-                <button v-if="currentTab === 'shopping'" @click="handleAddClick" class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-40"><i class="fa-solid fa-plus"></i></button>
-                <button v-if="currentTab === 'expenses'" @click="handleAddClick" class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-40"><i class="fa-solid fa-plus"></i></button>
+                <button
+                    v-if="currentTab === 'itinerary' && canEditItinerary"
+                    @click="handleAddClick"
+                    class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-40"
+                >
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+                <button
+                    v-if="currentTab === 'shopping'"
+                    @click="handleAddClick"
+                    class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-40"
+                >
+                    <i class="fa-solid fa-plus"></i>
+                </button>
+                <button
+                    v-if="currentTab === 'expenses'"
+                    @click="handleAddClick"
+                    class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-40"
+                >
+                    <i class="fa-solid fa-plus"></i>
+                </button>
 
-                <!-- Modals -->
+                <!-- Shopping Modal / Expense Modal / Itinerary Modal / Member Modal / Password Modal / Toast 
+                     這些結構與前一版相同，為節省篇幅直接在下方 JS 中掛載 -->
+                     
+                <!-- (略) Modal 區塊程式碼其實包含在上方已完整貼出的邏輯中，這裡不重複佔版面，
+                     請直接參考上一版或直接複製本文最末的 JS 區塊，Modal 的 HTML 需要放在 app 容器內 -->
+
+                 <!-- 這裡補充 Modal 的 HTML 以確保完整性 -->
+                 
                 <!-- Shopping Modal -->
                 <div v-if="showShoppingModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
+                        <h3 class="font-bold text-lg mb-5 text-center text-slate-800">新增購物清單 ({{ currentUser }})</h3>
                         <input v-model="newShoppingItem.name" type="text" placeholder="商品名稱" class="w-full bg-slate-50 border-none rounded-xl p-4 mb-4 focus:ring-2 focus:ring-deep-sea-blue text-sm outline-none" />
                         <div class="flex space-x-3">
                             <button @click="showShoppingModal = false" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
-                            <button @click="addShoppingItem" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm">新增</button>
+                            <button @click="addShoppingItem" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30">新增</button>
                         </div>
                     </div>
                 </div>
@@ -708,15 +1459,61 @@
                 <!-- Expense Modal -->
                 <div v-if="showExpenseModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ editingExpenseId === null ? "記一筆" : "編輯支出" }}</h3>
                         <div class="space-y-3">
-                            <input v-model="newExpense.date" type="date" class="w-full bg-slate-50 rounded-xl p-3 text-sm" />
-                            <input v-model="newExpense.name" type="text" placeholder="項目名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm" />
-                            <input v-model.number="newExpense.amount" type="number" placeholder="金額" class="w-full bg-slate-50 rounded-xl p-3 text-sm" />
-                            <select v-model="newExpense.payer" class="w-full bg-slate-50 rounded-xl p-3 text-sm"><option v-for="m in members" :key="m.id" :value="m.name">{{ m.name }} 先付</option></select>
+                            <input v-model="newExpense.date" type="date" class="w-full bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none" />
+                            <input v-model="newExpense.name" type="text" placeholder="項目名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                            <div class="grid grid-cols-2 gap-3">
+                                <select v-model="newExpense.payer" class="bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
+                                    <option v-for="member in members" :key="member.id" :value="member.name">{{ member.name }} (支付)</option>
+                                </select>
+                                <select v-model="newExpense.payment" class="bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
+                                    <option value="cash">現金</option>
+                                    <option value="card">信用卡</option>
+                                </select>
+                            </div>
+                            <div class="flex space-x-2">
+                                <select v-model="newExpense.currency" class="bg-slate-50 rounded-xl p-3 text-sm outline-none font-bold text-slate-700 w-24">
+                                    <option value="THB">฿ THB</option>
+                                    <option value="TWD">$ TWD</option>
+                                </select>
+                                <input v-model.number="newExpense.amount" type="number" placeholder="金額" class="flex-1 bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                            </div>
+                            <select v-model="newExpense.category" class="w-full bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
+                                <option value="food">飲食</option>
+                                <option value="transport">交通</option>
+                                <option value="shopping">購物</option>
+                                <option value="sightseeing">娛樂</option>
+                                <option value="accommodation">住宿</option>
+                                <option value="ticket">門票</option>
+                                <option value="other">其他</option>
+                            </select>
+                            <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 mt-2">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="text-xs font-bold text-slate-500"><i class="fa-solid fa-user-group mr-1"></i> 多人分帳</span>
+                                </div>
+                                <div class="flex space-x-1 mb-3 bg-white p-1 rounded-lg border border-slate-200">
+                                    <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'personal' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'personal'">個人</button>
+                                    <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'equal' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'equal'">均分</button>
+                                    <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'ratio' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'ratio'">比例</button>
+                                    <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'amount' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'amount'">金額</button>
+                                </div>
+                                <div v-if="newExpense.splitMethod !== 'personal'">
+                                    <div v-if="splitMembers.length > 0" class="space-y-2 max-h-32 overflow-y-auto pr-1">
+                                        <div v-if="newExpense.splitMethod === 'equal'" class="text-xs text-slate-500 p-2 text-center bg-white rounded border border-slate-100">將由 {{ splitMembers.length }} 位啟用成員均分</div>
+                                        <div v-else>
+                                            <div v-for="member in splitMembers" :key="member" class="flex items-center justify-between mb-2 last:mb-0">
+                                                <span class="text-xs text-slate-600 truncate w-20">{{ member }}</span>
+                                                <input v-model="newExpense.splitDetails[member]" type="number" :placeholder="newExpense.splitMethod === 'ratio' ? '比例' : '金額'" class="flex-1 bg-white p-1.5 rounded border border-slate-200 text-xs text-right outline-none" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="flex space-x-3 mt-6">
-                            <button @click="showExpenseModal = false" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
-                            <button @click="saveExpense" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm">儲存</button>
+                            <button @click="showExpenseModal = false; editingExpenseId = null;" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
+                            <button @click="saveExpense" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30">{{ editingExpenseId === null ? "儲存" : "更新" }}</button>
                         </div>
                     </div>
                 </div>
@@ -724,35 +1521,95 @@
                 <!-- Itinerary Modal -->
                 <div v-if="showItineraryModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+                        <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ isEditMode ? "編輯行程" : "新增行程" }}</h3>
                         <div class="space-y-3">
-                            <input v-model="newItinerary.startTime" type="text" placeholder="時間" class="w-full bg-slate-50 rounded-xl p-3 text-sm" />
-                            <input v-model="newItinerary.name" type="text" placeholder="行程名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm" />
-                            <textarea v-model="newItinerary.note" rows="3" placeholder="備註" class="w-full bg-slate-50 rounded-xl p-3 text-sm"></textarea>
+                            <select v-model="newItinerary.category" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none">
+                                <option value="sightseeing">景點</option>
+                                <option value="food">飲食</option>
+                                <option value="shopping">購物</option>
+                                <option value="accommodation">住宿</option>
+                                <option value="ticket">門票</option>
+                                <option value="other">其他</option>
+                            </select>
+                            <input v-model="newItinerary.startTime" type="text" placeholder="時間" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                            <input v-model="newItinerary.name" type="text" placeholder="行程名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                            <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-2">
+                                <p class="text-[10px] text-slate-400 font-bold ml-1">前往此處的交通 (上一站 → 這裡)</p>
+                                <div class="flex space-x-2">
+                                    <select v-model="newItinerary.transportType" class="bg-white rounded-lg p-2 text-sm text-slate-600 outline-none border border-slate-200 w-1/3">
+                                        <option value="car">包車/計程車</option>
+                                        <option value="public">大眾運輸/船</option>
+                                        <option value="walk">步行</option>
+                                        <option value="flight">飛機</option>
+                                    </select>
+                                    <input v-model="newItinerary.travelTime" type="text" placeholder="移動時間 (ex: 約20分鐘)" class="flex-1 bg-white rounded-lg p-2 text-sm outline-none border border-slate-200" />
+                                </div>
+                            </div>
+                            <input v-model="newItinerary.address" type="text" placeholder="地址 / 導航用名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                            <textarea v-model="newItinerary.note" rows="3" placeholder="備註" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none"></textarea>
+                            <div class="grid grid-cols-2 gap-3">
+                                <input v-model="newItinerary.hours" type="text" placeholder="營業時間" class="bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                                <input v-model="newItinerary.price" type="text" placeholder="預算" class="bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                            </div>
                         </div>
                         <div class="flex space-x-3 mt-6">
-                            <button @click="showItineraryModal = false" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
-                            <button @click="saveItineraryItem" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm">儲存</button>
+                            <button @click="showItineraryModal = false; isEditMode = false;" :class="isEditMode ? 'w-1/3' : 'flex-1'" class="py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
+                            <button v-if="isEditMode && canEditItinerary" @click="removeItineraryItem(newItinerary.id)" class="w-1/3 py-3 rounded-xl bg-red-100 text-red-600 font-bold text-sm hover:bg-red-200 transition-colors"><i class="fa-solid fa-trash-can mr-1"></i> 刪除</button>
+                            <button @click="saveItineraryItem" :disabled="!canEditItinerary" :class="['py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30', isEditMode ? 'w-1/3' : 'flex-1', !canEditItinerary ? 'opacity-60 cursor-not-allowed' : '']">{{ isEditMode ? "儲存" : "新增" }}</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Password Modal (修復：移除 v-if/v-show，強制顯示 input) -->
+                <!-- Member Modal -->
+                <div v-if="showMemberModal" class="fixed inset-0 bg-slate-900/50 z-[70] flex flex-col items-center justify-end sm:justify-center animate-fade-in backdrop-blur-sm">
+                    <div class="bg-white w-full sm:w-[480px] sm:rounded-3xl rounded-t-3xl p-6 shadow-2xl h-[85vh] sm:h-auto sm:max-h-[85vh] flex flex-col">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="font-bold text-xl text-slate-800">成員管理後台</h3>
+                            <button @click="closeMemberModal" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-times"></i></button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
+                            <div v-for="m in members" :key="m.id" class="flex items-center justify-between bg-white rounded-2xl p-4 border border-orange-100 shadow-sm">
+                                <div class="flex items-center space-x-3 flex-1 min-w-0 mr-2">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0" :class="m.role === 'admin' ? 'bg-orange-500' : 'bg-ice-blue'">{{ m.name.substring(0, 1).toUpperCase() }}</div>
+                                    <div class="flex flex-col min-w-0 flex-1">
+                                        <div class="flex items-center min-w-0">
+                                            <template v-if="editingMemberId === m.id">
+                                                <input v-model="tempMemberName" @keyup.enter="saveMemberName(m)" @blur="saveMemberName(m)" ref="editInput" class="w-full text-sm font-bold bg-white border border-blue-400 rounded px-2 py-1 outline-none" />
+                                            </template>
+                                            <template v-else>
+                                                <span class="font-bold text-slate-700 truncate block">{{ m.name }}</span>
+                                                <button @click="startEditMember(m)" class="ml-2 text-slate-400 hover:text-blue-500 flex-shrink-0 p-1"><i class="fa-solid fa-pen text-xs"></i></button>
+                                            </template>
+                                        </div>
+                                        <span class="text-[10px] text-slate-400 truncate">{{ m.role === "admin" ? "管理員" : "一般成員" }}</span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-2 flex-shrink-0 flex-nowrap">
+                                    <button @click="toggleMemberActive(m)" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors min-w-[50px] text-center" :class="m.active ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'">{{ m.active ? "參與" : "隱藏" }}</button>
+                                    <button @click="updateMemberRole(m, m.role === 'admin' ? 'viewer' : 'admin')" class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors flex-shrink-0" :class="m.role === 'admin' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-400'"><i class="fa-solid fa-crown text-xs"></i></button>
+                                    <button @click="openSetPasswordMode(m)" class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors flex-shrink-0" :class="m.password ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'"><i class="fa-solid fa-key text-xs"></i></button>
+                                    <button v-if="m.name !== '我'" @click="removeMember(m.id)" class="w-8 h-8 rounded-lg bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-auto pt-4 border-t border-slate-100">
+                            <div class="flex space-x-2">
+                                <input v-model="newMemberName" @keyup.enter="addMember" placeholder="輸入新成員名稱..." class="flex-1 bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-transparent focus:border-deep-sea-blue focus:bg-white transition-all" />
+                                <button @click="addMember" class="px-6 rounded-xl bg-deep-sea-blue text-white text-sm font-bold shadow-lg shadow-deep-sea-blue/20 hover:scale-105 transition-transform"><i class="fa-solid fa-plus mr-1"></i> 新增</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Password Modal -->
                 <div v-if="showRolePasswordModal" class="fixed inset-0 bg-slate-900/60 z-[80] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl border border-orange-100">
                         <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deep-sea-blue shadow-inner">
                             <i class="fa-solid fa-shield-cat text-xl"></i>
                         </div>
-                        <h3 class="font-bold text-base mb-2 text-center text-slate-800">{{ passwordMode === "loginAdmin" ? "Admin 身份驗證" : passwordMode === "loginPersonal" ? `歡迎回來，${targetLoginMember?.name}` : "需要密碼" }}</h3>
-                        
-                        <!-- 修正：input 永遠存在，不使用 v-if 切換 -->
-                        <input
-                            ref="rolePasswordInputRef"
-                            v-model="rolePasswordInput"
-                            type="password"
-                            placeholder="請輸入密碼"
-                            class="w-full bg-slate-50 rounded-xl p-3 text-center font-bold text-deep-sea-blue outline-none border-2 border-transparent focus:border-deep-sea-blue focus:bg-white transition-all mb-4 tracking-widest ring-1 ring-slate-100 focus:ring-deep-sea-blue/30"
-                        />
-                        
+                        <h3 class="font-bold text-base mb-2 text-center text-slate-800">{{ passwordMode === "role" ? "需要 Admin 權限" : passwordMode === "loginAdmin" ? "Admin 身份驗證" : passwordMode === "loginPersonal" ? `歡迎回來，${targetLoginMember?.name}` : passwordMode === "setPassword" ? `設定 ${targetLoginMember?.name} 的密碼` : "" }}</h3>
+                        <p class="text-xs text-center text-slate-400 mb-4">{{ passwordMode === "setPassword" ? "請設定一組只有該成員知道的密碼，留空則移除保護。" : "為了確保安全，請輸入密碼以繼續。" }}</p>
+                        <input v-model="rolePasswordInput" :type="passwordMode === 'setPassword' ? 'text' : 'password'" :placeholder="passwordMode === 'setPassword' ? '輸入新密碼 (留空移除)' : '請輸入密碼'" class="w-full bg-slate-50 rounded-xl p-3 text-center font-bold text-deep-sea-blue outline-none border-2 border-transparent focus:border-deep-sea-blue focus:bg-white transition-all mb-4 tracking-widest ring-1 ring-slate-100 focus:ring-deep-sea-blue/30" />
                         <div class="flex space-x-3">
                             <button @click="cancelRolePassword" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 text-sm font-bold hover:bg-slate-200 transition-colors">取消</button>
                             <button @click="confirmRolePassword" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-deep-sea-blue to-orange-500 text-white text-sm font-bold shadow-lg shadow-orange-200 hover:scale-105 transition-transform">確認</button>
@@ -768,9 +1625,27 @@
 
     <!-- JS 主程式 -->
     <script type="module">
-        import { createApp, ref, computed, onMounted, nextTick } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, onSnapshot, writeBatch, getDocs } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+        import {
+            createApp,
+            ref,
+            computed,
+            onMounted,
+            nextTick,
+        } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+        import {
+            initializeApp,
+        } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+        import {
+            getFirestore,
+            collection,
+            addDoc,
+            doc,
+            updateDoc,
+            deleteDoc,
+            onSnapshot,
+            writeBatch,
+            getDocs,
+        } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCyYCSGWQ0Wdf13AE62UG7W8WiwpqCHs_0",
@@ -785,52 +1660,292 @@
         const firebaseApp = initializeApp(firebaseConfig);
         const db = getFirestore(firebaseApp);
 
-        // === 行程順序修正 ===
+        // === 新版預設行程：完全依照指示重新安排 ===
         const INITIAL_ITINERARY = [
-             // Day 1: 修正交通邏輯
+            // Day 1: 抵達 -> 飯店入住(craftsman hotel) -> Ari 咖啡街 -> 晚餐 -> 按摩/飯店泳池/大麻店
             [
-                { category: "transport", name: "抵達曼谷機場 (BKK)", startTime: "13:05", address: "Suvarnabhumi Airport", note: "下機後辦理通關、領行李，預計 14:00 出關。建議預約保母車或叫 2 台 Grab 前往飯店。", order: 1, transportType: "flight", travelTime: "" }, // 第一站無交通時間
-                { category: "accommodation", name: "入住 Craftsman Bangkok", startTime: "15:00", address: "34-36 Phahon Yothin 11, Samsen Nai, Phaya Thai", note: "Check-in，放行李、分配房卡。稍作休息或在飯店泳池拍照。", order: 2, transportType: "car", travelTime: "機場 → 飯店約 40 分" },
-                { category: "food", name: "Ari 咖啡街散步", startTime: "16:00", address: "Ari Soi 4 / Gump's Ari", note: "從飯店搭嘟嘟車或叫車至 Ari。逛 Gump's Ari 拍照，或去 Nana Coffee Roasters 喝咖啡。", order: 3, transportType: "car", travelTime: "飯店 → Ari 區約 15 分" },
-                { category: "food", name: "晚餐：Lay Lao (Ari)", startTime: "18:00", address: "65 Phahon Yothin 7, Samsen Nai", note: "米其林必比登推薦東北菜。就在 Ari 站附近，吃完可以直接散步。", order: 4, transportType: "walk", travelTime: "Ari 區步行" },
-                { category: "other", name: "按摩 / 放鬆 / 續攤", startTime: "20:00", address: "Ari Area", note: "飯後可找附近按摩店 (Chaari Spa)，或去酒吧/大麻店 chill 一下。結束叫車回飯店。", order: 5, transportType: "walk", travelTime: "步行約 10 分" },
+                {
+                    category: "accommodation",
+                    name: "抵達曼谷・前往 Craftsman Hotel",
+                    startTime: "13:05",
+                    address: "Craftsman Bangkok, 34-36 Phahon Yothin 11, Samsen Nai, Phaya Thai",
+                    note: "13:05 抵達機場。出關後叫 Grab 或包車前往飯店 (車程約 30-45 分)。Check-in 放行李、簡單梳洗。",
+                    order: 1,
+                    transportType: "car",
+                    travelTime: "機場 → 飯店約 40 分",
+                },
+                {
+                    category: "food",
+                    name: "Ari 咖啡街散步",
+                    startTime: "15:30",
+                    address: "Ari Soi 4 / Ari Soi 2",
+                    note: "從飯店可步行或搭嘟嘟車至 Ari 站周邊。推薦 Gump's Ari (拍照)、Nana Coffee Roasters、Salt (文青小店)。",
+                    order: 2,
+                    transportType: "walk",
+                    travelTime: "飯店 → Ari 區步行約 15 分 / 車程 5 分",
+                },
+                {
+                    category: "food",
+                    name: "晚餐：Lay Lao (Ari)",
+                    startTime: "18:00",
+                    address: "65 Phahon Yothin 7, Samsen Nai, Phaya Thai, Bangkok",
+                    note: "米其林必比登推薦。主打東北泰菜、生醃海鮮，環境舒適，適合第一餐開胃。建議先訂位。",
+                    order: 3,
+                    transportType: "walk",
+                    travelTime: "Ari 咖啡街 → Lay Lao 步行 5 分",
+                },
+                {
+                    category: "other",
+                    name: "按摩 / 飯店泳池 / 大麻店",
+                    startTime: "20:00",
+                    address: "Ari 周邊或飯店",
+                    note: "吃飽後可選擇：1. 在 Ari 找按摩店 (Chaari Spa 等) 2. 回飯店泳池耍廢 3. 探訪附近 Dispensary (如 Cloud Nine Ari)。",
+                    order: 4,
+                    transportType: "walk",
+                    travelTime: "Lay Lao → 續攤地點 步行",
+                },
             ],
-            // Day 2
+            // Day 2: 早餐 -> 臥佛寺 -> 午餐 -> 鄭王廟 -> icon Siam -> 碼頭夜市(skyflyers) -> 夜生活(nana廣場)
             [
-                { category: "food", name: "早餐：FRAN'S Ari", startTime: "09:00", address: "58 Ngam Duphli Alley", note: "超紅早午餐，務必預約。叫車前往。", order: 1, transportType: "car", travelTime: "飯店 → FRAN'S 約 10 分" },
-                { category: "sightseeing", name: "臥佛寺 (Wat Pho)", startTime: "11:00", address: "2 Sanam Chai Rd", note: "從 Ari 叫車去舊城區，預留 40 分鐘車程避開塞車。參觀臥佛。", order: 2, transportType: "car", travelTime: "Ari → 臥佛寺 車程約 40 分" },
-                { category: "food", name: "午餐：RONGROS", startTime: "12:30", address: "392/16 Maha Rat Rd", note: "河畔景觀餐廳，看鄭王廟。就在臥佛寺附近的碼頭邊。", order: 3, transportType: "walk", travelTime: "臥佛寺 → RONGROS 步行 5 分" },
-                { category: "sightseeing", name: "鄭王廟 (Wat Arun)", startTime: "14:30", address: "158 Thanon Wang Doem", note: "搭接駁船過河。爬塔拍照，停留約 1 小時。", order: 4, transportType: "public", travelTime: "過河船程約 10 分" },
-                { category: "shopping", name: "ICONSIAM", startTime: "16:00", address: "299 Charoen Nakhon Rd", note: "從鄭王廟碼頭搭橘旗/藍旗船前往。逛室內水上市場吹冷氣。", order: 5, transportType: "public", travelTime: "鄭王廟 → ICONSIAM 船程 20 分" },
-                { category: "sightseeing", name: "碼頭夜市 Asiatique", startTime: "18:30", address: "2194 Charoen Krung Rd", note: "從 ICONSIAM 搭船至 Sathorn，轉免費接駁船。晚餐夜市解決，玩 Skyflyer。", order: 6, transportType: "public", travelTime: "船程約 30 分" },
-                { category: "other", name: "Nana 廣場 (夜生活)", startTime: "21:30", address: "Nana Plaza, Sukhumvit 4", note: "體驗曼谷紅燈區氛圍。結束後叫車回 Craftsman。", order: 7, transportType: "car", travelTime: "Asiatique → Nana 車程 30 分" },
+                {
+                    category: "food",
+                    name: "早餐：FRAN'S Ari",
+                    startTime: "09:00",
+                    address: "58, 2 Ngam Duphli Alley, Thung Maha Mek, Sathon, Bangkok",
+                    note: "曼谷超紅早午餐，以厚吐司和豐盛拼盤聞名。人多務必預約，不然會排很久。",
+                    order: 1,
+                    transportType: "car",
+                    travelTime: "飯店 → FRAN'S 約 10 分",
+                },
+                {
+                    category: "sightseeing",
+                    name: "臥佛寺 (Wat Pho)",
+                    startTime: "11:00",
+                    address: "2 Sanam Chai Rd, Phra Borom Maha Ratchawang, Phra Nakhon",
+                    note: "參觀最大臥佛、投幣祈福。結束後步行至河邊餐廳。",
+                    order: 2,
+                    transportType: "car",
+                    travelTime: "Ari → 臥佛寺 車程約 30 分",
+                },
+                {
+                    category: "food",
+                    name: "午餐：RONGROS",
+                    startTime: "12:30",
+                    address: "392/16 Maha Rat Rd, Phra Borom Maha Ratchawang, Phra Nakhon",
+                    note: "河畔景觀餐廳，正對鄭王廟，景色絕佳。提供精緻泰菜，需預訂窗邊位。",
+                    order: 3,
+                    transportType: "walk",
+                    travelTime: "臥佛寺 → RONGROS 步行 5 分",
+                },
+                {
+                    category: "sightseeing",
+                    name: "鄭王廟 (Wat Arun)",
+                    startTime: "14:30",
+                    address: "158 Thanon Wang Doem, Wat Arun, Bangkok Yai",
+                    note: "從 Tha Tien 碼頭搭接駁船過河。爬白色佛塔拍照，建議停留 1 小時。",
+                    order: 4,
+                    transportType: "public",
+                    travelTime: "餐廳 → 鄭王廟 (船) 約 10 分",
+                },
+                {
+                    category: "shopping",
+                    name: "ICONSIAM 逛街",
+                    startTime: "16:00",
+                    address: "299 Charoen Nakhon Rd, Khlong Ton Sai, Khlong San",
+                    note: "搭船前往。逛 G 樓 SookSiam 室內水上市場、Apple Store 觀景台。冷氣很強。",
+                    order: 5,
+                    transportType: "public",
+                    travelTime: "鄭王廟 → ICONSIAM (船) 約 20 分",
+                },
+                {
+                    category: "sightseeing",
+                    name: "碼頭夜市 Asiatique (Skyflyer)",
+                    startTime: "18:30",
+                    address: "2194 Charoen Krung Rd, Wat Phraya Krai, Bang Kho Laem",
+                    note: "從 ICONSIAM 搭船至 Sathorn 轉接駁船。晚餐在夜市解決，可玩 Skyflyer 摩天輪或逛倉庫區。",
+                    order: 6,
+                    transportType: "public",
+                    travelTime: "ICONSIAM → Asiatique (船) 約 30 分",
+                },
+                {
+                    category: "other",
+                    name: "夜生活：Nana 廣場",
+                    startTime: "21:30",
+                    address: "Nana Plaza, Sukhumvit 4 Alley, Khlong Toei",
+                    note: "知名的成人娛樂區與酒吧街，體驗曼谷夜生活。結束後叫車回 Craftsman。",
+                    order: 7,
+                    transportType: "car",
+                    travelTime: "Asiatique → Nana 車程約 30 分",
+                },
             ],
-            // Day 3: 修正 8:30 退房 & 8:45 出發
+            // Day 3(包車、換飯店): 美功鐵道市集 -> 午餐 -> 安帕瓦 -> Airbnb(通羅) -> 晚餐 -> 高空酒吧
             [
-                { category: "accommodation", name: "Craftsman 退房", startTime: "08:30", address: "Craftsman Bangkok", note: "起床吃早餐、收行李退房。包車司機預計 08:30 抵達接人。", order: 1, transportType: "walk", travelTime: "飯店門口上車" },
-                { category: "sightseeing", name: "美功鐵道市集", startTime: "10:45", address: "Mae Klong Railway Market", note: "08:45 準時出發，車程約 2 小時。看 11:10/11:30 火車。", order: 2, transportType: "car", travelTime: "曼谷 → 美功 約 2 小時" },
-                { category: "food", name: "午餐：廣銘珍 / 媽媽桑", startTime: "11:40", address: "市場旁", note: "看完火車就近吃雲吞麵或泡麵。", order: 3, transportType: "walk", travelTime: "步行" },
-                { category: "sightseeing", name: "安帕瓦水上市場", startTime: "13:00", address: "Amphawa", note: "搭車前往，約 20 分鐘。包船遊河，逛市集吃點心。", order: 4, transportType: "car", travelTime: "美功 → 安帕瓦 20 分" },
-                { category: "accommodation", name: "入住通羅 Airbnb", startTime: "17:00", address: "Thonglor Area", note: "15:30 離開安帕瓦，預計 17:00-17:30 抵達通羅。Check-in 休息。", order: 5, transportType: "car", travelTime: "安帕瓦 → 通羅 2 小時" },
-                { category: "food", name: "晚餐：頌通酒家", startTime: "19:00", address: "2829 Rama IV Rd", note: "老牌海鮮餐廳，必吃咖哩蟹。叫車前往。", order: 6, transportType: "car", travelTime: "通羅 → 頌通 15 分" },
-                { category: "other", name: "Tichuca Rooftop Bar", startTime: "21:00", address: "T-One Building", note: "水母酒吧喝一杯。人多需排隊。", order: 7, transportType: "car", travelTime: "頌通 → Tichuca 15 分" },
+                {
+                    category: "sightseeing",
+                    name: "美功鐵道市集",
+                    startTime: "10:30",
+                    address: "Mae Klong, Mueang Samut Songkhram District",
+                    note: "08:30 包車出發 (行李上車)。看 11:10 或 11:30 的火車進站。人多注意財物。",
+                    order: 1,
+                    transportType: "car",
+                    travelTime: "曼谷 → 美功 車程約 1.5-2 小時",
+                },
+                {
+                    category: "food",
+                    name: "午餐：廣銘珍餛飩麵 / 媽媽桑泡麵",
+                    startTime: "11:40",
+                    address: "Maeklong Railway Market 旁",
+                    note: "看完火車就近吃。廣銘珍以雲吞和燒肉聞名；鐵軌旁小攤販的媽媽桑泡麵也很有名。",
+                    order: 2,
+                    transportType: "walk",
+                    travelTime: "市場內步行",
+                },
+                {
+                    category: "sightseeing",
+                    name: "安帕瓦水上市場",
+                    startTime: "13:00",
+                    address: "Amphawa, Samut Songkhram",
+                    note: "週五六日才開。搭船遊河、吃烤海鮮、買伴手禮。氣氛比丹能莎朵悠閒。",
+                    order: 3,
+                    transportType: "car",
+                    travelTime: "美功 → 安帕瓦 車程約 20 分",
+                },
+                {
+                    category: "accommodation",
+                    name: "入住通羅 Airbnb",
+                    startTime: "17:00",
+                    address: "Thonglor (Sukhumvit 55) Area",
+                    note: "約 15:30 離開安帕瓦，返回曼谷市區。入住通羅區 Airbnb，稍微休息。",
+                    order: 4,
+                    transportType: "car",
+                    travelTime: "安帕瓦 → 通羅 車程約 1.5-2 小時",
+                },
+                {
+                    category: "food",
+                    name: "晚餐：頌通酒家",
+                    startTime: "19:00",
+                    address: "2829-31 Rama IV Rd, Khlong Toei",
+                    note: "老字號海鮮餐廳，咖哩螃蟹、炸鱸魚必點。離通羅不遠。",
+                    order: 5,
+                    transportType: "car",
+                    travelTime: "Airbnb → 頌通 車程約 15 分",
+                },
+                {
+                    category: "other",
+                    name: "高空酒吧：Tichuca Rooftop Bar",
+                    startTime: "21:00",
+                    address: "T-One Building 46F, Sukhumvit 40",
+                    note: "著名的水母酒吧，燈光效果超好。人潮眾多，建議早點去或要有排隊心理準備。",
+                    order: 6,
+                    transportType: "car",
+                    travelTime: "頌通 → Tichuca 車程約 15 分",
+                },
             ],
-            // Day 4
+            // Day 4: 四面佛 -> central world -> 午餐 -> 暹羅百麗宮 -> 按摩 -> 晚餐 -> bigC
             [
-                { category: "sightseeing", name: "四面佛", startTime: "10:00", address: "Erawan Shrine", note: "搭 BTS 從 Thong Lo 到 Chit Lom。參拜許願。", order: 1, transportType: "public", travelTime: "BTS 約 20 分" },
-                { category: "shopping", name: "Central World", startTime: "10:30", address: "Central World", note: "就在對面，過天橋即達。逛街吹冷氣。", order: 2, transportType: "walk", travelTime: "步行 5 分" },
-                { category: "food", name: "午餐：Here Hai (Paragon)", startTime: "12:30", address: "Siam Paragon G Fl", note: "走 Skywalk 到 Paragon。吃米其林蟹肉炒飯。", order: 3, transportType: "walk", travelTime: "步行 10 分" },
-                { category: "shopping", name: "Siam 商圈自由逛", startTime: "13:30", address: "Siam Center / Paragon", note: "自由活動時間，買衣服、香氛。", order: 4, transportType: "walk", travelTime: "商圈內" },
-                { category: "other", name: "按摩", startTime: "16:00", address: "Siam / Chit Lom", note: "Let's Relax 或其他按摩店放鬆腿部。", order: 5, transportType: "walk", travelTime: "步行" },
-                { category: "food", name: "晚餐：Mungkorn Seafood", startTime: "18:30", address: "Pracha Songkhro Rd", note: "搭車前往海鮮吃到飽。大頭蝦無限夾。", order: 6, transportType: "car", travelTime: "Siam → 餐廳 車程 30 分" },
-                { category: "shopping", name: "Big C Ekkamai", startTime: "21:00", address: "Sukhumvit 63", note: "吃飽去 Ekkamai 的 Big C 採購伴手禮，人少好逛。離通羅近。", order: 7, transportType: "car", travelTime: "餐廳 → Ekkamai 車程 25 分" },
+                {
+                    category: "sightseeing",
+                    name: "四面佛 (Erawan Shrine)",
+                    startTime: "10:00",
+                    address: "Ratchadamri Rd, Lumphini, Pathum Wan",
+                    note: "搭 BTS 到 Chit Lom 站。參拜許願，買花串和蠟燭。香火鼎盛。",
+                    order: 1,
+                    transportType: "public",
+                    travelTime: "通羅 → Chit Lom (BTS) 約 15 分",
+                },
+                {
+                    category: "shopping",
+                    name: "Central World",
+                    startTime: "10:30",
+                    address: "999/9 Rama I Rd, Pathum Wan",
+                    note: "就在四面佛斜對面。曼谷最大百貨之一，好逛、品牌多。",
+                    order: 2,
+                    transportType: "walk",
+                    travelTime: "四面佛 → Central World 步行 5 分",
+                },
+                {
+                    category: "food",
+                    name: "午餐：Here Hai (Siam Paragon)",
+                    startTime: "12:30",
+                    address: "Siam Paragon G Floor (Gourmet Eats)",
+                    note: "米其林蟹肉炒飯名店的分店（或美食街櫃位），免去本店排隊之苦。位於 Paragon G 樓。",
+                    order: 3,
+                    transportType: "walk",
+                    travelTime: "CW → Paragon (Skywalk) 步行 10 分",
+                },
+                {
+                    category: "shopping",
+                    name: "Siam Paragon & Siam Center",
+                    startTime: "13:30",
+                    address: "Rama I Rd, Pathum Wan",
+                    note: "吃飽逛精品、流行服飾。Siam Center 有很多泰國設計師品牌。",
+                    order: 4,
+                    transportType: "walk",
+                    travelTime: "百貨內移動",
+                },
+                {
+                    category: "other",
+                    name: "按摩放鬆",
+                    startTime: "16:00",
+                    address: "Siam Square / Chit Lom 周邊",
+                    note: "推薦 Let's Relax, Nature Thai 或 Treasure Spa。逛累了按腳或精油按摩。",
+                    order: 5,
+                    transportType: "walk",
+                    travelTime: "步行或短程嘟嘟車",
+                },
+                {
+                    category: "food",
+                    name: "晚餐：Mungkorn Seafood",
+                    startTime: "18:30",
+                    address: "1394 Pracha Songkhro Rd, Din Daeng",
+                    note: "雖然叫 Mungkorn @Sukhumvit 但請再次確認分店位置。知名的海鮮燒烤吃到飽，大頭蝦無限吃。",
+                    order: 6,
+                    transportType: "car",
+                    travelTime: "市區 → 餐廳 車程約 30 分",
+                },
+                {
+                    category: "shopping",
+                    name: "Big C Ekkamai 採購",
+                    startTime: "21:00",
+                    address: "78 Soi Sukhumvit 63, Phra Khanong Nuea",
+                    note: "Ekkamai 分店人比較少，好逛。買泰國零食、泡麵、伴手禮。離通羅住處也近。",
+                    order: 7,
+                    transportType: "car",
+                    travelTime: "餐廳 → Big C 車程約 20 分",
+                },
             ],
-            // Day 5: 修正 11:00 退房 & 12:00 抵達機場
+            // Day 5: 早餐/退房 -> 去機場
             [
-                { category: "food", name: "早餐 & 整理行李", startTime: "09:00", address: "Thonglor", note: "通羅附近咖啡廳早餐，最後打包。", order: 1, transportType: "walk", travelTime: "" },
-                { category: "accommodation", name: "退房 & 前往機場", startTime: "11:00", address: "Thonglor Airbnb", note: "11:00 準時退房，保母車接送。預留 1 小時車程。", order: 2, transportType: "walk", travelTime: "步行至樓下" },
-                { category: "transport", name: "抵達 BKK 機場", startTime: "12:00", address: "Suvarnabhumi Airport", note: "辦理登機、托運、退稅。逛免稅店。", order: 3, transportType: "car", travelTime: "通羅 → 機場 車程 60 分" },
-                { category: "flight", name: "搭機返台 (CI0832)", startTime: "14:05", address: "Gate", note: "14:05 起飛，結束旅程。", order: 4, transportType: "flight", travelTime: "機場內" },
+                {
+                    category: "food",
+                    name: "早餐 & 整理行李",
+                    startTime: "09:00",
+                    address: "Thonglor Area",
+                    note: "在通羅附近找間咖啡廳 (如 The Commons) 吃早餐，最後整理戰利品。",
+                    order: 1,
+                    transportType: "walk",
+                    travelTime: "Airbnb 周邊",
+                },
+                {
+                    category: "accommodation",
+                    name: "退房 & 前往機場",
+                    startTime: "11:00",
+                    address: "Suvarnabhumi Airport (BKK)",
+                    note: "11:00 退房，預約保母車前往機場。預計 14:05 的飛機，建議 11:30 前抵達機場辦理登機。",
+                    order: 2,
+                    transportType: "car",
+                    travelTime: "通羅 → 機場 車程約 45 分",
+                },
+                {
+                    category: "flight",
+                    name: "搭機返台",
+                    startTime: "14:05",
+                    address: "BKK Airport",
+                    note: "CI0832 飛往台北。平安回家。",
+                    order: 3,
+                    transportType: "flight",
+                    travelTime: "飛行約 3.5 小時",
+                },
             ],
         ];
 
@@ -839,175 +1954,1088 @@
                 const TRIP_YEAR = 2026;
                 const EXCHANGE_RATE = ref(0.92);
                 const WEATHER_API_KEY = "e5e727b85066927db1d248be29dfa632";
+
                 const currentTab = ref("itinerary");
                 const selectedDateIndex = ref(0);
                 const showShoppingModal = ref(false);
                 const showExpenseModal = ref(false);
                 const showItineraryModal = ref(false);
-                const showRolePasswordModal = ref(false);
+                const showMemberModal = ref(false);
                 const isEditMode = ref(false);
                 const inputTHB = ref(100);
                 const inputTWD = ref(92);
-                const rolePasswordInput = ref("");
-                const rolePasswordInputRef = ref(null); // DOM 參照
-                const passwordMode = ref("loginAdmin");
-                const targetLoginMember = ref(null);
+                const expandedMember = ref(null);
+                const editingMemberId = ref(null);
+                const tempMemberName = ref("");
+                const editInput = ref(null);
                 const recentlyMovedId = ref(null);
                 const isRatesLoading = ref(false);
+
                 const hasSelectedUser = ref(false);
                 const currentUser = ref("");
-                const showToast = ref(false);
-                const toastMessage = ref("");
-                const dates = ref([{ date: "1/16", weekday: "五", hasCar: false }, { date: "1/17", weekday: "六", hasCar: false }, { date: "1/18", weekday: "日", hasCar: true }, { date: "1/19", weekday: "一", hasCar: false }, { date: "1/20", weekday: "二", hasCar: false }]);
+                const pendingUser = ref("");
+                const membersLoaded = ref(false);
+
+                const showRolePasswordModal = ref(false);
+                const rolePasswordInput = ref("");
+                const ROLE_PASSWORD = "kappaho17";
+                const passwordMode = ref("role");
+                const targetLoginMember = ref(null);
+
+                const dates = ref([
+                    { date: "1/16", weekday: "五", hasCar: false },
+                    { date: "1/17", weekday: "六", hasCar: false },
+                    { date: "1/18", weekday: "日", hasCar: true },
+                    { date: "1/19", weekday: "一", hasCar: false },
+                    { date: "1/20", weekday: "二", hasCar: false },
+                ]);
                 const weatherData = ref([]);
                 const itineraryData = ref([[], [], [], [], []]);
+
+                const hotels = ref([
+                    {
+                        name: "Craftsman Bangkok",
+                        date: "1/16 - 1/18 (2晚)",
+                        phone: "+66 2 279 7299",
+                        address:
+                            "34-36 Phahon Yothin 11, Samsen Nai, Phaya Thai, Bangkok 10400",
+                    },
+                    {
+                        name: "Thonglor Airbnb",
+                        date: "1/18 - 1/20 (2晚)",
+                        phone: "Contact Host",
+                        address: "Sukhumvit 55 (Thonglor), Watthana, Bangkok",
+                    },
+                ]);
+
+                const DEFAULT_MEMBERS = [
+                    "kappabooom",
+                    "beibei1029",
+                    "hsiannnnng",
+                    "shinbinwei",
+                    "aylwen4444",
+                    "wunsin",
+                    "rtrtr1",
+                    "blackblacknu",
+                ];
                 const members = ref([]);
+
                 const allShoppingList = ref([]);
                 const expenses = ref([]);
+                const newMemberName = ref("");
+                const editingExpenseId = ref(null);
                 const newShoppingItem = ref({ name: "", checked: false });
                 const newItinerary = ref({});
                 const newExpense = ref({});
-                const ROLE_PASSWORD = "kappaho17";
-                const DEFAULT_MEMBERS = ["kappabooom", "beibei1029", "hsiannnnng", "shinbinwei", "aylwen4444", "wunsin", "rtrtr1", "blackblacknu"];
-
-                const currentUserRole = computed(() => { const m = members.value.find(m => m.name === currentUser.value); return m?.role || "viewer"; });
-                const canEditItinerary = computed(() => currentUserRole.value === "admin");
-                const currentShoppingList = computed(() => allShoppingList.value.filter(item => item.owner === currentUser.value));
-                const totalTHB = computed(() => expenses.value.filter(e => e.payer === currentUser.value && e.currency === 'THB').reduce((a, b) => a + (Number(b.amount) || 0), 0));
-                const totalTWD = computed(() => expenses.value.filter(e => e.payer === currentUser.value && e.currency === 'TWD').reduce((a, b) => a + (Number(b.amount) || 0), 0));
-                const finalTotalTWD = computed(() => Math.round(totalTWD.value + totalTHB.value * EXCHANGE_RATE.value));
-                const currentItinerary = computed(() => (itineraryData.value[selectedDateIndex.value] || []).sort((a, b) => (a.order || 999) - (b.order || 999)));
-
-                const triggerToast = (msg) => { toastMessage.value = msg; showToast.value = true; setTimeout(() => showToast.value = false, 3000); };
-                const formatNumber = (num) => num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") : "0";
-
-                onMounted(async () => {
-                    try {
-                        const membersCol = collection(db, "members");
-                        onSnapshot(membersCol, (snapshot) => {
-                            if (!snapshot.empty) {
-                                members.value = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
-                            } else {
-                                DEFAULT_MEMBERS.forEach(name => addDoc(membersCol, { name, active: true, role: 'viewer', password: '' }));
-                            }
-                        });
-
-                        onSnapshot(collection(db, "expenses"), (snapshot) => expenses.value = snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-                        onSnapshot(collection(db, "shopping_list"), (snapshot) => allShoppingList.value = snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
-
-                        for (let i = 0; i < dates.value.length; i++) {
-                            const itineraryCol = collection(db, `itinerary_day_${i}`);
-                            const snap = await getDocs(itineraryCol);
-                            if (snap.empty && INITIAL_ITINERARY[i]) {
-                                const batch = writeBatch(db);
-                                INITIAL_ITINERARY[i].forEach(item => batch.set(doc(itineraryCol), item));
-                                await batch.commit();
-                            }
-                            onSnapshot(itineraryCol, (snapshot) => itineraryData.value[i] = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-                        }
-
-                        try { await fetchExchangeRate(); } catch (e) { console.error("Rate error", e); }
-                        try { await fetchWeather(); } catch (e) { console.error("Weather error", e); }
-
-                    } catch (error) {
-                        console.error("Initialization error:", error);
-                        triggerToast("初始化發生錯誤，請重整頁面");
-                    } finally {
-                        // 確保 loading 移除
-                        setTimeout(() => {
-                            const loader = document.getElementById("loading-screen");
-                            if (loader) loader.classList.add("hidden");
-                        }, 500);
-                    }
+                const collapsedSections = ref({
+                    expenses: false,
+                    split: true,
+                    transfer: true,
                 });
 
-                const fetchExchangeRate = async () => {
-                    isRatesLoading.value = true;
-                    try {
-                        const r = await fetch("https://open.er-api.com/v6/latest/THB");
-                        const d = await r.json();
-                        if (d && d.rates && d.rates.TWD) EXCHANGE_RATE.value = Number(d.rates.TWD);
-                    } catch (e) { console.error(e); } finally { isRatesLoading.value = false; }
+                const showToast = ref(false);
+                const toastMessage = ref("");
+
+                const toggleSection = (key) => {
+                    collapsedSections.value[key] = !collapsedSections.value[key];
+                };
+                const triggerToast = (msg) => {
+                    toastMessage.value = msg;
+                    showToast.value = true;
+                    setTimeout(() => {
+                        showToast.value = false;
+                    }, 3000);
                 };
 
-                const fetchWeather = async () => { /* 簡化：天氣邏輯略 */ };
+                const currentUserRole = computed(() => {
+                    const m = members.value.find(
+                        (m) => m.name === currentUser.value
+                    );
+                    return m?.role || "viewer";
+                });
+                const canEditItinerary = computed(
+                    () => currentUserRole.value === "admin"
+                );
+
+                const currentShoppingList = computed(() =>
+                    allShoppingList.value.filter(
+                        (item) => item.owner === currentUser.value
+                    )
+                );
+
+                const transferSuggestions = computed(() => {
+                    const balances = { ...memberBalances.value };
+                    let debtors = [];
+                    let creditors = [];
+                    for (const [name, amount] of Object.entries(balances)) {
+                        if (amount < -0.5) debtors.push({ name, amount });
+                        if (amount > 0.5) creditors.push({ name, amount });
+                    }
+                    debtors.sort((a, b) => a.amount - b.amount);
+                    creditors.sort((a, b) => b.amount - a.amount);
+                    let suggestions = [];
+                    let i = 0,
+                        j = 0;
+                    while (i < debtors.length && j < creditors.length) {
+                        let debtor = debtors[i];
+                        let creditor = creditors[j];
+                        let amount = Math.min(
+                            Math.abs(debtor.amount),
+                            creditor.amount
+                        );
+                        if (amount > 0.5) {
+                            suggestions.push({
+                                from: debtor.name,
+                                to: creditor.name,
+                                amount: Math.round(amount),
+                            });
+                        }
+                        debtor.amount += amount;
+                        creditor.amount -= amount;
+                        if (Math.abs(debtor.amount) < 0.5) i++;
+                        if (creditor.amount < 0.5) j++;
+                    }
+                    return suggestions;
+                });
+
+                const resetNewExpense = () => {
+                    newExpense.value = {
+                        name: "",
+                        amount: null,
+                        category: "food",
+                        date: "2026-01-16",
+                        payment: "cash",
+                        currency: "THB",
+                        payer: currentUser.value,
+                        splitMethod: "personal",
+                        splitDetails: {},
+                    };
+                };
+                const formatNumber = (num) =>
+                    num
+                        ? num
+                              .toString()
+                              .replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                        : "0";
+
+                onMounted(async () => {
+                    onSnapshot(collection(db, "expenses"), (snapshot) => {
+                        expenses.value = snapshot.docs.map((d) => ({
+                            id: d.id,
+                            ...d.data(),
+                        }));
+                    });
+
+                    onSnapshot(collection(db, "shopping_list"), (snapshot) => {
+                        allShoppingList.value = snapshot.docs.map((d) => ({
+                            id: d.id,
+                            ...d.data(),
+                        }));
+                    });
+
+                    const membersCol = collection(db, "members");
+                    onSnapshot(membersCol, async (snapshot) => {
+                        if (!snapshot.empty) {
+                            members.value = snapshot.docs.map((doc) => {
+                                const data = doc.data();
+                                return {
+                                    id: doc.id,
+                                    name: data.name,
+                                    active: data.active,
+                                    role: data.role || "viewer",
+                                    password: data.password || "",
+                                };
+                            });
+                            membersLoaded.value = true;
+                        } else {
+                            for (const name of DEFAULT_MEMBERS) {
+                                await addDoc(membersCol, {
+                                    name,
+                                    active: true,
+                                    role: "viewer",
+                                    password: "",
+                                });
+                            }
+                        }
+                    });
+
+                    for (let i = 0; i < dates.value.length; i++) {
+                        const itineraryCol = collection(
+                            db,
+                            `itinerary_day_${i}`
+                        );
+                        const snap = await getDocs(itineraryCol);
+                        if (snap.empty && INITIAL_ITINERARY[i]) {
+                            const batch = writeBatch(db);
+                            INITIAL_ITINERARY[i].forEach((item) => {
+                                const newRef = doc(itineraryCol);
+                                batch.set(newRef, item);
+                            });
+                            await batch.commit();
+                        }
+
+                        onSnapshot(itineraryCol, (snapshot) => {
+                            let items = snapshot.docs.map((doc) => ({
+                                ...doc.data(),
+                                id: doc.id,
+                                isNoteExpanded: false,
+                                order: doc.data().order ?? 9999,
+                            }));
+                            itineraryData.value[i] = items;
+                        });
+                    }
+
+                    await fetchExchangeRate();
+                    await fetchWeather();
+
+                    setTimeout(() => {
+                        const loader =
+                            document.getElementById("loading-screen");
+                        if (loader) loader.classList.add("hidden");
+                    }, 1500);
+                });
+
+                const switchUser = (userName) => {
+                    const member = members.value.find(
+                        (m) => m.name === userName
+                    );
+                    if (member) attemptLogin(member);
+                };
 
                 const attemptLogin = (member) => {
                     targetLoginMember.value = member;
+                    pendingUser.value = member.name;
                     if (member.role === "admin") {
                         passwordMode.value = "loginAdmin";
                         rolePasswordInput.value = "";
                         showRolePasswordModal.value = true;
-                    } else if (member.password) {
+                    } else if (member.password && member.password.trim() !== "") {
                         passwordMode.value = "loginPersonal";
                         rolePasswordInput.value = "";
                         showRolePasswordModal.value = true;
                     } else {
                         performLogin(member);
-                        return; // 這裡要 return 避免跑下面
                     }
-                    // 強制聚焦
+                };
+
+                const performLogin = (member) => {
+                    currentUser.value = member.name;
+                    pendingUser.value = member.name;
+                    hasSelectedUser.value = true;
+                    triggerToast(`歡迎回來，${member.name}`);
+                };
+
+                const fetchExchangeRate = async () => {
+                    isRatesLoading.value = true;
+                    try {
+                        const r = await fetch(
+                            "https://open.er-api.com/v6/latest/THB"
+                        );
+                        const d = await r.json();
+                        if (d && d.rates && d.rates.TWD) {
+                            EXCHANGE_RATE.value = Number(d.rates.TWD);
+                            if (inputTHB.value) updateTWD();
+                        }
+                    } catch (e) {
+                        console.error("匯率失敗", e);
+                    } finally {
+                        setTimeout(
+                            () => (isRatesLoading.value = false),
+                            500
+                        );
+                    }
+                };
+
+                const fetchWeather = async () => {
+                    const tripStart = new Date(TRIP_YEAR, 0, 16);
+                    const now = new Date();
+                    const diffDays =
+                        (tripStart - now) /
+                        (1000 * 60 * 60 * 24);
+
+                    if (diffDays > 5) {
+                        const HISTORICAL_JAN = [
+                            {
+                                condition: "sunny",
+                                temp: "32/23",
+                                feel: "34",
+                                isFallback: true,
+                            },
+                            {
+                                condition: "sunny",
+                                temp: "33/24",
+                                feel: "35",
+                                isFallback: true,
+                            },
+                            {
+                                condition: "cloudy",
+                                temp: "32/23",
+                                feel: "34",
+                                isFallback: true,
+                            },
+                            {
+                                condition: "sunny",
+                                temp: "32/22",
+                                feel: "33",
+                                isFallback: true,
+                            },
+                            {
+                                condition: "sunny",
+                                temp: "33/23",
+                                feel: "35",
+                                isFallback: true,
+                            },
+                        ];
+                        weatherData.value = HISTORICAL_JAN;
+                        return;
+                    }
+
+                    try {
+                        const url = `https://api.openweathermap.org/data/2.5/forecast?q=Bangkok,TH&appid=${WEATHER_API_KEY}&units=metric&lang=zh_tw`;
+                        const resp = await fetch(url);
+                        const data = await resp.json();
+                        if (!data.list) throw new Error("No list");
+                        const grouped = {};
+                        data.list.forEach((i) => {
+                            const d = new Date(i.dt * 1000).getDate();
+                            if (!grouped[d]) grouped[d] = [];
+                            grouped[d].push(i);
+                        });
+                        const mapCondition = (m) =>
+                            ["Rain", "Drizzle", "Thunderstorm"].includes(m)
+                                ? "rain"
+                                : m === "Clouds"
+                                ? "cloudy"
+                                : "sunny";
+                        const processed = Object.values(grouped)
+                            .slice(0, 5)
+                            .map((dayList) => {
+                                const temps = dayList.map(
+                                    (i) => i.main.temp
+                                );
+                                const max = Math.round(
+                                    Math.max(...temps)
+                                );
+                                const min = Math.round(
+                                    Math.min(...temps)
+                                );
+                                const feel = Math.round(
+                                    dayList[0].main.feels_like
+                                );
+                                const cond = mapCondition(
+                                    dayList[0].weather[0].main
+                                );
+                                return {
+                                    condition: cond,
+                                    temp: `${max}/${min}`,
+                                    feel,
+                                    isFallback: false,
+                                };
+                            });
+                        weatherData.value = dates.value.map(
+                            (d, i) =>
+                                processed[i % processed.length] ||
+                                processed[0]
+                        );
+                    } catch (err) {
+                        weatherData.value = Array(5).fill({
+                            condition: "sunny",
+                            temp: "32/24",
+                            feel: "35",
+                            isFallback: true,
+                        });
+                    }
+                };
+
+                const currentItinerary = computed(() =>
+                    (itineraryData.value[selectedDateIndex.value] || []).sort(
+                        (a, b) => (a.order || 999) - (b.order || 999)
+                    )
+                );
+
+                const splitMembers = computed(() =>
+                    members.value
+                        .filter((m) => m.active)
+                        .map((m) => m.name)
+                );
+
+                const myExpenses = computed(() =>
+                    expenses.value
+                        .filter((exp) => {
+                            if (exp.payer === currentUser.value) return true;
+                            if (
+                                exp.splitMethod === "equal" &&
+                                members.value.find(
+                                    (m) =>
+                                        m.name === currentUser.value &&
+                                        m.active
+                                )
+                            )
+                                return true;
+                            if (
+                                exp.splitMethod === "amount" ||
+                                exp.splitMethod === "ratio"
+                            )
+                                return (
+                                    exp.splitDetails &&
+                                    Number(
+                                        exp.splitDetails[currentUser.value]
+                                    ) > 0
+                                );
+                            return false;
+                        })
+                        .map((exp) => {
+                            let myShare = 0;
+                            const totalAmount = Number(exp.amount) || 0;
+                            if (
+                                exp.payer === currentUser.value &&
+                                exp.splitMethod === "personal"
+                            ) {
+                                myShare = totalAmount;
+                            } else if (exp.splitMethod === "equal") {
+                                const activeCount = members.value.filter(
+                                    (m) => m.active
+                                ).length;
+                                const count = activeCount || 1;
+                                myShare = Math.round(totalAmount / count);
+                            } else if (exp.splitMethod === "amount") {
+                                myShare =
+                                    Number(
+                                        exp.splitDetails[currentUser.value]
+                                    ) || 0;
+                            } else if (exp.splitMethod === "ratio") {
+                                const totalRatio = Object.values(
+                                    exp.splitDetails
+                                ).reduce(
+                                    (sum, r) => sum + (Number(r) || 0),
+                                    0
+                                );
+                                const myRatio =
+                                    Number(
+                                        exp.splitDetails[currentUser.value]
+                                    ) || 0;
+                                if (totalRatio > 0)
+                                    myShare =
+                                        (totalAmount * myRatio) / totalRatio;
+                            }
+                            return {
+                                ...exp,
+                                displayAmount: myShare,
+                            };
+                        })
+                        .sort(
+                            (a, b) =>
+                                new Date(b.date) - new Date(a.date)
+                        )
+                );
+
+                const totalTHB = computed(() =>
+                    myExpenses.value
+                        .filter((e) => e.currency === "THB")
+                        .reduce(
+                            (sum, e) =>
+                                sum + (Number(e.displayAmount) || 0),
+                            0
+                        )
+                );
+                const totalTWD = computed(() =>
+                    myExpenses.value
+                        .filter((e) => e.currency === "TWD")
+                        .reduce(
+                            (sum, e) =>
+                                sum + (Number(e.displayAmount) || 0),
+                            0
+                        )
+                );
+                const finalTotalTWD = computed(() =>
+                    Math.round(
+                        totalTWD.value +
+                            totalTHB.value * EXCHANGE_RATE.value
+                    )
+                );
+
+                const memberBalances = computed(() => {
+                    const balances = {};
+                    members.value.forEach((m) => {
+                        balances[m.name] = 0;
+                    });
+                    expenses.value.forEach((exp) => {
+                        const amountInTWD =
+                            exp.currency === "TWD"
+                                ? Number(exp.amount) || 0
+                                : (Number(exp.amount) || 0) *
+                                  EXCHANGE_RATE.value;
+                        if (balances[exp.payer] !== undefined) {
+                            balances[exp.payer] += amountInTWD;
+                        }
+                        switch (exp.splitMethod) {
+                            case "equal": {
+                                const participants = members.value
+                                    .filter((m) => m.active)
+                                    .map((m) => m.name);
+                                const count = participants.length;
+                                if (count > 0) {
+                                    const share = amountInTWD / count;
+                                    participants.forEach((name) => {
+                                        if (balances[name] !== undefined)
+                                            balances[name] -= share;
+                                    });
+                                }
+                                break;
+                            }
+                            case "personal": {
+                                if (
+                                    balances[exp.payer] !== undefined
+                                ) {
+                                    balances[exp.payer] -= amountInTWD;
+                                }
+                                break;
+                            }
+                            case "amount": {
+                                for (const name in exp.splitDetails) {
+                                    const debt =
+                                        exp.currency === "TWD"
+                                            ? Number(
+                                                  exp.splitDetails[name]
+                                              ) || 0
+                                            : (Number(
+                                                  exp.splitDetails[name]
+                                              ) || 0) *
+                                              EXCHANGE_RATE.value;
+                                    if (balances[name] !== undefined) {
+                                        balances[name] -= debt;
+                                    }
+                                }
+                                break;
+                            }
+                            case "ratio": {
+                                const totalR = Object.values(
+                                    exp.splitDetails
+                                ).reduce(
+                                    (s, r) => s + Number(r || 0),
+                                    0
+                                );
+                                if (totalR > 0) {
+                                    for (const name in exp.splitDetails) {
+                                        const s =
+                                            (amountInTWD *
+                                                (Number(
+                                                    exp.splitDetails[name]
+                                                ) || 0)) /
+                                            totalR;
+                                        if (
+                                            balances[name] !== undefined
+                                        ) {
+                                            balances[name] -= s;
+                                        }
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    });
+                    return balances;
+                });
+
+                const handleAddClick = () => {
+                    if (currentTab.value === "shopping") {
+                        showShoppingModal.value = true;
+                    } else if (currentTab.value === "expenses") {
+                        editingExpenseId.value = null;
+                        resetNewExpense();
+                        showExpenseModal.value = true;
+                    } else if (currentTab.value === "itinerary") {
+                        if (!canEditItinerary.value) {
+                            triggerToast("你目前是 Viewer，無法編輯行程");
+                            return;
+                        }
+                        isEditMode.value = false;
+                        const maxOrder =
+                            currentItinerary.value.length > 0
+                                ? Math.max(
+                                      ...currentItinerary.value.map(
+                                          (i) => i.order || 0
+                                      )
+                                  )
+                                : -1;
+                        newItinerary.value = {
+                            category: "sightseeing",
+                            name: "",
+                            startTime: "",
+                            order: maxOrder + 1,
+                            transportType: "car",
+                            travelTime: "",
+                        };
+                        showItineraryModal.value = true;
+                    }
+                };
+
+                const saveExpense = async () => {
+                    if (!newExpense.value.name || !newExpense.value.amount) {
+                        triggerToast("❌ 請輸入名稱與金額");
+                        return;
+                    }
+                    const data = JSON.parse(
+                        JSON.stringify(newExpense.value)
+                    );
+                    try {
+                        if (editingExpenseId.value === null) {
+                            await addDoc(
+                                collection(db, "expenses"),
+                                data
+                            );
+                            triggerToast("✅ 支出新增成功！");
+                        } else {
+                            await updateDoc(
+                                doc(
+                                    db,
+                                    "expenses",
+                                    editingExpenseId.value
+                                ),
+                                data
+                            );
+                            triggerToast("✅ 支出更新成功！");
+                        }
+                        showExpenseModal.value = false;
+                        editingExpenseId.value = null;
+                    } catch (e) {
+                        console.error("Save failed:", e);
+                        triggerToast("❌ 儲存失敗，請檢查網路");
+                    }
+                };
+
+                const removeExpense = async (id) => {
+                    if (confirm("確定要刪除這筆支出嗎？")) {
+                        await deleteDoc(doc(db, "expenses", id));
+                        triggerToast("🗑️ 支出已刪除");
+                    }
+                };
+
+                const addMember = async () => {
+                    if (
+                        newMemberName.value &&
+                        !members.value.find(
+                            (m) => m.name === newMemberName.value
+                        )
+                    ) {
+                        await addDoc(collection(db, "members"), {
+                            name: newMemberName.value,
+                            active: true,
+                            role: "viewer",
+                            password: "",
+                        });
+                        newMemberName.value = "";
+                    }
+                };
+
+                const startEditMember = (m) => {
+                    editingMemberId.value = m.id;
+                    tempMemberName.value = m.name;
                     nextTick(() => {
-                        if (rolePasswordInputRef.value) {
-                            rolePasswordInputRef.value.focus();
+                        if (
+                            editInput.value &&
+                            editInput.value.focus
+                        ) {
+                            editInput.value.focus();
                         }
                     });
                 };
 
-                const performLogin = (member) => { currentUser.value = member.name; hasSelectedUser.value = true; };
+                const saveMemberName = async (m) => {
+                    if (editingMemberId.value === null) return;
+                    if (
+                        tempMemberName.value &&
+                        tempMemberName.value !== m.name
+                    ) {
+                        await updateDoc(
+                            doc(db, "members", m.id),
+                            {
+                                name: tempMemberName.value,
+                            }
+                        );
+                        triggerToast("✅ 成員名稱已更新");
+                    }
+                    editingMemberId.value = null;
+                    tempMemberName.value = "";
+                };
+
+                const toggleMemberActive = async (m) => {
+                    await updateDoc(doc(db, "members", m.id), {
+                        active: !m.active,
+                    });
+                };
+
+                const removeMember = async (id) => {
+                    if (confirm("確定要刪除此成員嗎？")) {
+                        await deleteDoc(doc(db, "members", id));
+                    }
+                };
+
+                const addShoppingItem = async () => {
+                    if (newShoppingItem.value.name) {
+                        await addDoc(collection(db, "shopping_list"), {
+                            name: newShoppingItem.value.name,
+                            checked: false,
+                            owner: currentUser.value,
+                        });
+                        newShoppingItem.value.name = "";
+                        showShoppingModal.value = false;
+                        triggerToast("✅ 商品已加入");
+                    }
+                };
+
+                const toggleShoppingItem = async (item) => {
+                    await updateDoc(
+                        doc(db, "shopping_list", item.id),
+                        {
+                            checked: !item.checked,
+                        }
+                    );
+                };
+
+                const removeShoppingItem = async (id) => {
+                    if (confirm("確定要刪除這個商品嗎？")) {
+                        await deleteDoc(doc(db, "shopping_list", id));
+                        triggerToast("🗑️ 商品已刪除");
+                    }
+                };
+
+                const saveItineraryItem = async () => {
+                    if (!canEditItinerary.value) {
+                        triggerToast("你目前是 Viewer，無法編輯行程");
+                        return;
+                    }
+                    if (!newItinerary.value.name) return;
+                    const dataToSave = JSON.parse(
+                        JSON.stringify(newItinerary.value)
+                    );
+                    delete dataToSave.isNoteExpanded;
+                    const col = collection(
+                        db,
+                        `itinerary_day_${selectedDateIndex.value}`
+                    );
+                    if (isEditMode.value) {
+                        await updateDoc(
+                            doc(col, dataToSave.id),
+                            dataToSave
+                        );
+                    } else {
+                        await addDoc(col, dataToSave);
+                    }
+                    showItineraryModal.value = false;
+                };
+
+                const removeItineraryItem = async (id) => {
+                    if (!canEditItinerary.value) {
+                        triggerToast("你目前是 Viewer，無法編輯行程");
+                        return;
+                    }
+                    if (confirm("確定要刪除這個行程嗎？")) {
+                        await deleteDoc(
+                            doc(
+                                db,
+                                `itinerary_day_${selectedDateIndex.value}`,
+                                id
+                            )
+                        );
+                        showItineraryModal.value = false;
+                    }
+                };
+
+                const moveItem = async (visualIndex, direction, itemId) => {
+                    if (!canEditItinerary.value) {
+                        triggerToast("你目前是 Viewer，無法編輯行程");
+                        return;
+                    }
+                    recentlyMovedId.value = itemId;
+                    const sortedList = [...currentItinerary.value];
+                    const targetIndex = visualIndex + direction;
+                    if (
+                        targetIndex < 0 ||
+                        targetIndex >= sortedList.length
+                    ) {
+                        recentlyMovedId.value = null;
+                        return;
+                    }
+                    const itemA = sortedList[visualIndex];
+                    const itemB = sortedList[targetIndex];
+                    const orderA = itemA.order ?? visualIndex;
+                    const orderB = itemB.order ?? targetIndex;
+                    itemA.order = orderB;
+                    itemB.order = orderA;
+                    setTimeout(() => {
+                        recentlyMovedId.value = null;
+                    }, 1000);
+                    const batch = writeBatch(db);
+                    const col = collection(
+                        db,
+                        `itinerary_day_${selectedDateIndex.value}`
+                    );
+                    batch.update(doc(col, itemA.id), {
+                        order: itemA.order,
+                    });
+                    batch.update(doc(col, itemB.id), {
+                        order: itemB.order,
+                    });
+                    await batch.commit();
+                };
 
                 const confirmRolePassword = async () => {
                     const input = rolePasswordInput.value;
-                    if (passwordMode.value === "loginAdmin" && input === ROLE_PASSWORD) {
-                        performLogin(targetLoginMember.value);
-                        showRolePasswordModal.value = false;
-                    } else if (passwordMode.value === "loginPersonal" && input === targetLoginMember.value.password) {
-                        performLogin(targetLoginMember.value);
-                        showRolePasswordModal.value = false;
-                    } else {
-                        triggerToast("密碼錯誤");
-                    }
-                };
-                
-                const cancelRolePassword = () => showRolePasswordModal.value = false;
-                const updateTWD = () => inputTWD.value = Math.round(inputTHB.value * EXCHANGE_RATE.value);
-                const updateTHB = () => inputTHB.value = Math.round(inputTWD.value / EXCHANGE_RATE.value);
-                
-                const handleAddClick = () => {
-                    if (currentTab.value === 'itinerary') {
-                        if (!canEditItinerary.value) return triggerToast("權限不足");
-                        newItinerary.value = {}; showItineraryModal.value = true;
-                    } else if (currentTab.value === 'shopping') {
-                        newShoppingItem.value = { name: "", checked: false }; showShoppingModal.value = true;
-                    } else if (currentTab.value === 'expenses') {
-                        newExpense.value = { date: new Date().toISOString().split('T')[0], currency: 'THB', payer: currentUser.value }; showExpenseModal.value = true;
+                    if (passwordMode.value === "loginAdmin") {
+                        if (input === ROLE_PASSWORD) {
+                            performLogin(targetLoginMember.value);
+                            closePasswordModal();
+                        } else {
+                            triggerToast("Admin 密碼錯誤");
+                        }
+                    } else if (passwordMode.value === "loginPersonal") {
+                        if (input === targetLoginMember.value.password) {
+                            performLogin(targetLoginMember.value);
+                            closePasswordModal();
+                        } else {
+                            triggerToast("密碼錯誤");
+                        }
+                    } else if (passwordMode.value === "setPassword") {
+                        if (targetLoginMember.value) {
+                            try {
+                                await updateDoc(
+                                    doc(
+                                        db,
+                                        "members",
+                                        targetLoginMember.value.id
+                                    ),
+                                    { password: input }
+                                );
+                                triggerToast(
+                                    input
+                                        ? "已設定個人密碼"
+                                        : "已移除個人密碼"
+                                );
+                                closePasswordModal();
+                            } catch (e) {
+                                triggerToast("儲存失敗");
+                            }
+                        }
                     }
                 };
 
-                // UI Helpers
-                const getCategoryIcon = (c) => ({ sightseeing: "fa-solid fa-camera", food: "fa-solid fa-utensils", shopping: "fa-solid fa-bag-shopping", accommodation: "fa-solid fa-bed", transport: "fa-solid fa-van-shuttle", ticket: "fa-solid fa-ticket", flight: "fa-solid fa-plane", other: "fa-solid fa-circle-dot" }[c] || "fa-solid fa-circle-dot");
-                const getTransportIcon = (t) => ({ car: "fa-solid fa-car", walk: "fa-solid fa-person-walking", public: "fa-solid fa-train-subway", flight: "fa-solid fa-plane-up" }[t] || "fa-solid fa-arrow-right");
-                const getCategoryColor = (c) => ({ sightseeing: "#FF7043", food: "#FFA726", shopping: "#EC407A", accommodation: "#5C6BC0", transport: "#78909C", ticket: "#8D6E63", flight: "#29B6F6", other: "#9E9E9E" }[c] || "#BDBDBD");
-                const getWeatherIcon = (c) => ({ sunny: "fa-solid fa-sun", cloudy: "fa-solid fa-cloud-sun", rain: "fa-solid fa-cloud-showers-heavy" }[c] || "fa-solid fa-sun");
-                const getWeatherDescription = (c) => ({ sunny: "晴朗炎熱", cloudy: "多雲偶晴", rain: "午後雷陣雨" }[c] || "晴朗");
-                const editItem = (i) => { newItinerary.value = {...i}; showItineraryModal.value = true; };
-                const saveItineraryItem = async () => { /* 儲存邏輯略 */ showItineraryModal.value = false; };
-                const addShoppingItem = async () => { if(newShoppingItem.value.name) await addDoc(collection(db, "shopping_list"), { ...newShoppingItem.value, owner: currentUser.value }); showShoppingModal.value = false; };
-                const toggleShoppingItem = async (item) => await updateDoc(doc(db, "shopping_list", item.id), { checked: !item.checked });
-                const removeShoppingItem = async (id) => await deleteDoc(doc(db, "shopping_list", id));
-                const saveExpense = async () => { if(newExpense.value.amount) await addDoc(collection(db, "expenses"), newExpense.value); showExpenseModal.value = false; };
-                const moveItem = () => {};
+                const closePasswordModal = () => {
+                    showRolePasswordModal.value = false;
+                    rolePasswordInput.value = "";
+                    targetLoginMember.value = null;
+                    passwordMode.value = "role";
+                    if (currentUser.value) {
+                        pendingUser.value = currentUser.value;
+                    }
+                };
+
+                const cancelRolePassword = () => {
+                    closePasswordModal();
+                };
+
+                const openSetPasswordMode = (m) => {
+                    targetLoginMember.value = m;
+                    passwordMode.value = "setPassword";
+                    rolePasswordInput.value = "";
+                    showRolePasswordModal.value = true;
+                };
+
+                const updateMemberRole = async (m, role) => {
+                    try {
+                        await updateDoc(doc(db, "members", m.id), {
+                            role,
+                        });
+                        triggerToast(
+                            `${m.name} 已設為 ${
+                                role === "admin" ? "Admin" : "Viewer"
+                            }`
+                        );
+                    } catch (e) {
+                        console.error(e);
+                        triggerToast("更新角色失敗");
+                    }
+                };
+
+                const closeMemberModal = () => {
+                    showMemberModal.value = false;
+                };
+
+                const updateTWD = () => {
+                    inputTWD.value = Math.round(
+                        inputTHB.value * EXCHANGE_RATE.value
+                    );
+                };
+                const updateTHB = () => {
+                    inputTHB.value = Math.round(
+                        inputTWD.value / EXCHANGE_RATE.value
+                    );
+                };
+                const toggleMemberDetails = (n) => {
+                    expandedMember.value =
+                        expandedMember.value === n ? null : n;
+                };
+                const getMemberPaidExpenses = (n) =>
+                    expenses.value.filter(
+                        (e) =>
+                            e.payer === n &&
+                            e.splitMethod !== "personal"
+                    );
+
+                const startEditExpense = (id, exp) => {
+                    editingExpenseId.value = id;
+                    newExpense.value = JSON.parse(JSON.stringify(exp));
+                    delete newExpense.value.id;
+                    if (!newExpense.value.splitDetails)
+                        newExpense.value.splitDetails = {};
+                    showExpenseModal.value = true;
+                };
+
+                const getCategoryIcon = (c) =>
+                    ({
+                        sightseeing: "fa-solid fa-camera",
+                        food: "fa-solid fa-utensils",
+                        shopping: "fa-solid fa-bag-shopping",
+                        accommodation: "fa-solid fa-bed",
+                        transport: "fa-solid fa-van-shuttle",
+                        ticket: "fa-solid fa-ticket",
+                        flight: "fa-solid fa-plane",
+                        other: "fa-solid fa-circle-dot",
+                    }[c] || "fa-solid fa-circle-dot");
+
+                const getTransportIcon = (t) =>
+                    ({
+                        car: "fa-solid fa-car",
+                        walk: "fa-solid fa-person-walking",
+                        public: "fa-solid fa-train-subway",
+                        flight: "fa-solid fa-plane-up",
+                    }[t] || "fa-solid fa-arrow-right");
+
+                const getCategoryColor = (c) =>
+                    ({
+                        sightseeing: "#FF7043",
+                        food: "#FFA726",
+                        shopping: "#EC407A",
+                        accommodation: "#5C6BC0",
+                        transport: "#78909C",
+                        ticket: "#8D6E63",
+                        flight: "#29B6F6",
+                        other: "#9E9E9E",
+                    }[c] || "#BDBDBD");
+
+                const getWeatherIcon = (c) =>
+                    ({
+                        sunny: "fa-solid fa-sun",
+                        cloudy: "fa-solid fa-cloud-sun",
+                        rain: "fa-solid fa-cloud-showers-heavy",
+                    }[c] || "fa-solid fa-sun");
+
+                const getWeatherDescription = (c) =>
+                    ({
+                        sunny: "晴朗炎熱",
+                        cloudy: "多雲偶晴",
+                        rain: "午後雷陣雨",
+                    }[c] || "晴朗");
+
+                const editItem = (i) => {
+                    if (!canEditItinerary.value) {
+                        triggerToast(
+                            "你目前是 Viewer，無法編輯行程"
+                        );
+                        return;
+                    }
+                    isEditMode.value = true;
+                    newItinerary.value = JSON.parse(JSON.stringify(i));
+                    showItineraryModal.value = true;
+                };
+
+                resetNewExpense();
 
                 return {
-                    currentTab, selectedDateIndex, showShoppingModal, showExpenseModal, showItineraryModal, showRolePasswordModal,
-                    dates, weatherData, currentItinerary, members, currentShoppingList,
-                    newShoppingItem, newExpense, newItinerary, rolePasswordInput, rolePasswordInputRef, passwordMode, targetLoginMember,
-                    currentUser, hasSelectedUser, canEditItinerary, totalTHB, totalTWD, finalTotalTWD,
-                    inputTHB, inputTWD, EXCHANGE_RATE, isRatesLoading, showToast, toastMessage,
-                    attemptLogin, confirmRolePassword, cancelRolePassword,
-                    getCategoryIcon, getTransportIcon, getCategoryColor, getWeatherIcon, getWeatherDescription, formatNumber,
-                    handleAddClick, editItem, saveItineraryItem, addShoppingItem, toggleShoppingItem, removeShoppingItem, saveExpense, moveItem,
-                    updateTWD, updateTHB, fetchExchangeRate
+                    currentTab,
+                    selectedDateIndex,
+                    showShoppingModal,
+                    showExpenseModal,
+                    showItineraryModal,
+                    showMemberModal,
+                    isEditMode,
+                    editingExpenseId,
+                    expandedMember,
+                    dates,
+                    weatherData,
+                    currentItinerary,
+                    hotels,
+                    expenses,
+                    members,
+                    newShoppingItem,
+                    newExpense,
+                    newItinerary,
+                    newMemberName,
+                    splitMembers,
+                    myExpenses,
+                    totalTHB,
+                    totalTWD,
+                    finalTotalTWD,
+                    memberBalances,
+                    EXCHANGE_RATE,
+                    inputTHB,
+                    inputTWD,
+                    updateTWD,
+                    updateTHB,
+                    currentUser,
+                    currentShoppingList,
+                    formatNumber,
+                    getCategoryIcon,
+                    handleAddClick,
+                    addMember,
+                    toggleMemberActive,
+                    removeMember,
+                    toggleMemberDetails,
+                    getMemberPaidExpenses,
+                    startEditExpense,
+                    saveExpense,
+                    removeExpense,
+                    addShoppingItem,
+                    removeShoppingItem,
+                    toggleShoppingItem,
+                    saveItineraryItem,
+                    removeItineraryItem,
+                    editItem,
+                    getWeatherIcon,
+                    getWeatherDescription,
+                    getTransportIcon,
+                    getCategoryColor,
+                    collapsedSections,
+                    toggleSection,
+                    transferSuggestions,
+                    showToast,
+                    toastMessage,
+                    triggerToast,
+                    editingMemberId,
+                    tempMemberName,
+                    startEditMember,
+                    saveMemberName,
+                    editInput,
+                    moveItem,
+                    recentlyMovedId,
+                    showRolePasswordModal,
+                    rolePasswordInput,
+                    confirmRolePassword,
+                    cancelRolePassword,
+                    updateMemberRole,
+                    closeMemberModal,
+                    currentUserRole,
+                    canEditItinerary,
+                    hasSelectedUser,
+                    attemptLogin,
+                    targetLoginMember,
+                    passwordMode,
+                    openSetPasswordMode,
+                    pendingUser,
+                    membersLoaded,
+                    switchUser,
+                    fetchExchangeRate,
+                    isRatesLoading,
                 };
             },
         });
