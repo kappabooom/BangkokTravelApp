@@ -160,14 +160,6 @@
         .fab-shadow {
             box-shadow: 0 4px 15px rgba(255, 179, 0, 0.5);
         }
-        .note-content {
-            max-height: 2.5rem;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-        }
-        .note-content.expanded {
-            max-height: 500px;
-        }
         .expenses-banner {
             background: linear-gradient(135deg, #ff7043 0%, #ab47bc 100%);
         }
@@ -617,32 +609,14 @@
                                             {{ item.address }}
                                         </p>
                                     </div>
+                                    
+                                    <!-- 重新排版的備註區域 -->
                                     <div
                                         v-if="item.note && item.note.length > 0"
-                                        class="mt-2 text-xs bg-slate-50 p-2 rounded-lg border border-slate-100"
+                                        class="mt-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100 text-slate-600 leading-relaxed"
                                     >
-                                        <div
-                                            class="note-content"
-                                            :class="{
-                                                expanded: item.isNoteExpanded,
-                                            }"
-                                        >
-                                            {{ item.note }}
-                                        </div>
-                                        <button
-                                            v-if="item.note.length > 50"
-                                            @click="
-                                                item.isNoteExpanded =
-                                                    !item.isNoteExpanded
-                                            "
-                                            class="text-deep-sea-blue font-bold mt-1"
-                                        >
-                                            {{
-                                                item.isNoteExpanded
-                                                    ? "收合"
-                                                    : "展開"
-                                            }}
-                                        </button>
+                                        <div class="font-bold mb-1 text-slate-400 text-[10px] uppercase tracking-wider">Note</div>
+                                        <div class="whitespace-pre-wrap break-words">{{ item.note }}</div>
                                     </div>
                                 </div>
 
