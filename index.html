@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <title>2026曼谷旅行</title>
 
@@ -45,6 +45,7 @@
             -webkit-tap-highlight-color: transparent;
             font-family: "Noto Sans TC", sans-serif;
             color: #334155;
+            padding-bottom: env(safe-area-inset-bottom);
         }
         .app-container {
             max-width: 480px;
@@ -92,7 +93,6 @@
             display: block;
         }
 
-        /* ▶ Tab 配色修改：未選中改為淺橘色實心底 */
         .side-tab-bar {
             position: absolute;
             bottom: 15px;
@@ -115,16 +115,16 @@
             border-width: 1px;
         }
         .tab-button.active {
-            background-color: #e65100; /* 深橘色 */
+            background-color: #e65100;
             color: #ffffff;
             border-color: #e65100;
             box-shadow: 0 6px 15px rgba(230, 81, 0, 0.4);
             transform: scale(1.05);
         }
         .tab-button:not(.active) {
-            background-color: #FFF3E0; /* 淺橘色，不再透明 */
-            color: #E65100;            /* 深橘色 icon */
-            border-color: #FFCC80;     /* 橘色邊框 */
+            background-color: #FFF3E0;
+            color: #E65100;
+            border-color: #FFCC80;
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
         }
 
@@ -163,13 +163,18 @@
         .expenses-banner {
             background: linear-gradient(135deg, #ff7043 0%, #ab47bc 100%);
         }
+        
+        /* 修正重點：提高 z-index 並加入背景模糊 */
         .date-selector-sticky {
-            background-color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border-bottom: 1px solid #f0f0f0;
-            z-index: 20;
+            z-index: 40; /* 提高層級，原為 20 */
             top: 0;
             padding-top: env(safe-area-inset-top, 20px);
         }
+        
         .rotate-180 {
             transform: rotate(180deg);
         }
@@ -205,7 +210,7 @@
 
         .flip-list-move {
             transition: transform 0.5s cubic-bezier(0.2, 0, 0, 1);
-            z-index: 20;
+            z-index: 20; /* 保持較低，讓 sticky (40) 蓋過它 */
             position: relative;
         }
         .flip-list-enter-active,
@@ -263,11 +268,6 @@
             color: #e65100;
             margin-bottom: 1rem;
             animation: pulse-logo 1.5s infinite ease-in-out;
-        }
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
         }
         @keyframes pulse-logo {
             0%,
@@ -610,7 +610,6 @@
                                         </p>
                                     </div>
                                     
-                                    <!-- 重新排版的備註區域 -->
                                     <div
                                         v-if="item.note && item.note.length > 0"
                                         class="mt-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-100 text-slate-600 leading-relaxed"
@@ -1385,25 +1384,25 @@
                     </div>
                 </div>
 
-                <!-- 浮動新增按鈕 -->
+                <!-- 浮動新增按鈕 (z-index 提高到 50) -->
                 <button
                     v-if="currentTab === 'itinerary' && canEditItinerary"
                     @click="handleAddClick"
-                    class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-40"
+                    class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-50"
                 >
                     <i class="fa-solid fa-plus"></i>
                 </button>
                 <button
                     v-if="currentTab === 'shopping'"
                     @click="handleAddClick"
-                    class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-40"
+                    class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-50"
                 >
                     <i class="fa-solid fa-plus"></i>
                 </button>
                 <button
                     v-if="currentTab === 'expenses'"
                     @click="handleAddClick"
-                    class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-40"
+                    class="fixed bottom-6 right-6 w-14 h-14 bg-accent-yellow rounded-full fab-shadow text-deep-sea-blue text-2xl flex items-center justify-center hover:scale-110 transition-transform z-50"
                 >
                     <i class="fa-solid fa-plus"></i>
                 </button>
@@ -1417,7 +1416,7 @@
                  <!-- 這裡補充 Modal 的 HTML 以確保完整性 -->
                  
                 <!-- Shopping Modal -->
-                <div v-if="showShoppingModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                <div v-if="showShoppingModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[70] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
                         <h3 class="font-bold text-lg mb-5 text-center text-slate-800">新增購物清單 ({{ currentUser }})</h3>
                         <input v-model="newShoppingItem.name" type="text" placeholder="商品名稱" class="w-full bg-slate-50 border-none rounded-xl p-4 mb-4 focus:ring-2 focus:ring-deep-sea-blue text-sm outline-none" />
@@ -1429,7 +1428,7 @@
                 </div>
 
                 <!-- Expense Modal -->
-                <div v-if="showExpenseModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                <div v-if="showExpenseModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[70] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                         <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ editingExpenseId === null ? "記一筆" : "編輯支出" }}</h3>
                         <div class="space-y-3">
@@ -1491,7 +1490,7 @@
                 </div>
 
                 <!-- Itinerary Modal -->
-                <div v-if="showItineraryModal" class="fixed inset-0 bg-deep-sea-blue/40 z-50 flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                <div v-if="showItineraryModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[70] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                         <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ isEditMode ? "編輯行程" : "新增行程" }}</h3>
                         <div class="space-y-3">
