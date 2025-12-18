@@ -736,15 +736,18 @@
                     </div>
                 </div>
 
-                <!-- Password Modal (修復：移除 v-if/v-show，強制顯示 input) -->
-                <div v-if="showRolePasswordModal" class="fixed inset-0 bg-slate-900/60 z-[80] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                <!-- Password Modal (重點修正：加入 key 強制重繪) -->
+                <div 
+                    v-if="showRolePasswordModal" 
+                    :key="targetLoginMember?.id || 'password-modal'"
+                    class="fixed inset-0 bg-slate-900/60 z-[80] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in"
+                >
                     <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl border border-orange-100">
                         <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deep-sea-blue shadow-inner">
                             <i class="fa-solid fa-shield-cat text-xl"></i>
                         </div>
                         <h3 class="font-bold text-base mb-2 text-center text-slate-800">{{ passwordMode === "loginAdmin" ? "Admin 身份驗證" : passwordMode === "loginPersonal" ? `歡迎回來，${targetLoginMember?.name}` : "需要密碼" }}</h3>
                         
-                        <!-- 修正：input 永遠存在，不使用 v-if 切換 -->
                         <input
                             ref="rolePasswordInputRef"
                             v-model="rolePasswordInput"
@@ -785,11 +788,10 @@
         const firebaseApp = initializeApp(firebaseConfig);
         const db = getFirestore(firebaseApp);
 
-        // === 行程順序修正 ===
         const INITIAL_ITINERARY = [
-             // Day 1: 修正交通邏輯
+             // Day 1
             [
-                { category: "transport", name: "抵達曼谷機場 (BKK)", startTime: "13:05", address: "Suvarnabhumi Airport", note: "下機後辦理通關、領行李，預計 14:00 出關。建議預約保母車或叫 2 台 Grab 前往飯店。", order: 1, transportType: "flight", travelTime: "" }, // 第一站無交通時間
+                { category: "transport", name: "抵達曼谷機場 (BKK)", startTime: "13:05", address: "Suvarnabhumi Airport", note: "下機後辦理通關、領行李，預計 14:00 出關。建議預約保母車或叫 2 台 Grab 前往飯店。", order: 1, transportType: "flight", travelTime: "" },
                 { category: "accommodation", name: "入住 Craftsman Bangkok", startTime: "15:00", address: "34-36 Phahon Yothin 11, Samsen Nai, Phaya Thai", note: "Check-in，放行李、分配房卡。稍作休息或在飯店泳池拍照。", order: 2, transportType: "car", travelTime: "機場 → 飯店約 40 分" },
                 { category: "food", name: "Ari 咖啡街散步", startTime: "16:00", address: "Ari Soi 4 / Gump's Ari", note: "從飯店搭嘟嘟車或叫車至 Ari。逛 Gump's Ari 拍照，或去 Nana Coffee Roasters 喝咖啡。", order: 3, transportType: "car", travelTime: "飯店 → Ari 區約 15 分" },
                 { category: "food", name: "晚餐：Lay Lao (Ari)", startTime: "18:00", address: "65 Phahon Yothin 7, Samsen Nai", note: "米其林必比登推薦東北菜。就在 Ari 站附近，吃完可以直接散步。", order: 4, transportType: "walk", travelTime: "Ari 區步行" },
@@ -805,7 +807,7 @@
                 { category: "sightseeing", name: "碼頭夜市 Asiatique", startTime: "18:30", address: "2194 Charoen Krung Rd", note: "從 ICONSIAM 搭船至 Sathorn，轉免費接駁船。晚餐夜市解決，玩 Skyflyer。", order: 6, transportType: "public", travelTime: "船程約 30 分" },
                 { category: "other", name: "Nana 廣場 (夜生活)", startTime: "21:30", address: "Nana Plaza, Sukhumvit 4", note: "體驗曼谷紅燈區氛圍。結束後叫車回 Craftsman。", order: 7, transportType: "car", travelTime: "Asiatique → Nana 車程 30 分" },
             ],
-            // Day 3: 修正 8:30 退房 & 8:45 出發
+            // Day 3
             [
                 { category: "accommodation", name: "Craftsman 退房", startTime: "08:30", address: "Craftsman Bangkok", note: "起床吃早餐、收行李退房。包車司機預計 08:30 抵達接人。", order: 1, transportType: "walk", travelTime: "飯店門口上車" },
                 { category: "sightseeing", name: "美功鐵道市集", startTime: "10:45", address: "Mae Klong Railway Market", note: "08:45 準時出發，車程約 2 小時。看 11:10/11:30 火車。", order: 2, transportType: "car", travelTime: "曼谷 → 美功 約 2 小時" },
@@ -825,7 +827,7 @@
                 { category: "food", name: "晚餐：Mungkorn Seafood", startTime: "18:30", address: "Pracha Songkhro Rd", note: "搭車前往海鮮吃到飽。大頭蝦無限夾。", order: 6, transportType: "car", travelTime: "Siam → 餐廳 車程 30 分" },
                 { category: "shopping", name: "Big C Ekkamai", startTime: "21:00", address: "Sukhumvit 63", note: "吃飽去 Ekkamai 的 Big C 採購伴手禮，人少好逛。離通羅近。", order: 7, transportType: "car", travelTime: "餐廳 → Ekkamai 車程 25 分" },
             ],
-            // Day 5: 修正 11:00 退房 & 12:00 抵達機場
+            // Day 5
             [
                 { category: "food", name: "早餐 & 整理行李", startTime: "09:00", address: "Thonglor", note: "通羅附近咖啡廳早餐，最後打包。", order: 1, transportType: "walk", travelTime: "" },
                 { category: "accommodation", name: "退房 & 前往機場", startTime: "11:00", address: "Thonglor Airbnb", note: "11:00 準時退房，保母車接送。預留 1 小時車程。", order: 2, transportType: "walk", travelTime: "步行至樓下" },
@@ -913,7 +915,6 @@
                         console.error("Initialization error:", error);
                         triggerToast("初始化發生錯誤，請重整頁面");
                     } finally {
-                        // 確保 loading 移除
                         setTimeout(() => {
                             const loader = document.getElementById("loading-screen");
                             if (loader) loader.classList.add("hidden");
@@ -944,14 +945,15 @@
                         showRolePasswordModal.value = true;
                     } else {
                         performLogin(member);
-                        return; // 這裡要 return 避免跑下面
+                        return;
                     }
-                    // 強制聚焦
-                    nextTick(() => {
+                    
+                    // 修正：使用 setTimeout 確保 Modal 動畫開始且 DOM 掛載後再聚焦
+                    setTimeout(() => {
                         if (rolePasswordInputRef.value) {
                             rolePasswordInputRef.value.focus();
                         }
-                    });
+                    }, 100);
                 };
 
                 const performLogin = (member) => { currentUser.value = member.name; hasSelectedUser.value = true; };
