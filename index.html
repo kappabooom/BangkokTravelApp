@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.0.13 -->
-        <p class="text-xs text-slate-400 mt-3">v1.0.13</p>
+        <!-- 版本號 v1.0.14 -->
+        <p class="text-xs text-slate-400 mt-3">v1.0.14</p>
     </div>
 
     <div id="app" class="app-container">
@@ -2500,11 +2500,11 @@
                 };
 
                 const removeExpense = async (id) => {
-                    // 1. 取得該筆支出資料
+                    // 1. 取得該筆支出資料 (需從 expenses 中查找以確認 payer)
                     const exp = expenses.value.find(e => e.id === id);
                     if (!exp) return;
                 
-                    // 2. 權限檢查：是否為記帳者 (payer) 或管理員 (admin)
+                    // --- 新增權限檢查開始 ---
                     const isOwner = exp.payer === currentUser.value;
                     const isAdmin = members.value.find(m => m.name === currentUser.value)?.role === 'admin';
                 
@@ -2513,13 +2513,13 @@
                             icon: 'error',
                             title: '權限不足',
                             text: '只有該筆支出的記帳者或管理員才能刪除',
-                            timer: 2000,
+                            timer: 1500,
                             showConfirmButton: false
                         });
                         return;
                     }
+                    // --- 新增權限檢查結束 ---
                 
-                    // 3. 原有的刪除確認邏輯
                     const result = await Swal.fire({
                         title: '確定刪除?',
                         text: "刪除後無法復原",
@@ -2539,7 +2539,7 @@
                                 Swal.showLoading();
                             }
                         });
-                        
+                
                         try {
                             await deleteDoc(doc(db, "expenses", id));
                             Swal.fire({
@@ -2938,13 +2938,34 @@
                     );
 
                 const startEditExpense = (id, exp) => {
+                    // --- 新增權限檢查開始 ---
+                    const isOwner = exp.payer === currentUser.value;
+                    const isAdmin = members.value.find(m => m.name === currentUser.value)?.role === 'admin';
+                
+                    if (!isOwner && !isAdmin) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: '權限不足',
+                            text: '只有該筆支出的記帳者或管理員才能修改',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        return;
+                    }
+                    // --- 新增權限檢查結束 ---
+                
                     editingExpenseId.value = id;
                     newExpense.value = JSON.parse(JSON.stringify(exp));
+                    // 移除 id 以免存回 data
                     delete newExpense.value.id;
-                    if (!newExpense.value.splitDetails)
+                
+                    // 如果是舊資料沒有 splitDetails，補一個空的
+                    if (!newExpense.value.splitDetails) {
                         newExpense.value.splitDetails = {};
+                    }
+                
                     showExpenseModal.value = true;
-                };
+                }
 
                 const getCategoryIcon = (c) =>
                     ({
