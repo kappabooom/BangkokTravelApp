@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.0.11 -->
-        <p class="text-xs text-slate-400 mt-3">v1.0.11</p>
+        <!-- 版本號 v1.0.12 -->
+        <p class="text-xs text-slate-400 mt-3">v1.0.12</p>
     </div>
 
     <div id="app" class="app-container">
@@ -1997,17 +1997,7 @@
                             // ★★★ 建議補上這行，確保初始化後也視為載入完成 ★★★
                             membersLoaded.value = true; 
                         }
-                         // ★★★★★ 必須補上這段來關閉 Loading 畫面 ★★★★★
-                        setTimeout(() => {
-                            const loader = document.getElementById("loading-screen");
-                            if (loader) {
-                                loader.style.opacity = '0';
-                                loader.style.transition = 'opacity 0.5s';
-                                setTimeout(() => {
-                                    loader.style.display = 'none';
-                                }, 500);
-                            }
-                        }, 500);
+
                     });
 
                     for (let i = 0; i < dates.value.length; i++) {
@@ -2056,9 +2046,10 @@
                     await fetchWeather();
 
                     setTimeout(() => {
-                        const loader =
-                            document.getElementById("loading-screen");
-                        if (loader) loader.classList.add("hidden");
+                        const loader = document.getElementById("loading-screen");
+                        // 注意：index-12 用的是 classList.add("hidden")，請確保您的 CSS 有 .hidden { display: none; }
+                        // 或者直接用 style.display = 'none' 比較保險
+                        if (loader) loader.style.display = 'none'; 
                     }, 500);
                 });
 
