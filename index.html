@@ -378,8 +378,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.0.4 -->
-        <p class="text-xs text-slate-400 mt-3">v1.0.4</p>
+        <!-- 版本號 v1.0.5 -->
+        <p class="text-xs text-slate-400 mt-3">v1.0.5</p>
     </div>
 
     <div id="app" class="app-container">
@@ -1508,7 +1508,7 @@
 
             </main>
         </div>
-
+         </div>
         <!-- Shopping Modal -->
         <div v-if="showShoppingModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
             <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
@@ -2009,6 +2009,22 @@
                         });
                     }
 
+                    // --- 新增：檢查是否有儲存的登入者 ---
+                    const savedUser = localStorage.getItem("travelAppUser");
+                    if (savedUser) {
+                        try {
+                            const userObj = JSON.parse(savedUser);
+                            // 自動登入
+                            currentUser.value = userObj.name;
+                            pendingUser.value = userObj.name;
+                            hasSelectedUser.value = true;
+                            // 這裡不跳 Toast，以免每次重整都跳
+                        } catch (e) {
+                            console.error("Auto login failed", e);
+                            localStorage.removeItem("travelAppUser");
+                        }
+                    }
+
                     await fetchExchangeRate();
                     await fetchWeather();
 
@@ -2016,10 +2032,14 @@
                         const loader =
                             document.getElementById("loading-screen");
                         if (loader) loader.classList.add("hidden");
-                    }, 1500);
+                    }, 500);
                 });
 
                 const switchUser = (userName) => {
+                    hasSelectedUser.value = false;
+                    currentUser.value = "";
+                    // --- 新增：清除紀錄 ---
+                    localStorage.removeItem("travelAppUser");
                     const member = members.value.find(
                         (m) => m.name === userName
                     );
@@ -2046,6 +2066,7 @@
                     currentUser.value = member.name;
                     pendingUser.value = member.name;
                     hasSelectedUser.value = true;
+                    localStorage.setItem("travelAppUser", JSON.stringify(member)); 
                     triggerToast(`歡迎回來，${member.name}`);
                 };
 
