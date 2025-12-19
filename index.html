@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.0.9 -->
-        <p class="text-xs text-slate-400 mt-3">v1.0.9</p>
+        <!-- 版本號 v1.0.10 -->
+        <p class="text-xs text-slate-400 mt-3">v1.0.10</p>
     </div>
 
     <div id="app" class="app-container">
@@ -1216,7 +1216,7 @@
                                         </div>
                                         <button
                                             @click.stop="
-                                                removeExpense(exp.id)
+                                                removeExpense(exp)
                                             "
                                             class="w-8 h-8 flex items-center justify-center rounded-full text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors"
                                         >
@@ -2495,9 +2495,19 @@
                     }
                 };
 
-                const removeExpense = async (id) => {
-                    // 檢查權限 (如果有的話)
-                    // if (!canEditItinerary.value) ...
+                const removeExpense = async (expense) => {
+                    / ★★★ 新增權限檢查邏輯 ★★★
+                    // 如果當前使用者不是 admin，且不是這筆帳的付款人，就禁止刪除
+                    // (假設 admin 有最高權限，如果您不想要 admin 刪除，可移除 && 部分)
+                    if (currentUser.value !== expense.payer && currentUser.value !== 'admin') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: '權限不足',
+                            text: `這筆帳是 ${expense.payer} 記的，只有他（或 Admin）能刪除！`,
+                            confirmButtonText: '好喔'
+                        });
+                        return;
+                    }
                 
                     const result = await Swal.fire({
                         title: '刪除這筆支出？',
@@ -2512,7 +2522,7 @@
                 
                     if (result.isConfirmed) {
                         Swal.fire({ title: '處理中...', didOpen: () => Swal.showLoading() });
-                        await deleteDoc(doc(db, "expenses", id));
+                        await deleteDoc(doc(db, "expenses", expense.id));
                         Swal.fire({ icon: 'success', title: '支出已刪除', timer: 1500, showConfirmButton: false });
                     }
                 };
@@ -2604,7 +2614,7 @@
                             owner: currentUser.value,
                         });
                         newShoppingItem.value.name = "";
-                        
+                        showShoppingModal.value = false;
                         // 成功提示
                         Swal.fire({
                             icon: 'success',
