@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.0.12 -->
-        <p class="text-xs text-slate-400 mt-3">v1.0.12</p>
+        <!-- 版本號 v1.0.13 -->
+        <p class="text-xs text-slate-400 mt-3">v1.0.13</p>
     </div>
 
     <div id="app" class="app-container">
@@ -2499,37 +2499,65 @@
                     }
                 };
 
-                const removeExpense = async (expense) => {
-                    / ★★★ 新增權限檢查邏輯 ★★★
-                    // 如果當前使用者不是 admin，且不是這筆帳的付款人，就禁止刪除
-                    // (假設 admin 有最高權限，如果您不想要 admin 刪除，可移除 && 部分)
-                    if (currentUser.value !== expense.payer && currentUser.value !== 'admin') {
-                        Swal.fire({
+                const removeExpense = async (id) => {
+                    // 1. 取得該筆支出資料
+                    const exp = expenses.value.find(e => e.id === id);
+                    if (!exp) return;
+                
+                    // 2. 權限檢查：是否為記帳者 (payer) 或管理員 (admin)
+                    const isOwner = exp.payer === currentUser.value;
+                    const isAdmin = members.value.find(m => m.name === currentUser.value)?.role === 'admin';
+                
+                    if (!isOwner && !isAdmin) {
+                        await Swal.fire({
                             icon: 'error',
                             title: '權限不足',
-                            text: `這筆帳是 ${expense.payer} 記的，只有他（或 Admin）能刪除！`,
-                            confirmButtonText: '好喔'
+                            text: '只有該筆支出的記帳者或管理員才能刪除',
+                            timer: 2000,
+                            showConfirmButton: false
                         });
                         return;
                     }
                 
+                    // 3. 原有的刪除確認邏輯
                     const result = await Swal.fire({
-                        title: '刪除這筆支出？',
-                        text: "刪除後需重新輸入",
+                        title: '確定刪除?',
+                        text: "刪除後無法復原",
                         icon: 'warning',
                         showCancelButton: true,
                         confirmButtonColor: '#d33',
                         cancelButtonColor: '#3085d6',
                         confirmButtonText: '刪除',
-                        cancelButtonText: '保留'
+                        cancelButtonText: '取消'
                     });
                 
                     if (result.isConfirmed) {
-                        Swal.fire({ title: '處理中...', didOpen: () => Swal.showLoading() });
-                        await deleteDoc(doc(db, "expenses", expense.id));
-                        Swal.fire({ icon: 'success', title: '支出已刪除', timer: 1500, showConfirmButton: false });
+                        Swal.fire({
+                            title: '刪除中...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        
+                        try {
+                            await deleteDoc(doc(db, "expenses", id));
+                            Swal.fire({
+                                icon: 'success',
+                                title: '已刪除',
+                                timer: 1500,
+                                showConfirmButton: false
+                            });
+                        } catch (error) {
+                            console.error("Delete error:", error);
+                            Swal.fire({
+                                icon: 'error',
+                                title: '刪除失敗',
+                                text: error.message
+                            });
+                        }
                     }
-                };
+                }
 
 
                 const addMember = async () => {
