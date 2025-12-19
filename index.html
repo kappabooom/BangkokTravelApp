@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.0.14 -->
-        <p class="text-xs text-slate-400 mt-3">v1.0.14</p>
+        <!-- 版本號 v1.0.15 -->
+        <p class="text-xs text-slate-400 mt-3">v1.0.15</p>
     </div>
 
     <div id="app" class="app-container">
@@ -2500,26 +2500,53 @@
                 };
 
                 const removeExpense = async (id) => {
-                    // 1. 取得該筆支出資料 (需從 expenses 中查找以確認 payer)
+                    console.log("正在執行刪除，ID:", id);
+                
+                    // 1. 確保 expenses 資料已載入
+                    if (!expenses.value || expenses.value.length === 0) {
+                        console.error("錯誤：支出列表為空");
+                        await Swal.fire({ icon: 'error', title: '資料尚未載入', text: '請稍後再試' });
+                        return;
+                    }
+                
+                    // 2. 取得該筆支出資料
                     const exp = expenses.value.find(e => e.id === id);
-                    if (!exp) return;
+                    
+                    // 防呆：如果 ID 對不上導致找不到資料，跳出提示
+                    if (!exp) {
+                        console.error("錯誤：找不到該 ID 的支出資料", id);
+                        await Swal.fire({ 
+                            icon: 'error', 
+                            title: '找不到資料', 
+                            text: '系統找不到這筆支出，請重新整理頁面' 
+                        });
+                        return;
+                    }
                 
-                    // --- 新增權限檢查開始 ---
-                    const isOwner = exp.payer === currentUser.value;
-                    const isAdmin = members.value.find(m => m.name === currentUser.value)?.role === 'admin';
+                    // 3. 權限檢查邏輯
+                    const currentUserName = currentUser.value;
+                    const currentMember = members.value.find(m => m.name === currentUserName);
+                    
+                    // 判斷身分
+                    const isOwner = exp.payer === currentUserName;
+                    const isAdmin = currentMember && currentMember.role === 'admin';
                 
+                    console.log(`使用者: ${currentUserName}, 角色: ${currentMember?.role}, 是記帳者: ${isOwner}, 是管理員: ${isAdmin}`);
+                
+                    // 4. 執行權限阻擋
                     if (!isOwner && !isAdmin) {
+                        console.warn("阻擋刪除：權限不足");
                         await Swal.fire({
                             icon: 'error',
                             title: '權限不足',
-                            text: '只有該筆支出的記帳者或管理員才能刪除',
-                            timer: 1500,
+                            text: `只有記帳者 (${exp.payer}) 或管理員才能刪除`,
+                            timer: 2000,
                             showConfirmButton: false
                         });
                         return;
                     }
-                    // --- 新增權限檢查結束 ---
                 
+                    // 5. 權限通過，詢問是否刪除
                     const result = await Swal.fire({
                         title: '確定刪除?',
                         text: "刪除後無法復原",
@@ -2535,11 +2562,9 @@
                         Swal.fire({
                             title: '刪除中...',
                             allowOutsideClick: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
+                            didOpen: () => Swal.showLoading()
                         });
-                
+                        
                         try {
                             await deleteDoc(doc(db, "expenses", id));
                             Swal.fire({
@@ -2549,7 +2574,7 @@
                                 showConfirmButton: false
                             });
                         } catch (error) {
-                            console.error("Delete error:", error);
+                            console.error("Firebase 刪除失敗:", error);
                             Swal.fire({
                                 icon: 'error',
                                 title: '刪除失敗',
