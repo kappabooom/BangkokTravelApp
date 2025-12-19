@@ -21,23 +21,6 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
 
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        "snow-white": "#FFFDE7",
-                        "ice-blue": "#4DB6AC",
-                        "light-snow-blue": "#FFF3E0",
-                        "deep-sea-blue": "#E65100",
-                        "accent-yellow": "#FFB300",
-                        "soft-gray": "#FAFAFA",
-                    },
-                },
-            },
-        };
-    </script>
-
     <style>
         @import url("https://fonts.googleapis.com/css?family=Noto+Sans+TC:wght@300;400;500;700&display=swap");
 
@@ -47,28 +30,47 @@
             padding: 0;
         }
         body {
-            /* 修改：背景色改為白色，讓狀態列顯示為白色，與 Header 融合 */
-            background-color: #ffffff;
+            /* 修改：背景色改回米黃色，讓狀態列看起來是延伸的 */
+            background-color: #fff3e0;
             -webkit-tap-highlight-color: transparent;
             font-family: "Noto Sans TC", sans-serif;
             color: #334155;
             overflow: hidden;
         }
 
+        /* 
+           狀態列遮罩：
+           這是一個隱形的保護層，只有在日期欄滑上去時才會有作用。
+           平時它是透明的，讓 Header 圖片可以透出來。
+        */
+        .status-bar-curtain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top);
+            background-color: #fff3e0; /* 與背景同色 */
+            z-index: 50; /* 比日期欄高，確保狀態列文字不被內容干擾 */
+            opacity: 0; /* 預設透明，讓 Header 圖片顯示 */
+            transition: opacity 0.2s;
+            pointer-events: none; /* 讓點擊穿透 */
+        }
+        /* 當日期欄吸附時，我們需要一個機制讓遮罩現身 (需搭配 JS，但純 CSS 可用黏性佈局技巧) */
+        /* 替代方案：直接讓 sticky 元素自己長高去遮 */
+
         .app-container {
             max-width: 480px;
             margin: 0 auto;
             height: 100%;
-            /* 恢復背景色為淺橘色，區隔內容 */
-            background-color: #fff3e0; 
+            background-color: #ffffff; /* 內容區白色 */
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.05);
             position: relative;
             
-            /* 關鍵修正 1：恢復頂部安全區域 Padding */
-            /* 這會讓所有內容（含 Header 圖片）往下移，避開狀態列 */
-            padding-top: env(safe-area-inset-top);
+            /* 
+              關鍵：不使用 padding-top，讓 Header 圖片衝到最頂
+              但內容區需要自己管理留白
+            */
             padding-bottom: calc(90px + env(safe-area-inset-bottom));
-            
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
@@ -76,7 +78,7 @@
         .login-screen {
             position: fixed;
             inset: 0;
-            z-index: 200; /* 最高層級 */
+            z-index: 200;
             background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
             display: flex;
             flex-direction: column;
@@ -92,7 +94,6 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
             border-bottom-left-radius: 35px;
             border-bottom-right-radius: 35px;
-            /* 關鍵修正 2：保持較低 Z-index，確保 Modal 能蓋過它 */
             z-index: 10;
         }
         .header-image-container {
@@ -146,26 +147,51 @@
         }
 
         .app-main {
-            /* 修正：移除 z-index 定義，避免建立錯誤的 Stacking Context 限制內部 Modal */
             position: relative;
-            /* z-index: 5;  <-- 移除這行 */
+            /* 這裡也不要 padding-top，由結構控制 */
         }
 
         /* 
-           【日期欄最終修正】
-           因為容器已經有了 padding-top: env(safe-area)，
-           所以這裡只要 sticky top: 0 就會剛好貼在安全區域下方，不會穿到狀態列。
+           【終極日期欄修正】
+           1. 顏色：改為 #fff3e0 (米黃色)
+           2. 穿圖：利用 top: 0 和 padding-top 填滿狀態列
+           3. 遮擋：因為有 padding-top，文字不會被瀏海擋住
         */
         .date-selector-sticky {
             position: sticky;
             position: -webkit-sticky;
-            top: 0; 
-            z-index: 40; /* 蓋過 Header (10) */
             
-            background-color: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-bottom: 1px solid #f0f0f0;
+            /* 讓它吸附在螢幕最頂端（包含狀態列區域） */
+            top: 0;
+            z-index: 40; 
+            
+            /* 修改：背景色改為米黃色 */
+            background-color: #fff3e0;
+            
+            /* 增加底部邊框區隔 */
+            border-bottom: 1px solid #ffe0b2;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+
+            /* 關鍵：讓此區塊「長高」去覆蓋狀態列 */
+            /* padding-top 設為安全區域高度，讓內容往下推 */
+            padding-top: env(safe-area-inset-top);
+            
+            /* 
+               Hack: 
+               為了讓它在「未吸附」時（即在 Header 下方時）不要有那麼大的頭頂留白，
+               我們需要用負 margin 把這塊多出來的 padding 吃掉嗎？
+               不，這次我們不吃掉。
+               因為我們希望當它滑到最上面時，那塊 padding 剛好填滿狀態列。
+               
+               副作用：在 Header 下方時，它內部上方會有一塊空白。
+               解法：我們在 flex 容器上做垂直置中 (items-center) 即可視覺忽略。
+            */
+        }
+        /* 針對不支援 env 的 fallback */
+        @supports not (padding-top: env(safe-area-inset-top)) {
+            .date-selector-sticky {
+                top: 0;
+            }
         }
 
         .hide-scrollbar::-webkit-scrollbar { display: none; }
