@@ -47,7 +47,8 @@
             padding: 0;
         }
         body {
-            background-color: #fff3e0;
+            /* 修改：背景色改為白色，讓狀態列顯示為白色，與 Header 融合 */
+            background-color: #ffffff;
             -webkit-tap-highlight-color: transparent;
             font-family: "Noto Sans TC", sans-serif;
             color: #334155;
@@ -58,10 +59,16 @@
             max-width: 480px;
             margin: 0 auto;
             height: 100%;
-            background-color: #ffffff;
+            /* 恢復背景色為淺橘色，區隔內容 */
+            background-color: #fff3e0; 
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.05);
             position: relative;
+            
+            /* 關鍵修正 1：恢復頂部安全區域 Padding */
+            /* 這會讓所有內容（含 Header 圖片）往下移，避開狀態列 */
+            padding-top: env(safe-area-inset-top);
             padding-bottom: calc(90px + env(safe-area-inset-bottom));
+            
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
@@ -69,7 +76,7 @@
         .login-screen {
             position: fixed;
             inset: 0;
-            z-index: 200; /* 提升層級，確保蓋住所有東西 */
+            z-index: 200; /* 最高層級 */
             background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
             display: flex;
             flex-direction: column;
@@ -85,7 +92,8 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
             border-bottom-left-radius: 35px;
             border-bottom-right-radius: 35px;
-            z-index: 10; /* 保持較低層級，讓日期欄可以蓋過去 */
+            /* 關鍵修正 2：保持較低 Z-index，確保 Modal 能蓋過它 */
+            z-index: 10;
         }
         .header-image-container {
             width: 100%;
@@ -138,41 +146,26 @@
         }
 
         .app-main {
-            padding-top: 0 !important; /* 修正：不需要額外 padding，由 margin 控制 */
+            /* 修正：移除 z-index 定義，避免建立錯誤的 Stacking Context 限制內部 Modal */
             position: relative;
-            z-index: 5;
+            /* z-index: 5;  <-- 移除這行 */
         }
 
         /* 
-           【日期欄修復核心】
-           解決問題：
-           1. 穿圖 -> top: 0 加上背景色
-           2. 狀態列遮字 -> padding-top: safe-area
-           3. 初始位置跑版 -> margin-top: -safe-area 把 padding 抵銷回來
+           【日期欄最終修正】
+           因為容器已經有了 padding-top: env(safe-area)，
+           所以這裡只要 sticky top: 0 就會剛好貼在安全區域下方，不會穿到狀態列。
         */
         .date-selector-sticky {
             position: sticky;
             position: -webkit-sticky;
-            top: 0;
-            z-index: 40; /* 比 Header(10) 高，比 Modal(100) 低 */
+            top: 0; 
+            z-index: 40; /* 蓋過 Header (10) */
             
             background-color: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border-bottom: 1px solid #f0f0f0;
-
-            /* 關鍵：增加上內距以避開狀態列，但用負邊距拉回，保持視覺高度不變 */
-            padding-top: env(safe-area-inset-top);
-            margin-top: calc( -1 * env(safe-area-inset-top) );
-        }
-        
-        /* 針對不支援 env 的舊瀏覽器 fallback */
-        @supports not (padding-top: env(safe-area-inset-top)) {
-            .date-selector-sticky {
-                top: 0;
-                padding-top: 0;
-                margin-top: 0;
-            }
         }
 
         .hide-scrollbar::-webkit-scrollbar { display: none; }
@@ -233,6 +226,7 @@
             50% { transform: scale(1.1); opacity: 0.8; }
         }
     </style>
+
 
 
 
