@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.0.7 -->
-        <p class="text-xs text-slate-400 mt-3">v1.0.7</p>
+        <!-- 版本號 v1.0.8 -->
+        <p class="text-xs text-slate-400 mt-3">v1.0.8</p>
     </div>
 
     <div id="app" class="app-container">
@@ -879,42 +879,36 @@
                             <li
                                 v-for="hotel in hotels"
                                 :key="hotel.name"
-                                class="bg-rose-50 rounded-xl p-4 border border-rose-100 relative overflow-hidden"
+                                class="bg-rose-50 rounded-xl p-4 border border-rose-100 relative overflow-hidden flex flex-row items-start justify-between gap-3 shadow-sm"
                             >
-                                <div
-                                    class="absolute right-0 top-0 p-2 opacity-10"
-                                >
-                                    <i class="fa-solid fa-bed text-4xl"></i>
+                                <!-- 左側資訊 -->
+                                <div class="flex-1 min-w-0"> <!-- min-w-0 用於讓 truncate 生效 -->
+                                    <p class="font-bold text-deep-sea-blue mb-2 text-lg truncate">
+                                        {{ hotel.name }}
+                                    </p>
+                                    
+                                    <p class="text-xs text-slate-500 mb-1 flex items-center font-bold">
+                                        <i class="fa-solid fa-calendar-days w-5 text-center mr-1 text-rose-400"></i>
+                                        {{ hotel.date }}
+                                    </p>
+                                    
+                                    <p class="text-xs text-slate-500 mb-1 flex items-center">
+                                        <i class="fa-solid fa-phone w-5 text-center mr-1 text-rose-400"></i>
+                                        <a :href="`tel:${hotel.phone}`" class="hover:text-rose-600 transition-colors">
+                                            {{ hotel.phone }}
+                                        </a>
+                                    </p>
+                                    
+                                    <p class="text-xs text-slate-500 flex items-start">
+                                        <i class="fa-solid fa-location-dot w-5 text-center mr-1 mt-0.5 text-rose-400"></i>
+                                        <span class="break-words leading-tight">{{ hotel.address }}</span>
+                                    </p>
                                 </div>
-                                <p
-                                    class="font-bold text-deep-sea-blue mb-2 text-lg"
-                                >
-                                    {{ hotel.name }}
-                                </p>
-                                <p
-                                    class="text-xs text-slate-500 mb-1 flex items-center font-bold"
-                                >
-                                    <i
-                                        class="fa-solid fa-calendar-days w-5 text-center mr-2 text-rose-400"
-                                    ></i>
-                                    {{ hotel.date }}
-                                </p>
-                                <p
-                                    class="text-xs text-slate-500 mb-1 flex items-center"
-                                >
-                                    <i
-                                        class="fa-solid fa-phone w-5 text-center mr-2 text-rose-400"
-                                    ></i>
-                                    {{ hotel.phone }}
-                                </p>
-                                <p
-                                    class="text-xs text-slate-500 flex items-center"
-                                >
-                                    <i
-                                        class="fa-solid fa-location-dot w-5 text-center mr-2 text-rose-400"
-                                    ></i>
-                                    {{ hotel.address }}
-                                </p>
+                            
+                                <!-- 右側大 Icon (裝飾用) -->
+                                <div class="flex-shrink-0 self-center opacity-20">
+                                    <i class="fa-solid fa-bed text-5xl text-rose-400"></i>
+                                </div>
                             </li>
                         </ul>
                     </div>
@@ -1845,7 +1839,13 @@
                 const editingExpenseId = ref(null);
                 const newShoppingItem = ref({ name: "", checked: false });
                 const newItinerary = ref({});
-                const newExpense = ref({});
+                const newExpense = ref({
+                    name: "",      // 改為 name 以配合 HTML
+                    amount: "",
+                    payer: currentUser.value || "", // 確保有預設付款人
+                    currency: "THB",
+                    splitMethod: "equal"
+                });
                 const collapsedSections = ref({
                     expenses: false,
                     split: true,
@@ -2417,13 +2417,12 @@
                 };
 
                 const saveExpense = async () => { // 原本可能沒有名字，建議給它一個名字並綁定回去
-                    if (!newExpense.value.item || !newExpense.value.amount) {
+                    if (!newExpense.value.name || !newExpense.value.amount) {
                          Swal.fire({
                             icon: 'warning',
                             title: '資料不完整',
                             text: '請輸入項目名稱與金額',
-                            timer: 1500,
-                            showConfirmButton: false
+                            // ...
                         });
                         return;
                     }
@@ -2484,11 +2483,27 @@
                 };
 
                 const removeExpense = async (id) => {
-                    if (confirm("確定要刪除這筆支出嗎？")) {
+                    // 檢查權限 (如果有的話)
+                    // if (!canEditItinerary.value) ...
+                
+                    const result = await Swal.fire({
+                        title: '刪除這筆支出？',
+                        text: "刪除後需重新輸入",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: '刪除',
+                        cancelButtonText: '保留'
+                    });
+                
+                    if (result.isConfirmed) {
+                        Swal.fire({ title: '處理中...', didOpen: () => Swal.showLoading() });
                         await deleteDoc(doc(db, "expenses", id));
-                        triggerToast("🗑️ 支出已刪除");
+                        Swal.fire({ icon: 'success', title: '支出已刪除', timer: 1500, showConfirmButton: false });
                     }
                 };
+
 
                 const addMember = async () => {
                     if (
@@ -2654,18 +2669,32 @@
 
                 const removeItineraryItem = async (id) => {
                     if (!canEditItinerary.value) {
-                        triggerToast("你目前是 Viewer，無法編輯行程");
+                        Swal.fire({ icon: 'error', title: '權限不足', text: '你目前是 Viewer，無法編輯行程' });
                         return;
                     }
-                    if (confirm("確定要刪除這個行程嗎？")) {
-                        await deleteDoc(
-                            doc(
-                                db,
-                                `itinerary_day_${selectedDateIndex.value}`,
-                                id
-                            )
-                        );
-                        showItineraryModal.value = false;
+                    
+                    // 使用 SweetAlert 確認
+                    const result = await Swal.fire({
+                        title: '確定要刪除嗎？',
+                        text: "刪除後無法復原",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: '是的，刪除它！',
+                        cancelButtonText: '取消'
+                    });
+                
+                    if (result.isConfirmed) {
+                        // 顯示刪除中...
+                        Swal.fire({ title: '刪除中...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                        
+                        try {
+                            await deleteDoc(doc(db, `itinerary_day_${selectedDateIndex.value}`, id));
+                            Swal.fire({ icon: 'success', title: '已刪除', timer: 1500, showConfirmButton: false });
+                        } catch (e) {
+                            Swal.fire('錯誤', e.message, 'error');
+                        }
                     }
                 };
 
