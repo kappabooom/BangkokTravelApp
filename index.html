@@ -38,10 +38,10 @@
         };
     </script>
 
-        <style>
+            <style>
         @import url("https://fonts.googleapis.com/css?family=Noto+Sans+TC:wght@300;400;500;700&display=swap");
 
-        /* 讓 body 不滾動，由 .app-container 負責滾動，避免 iOS sticky header 跟狀態列錯位 */
+        /* 1. 讓 body 滿版且不滾動，由 .app-container 負責滾動 */
         html, body {
             height: 100%;
             margin: 0;
@@ -52,10 +52,10 @@
             -webkit-tap-highlight-color: transparent;
             font-family: "Noto Sans TC", sans-serif;
             color: #334155;
-            overflow: hidden;
+            overflow: hidden; /* 禁止 body 滾動 */
         }
 
-        /* 真正滾動容器，並處理 safe area */
+        /* 2. 主容器設定：移除之前的 padding-top，讓 Header 圖片能延伸到最頂端 */
         .app-container {
             max-width: 480px;
             margin: 0 auto;
@@ -63,15 +63,12 @@
             background-color: #ffffff;
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.05);
             position: relative;
+            /* 底部保留安全區域，避免被 iPhone 橫條擋住 */
             padding-bottom: calc(90px + env(safe-area-inset-bottom));
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
-        @supports (padding-top: env(safe-area-inset-top)) {
-            .app-container {
-                padding-top: env(safe-area-inset-top);
-            }
-        }
+        /* 移除之前的 @supports padding-top 區塊，讓圖片滿版 */
 
         .login-screen {
             position: fixed;
@@ -181,8 +178,11 @@
         }
 
         /* 
-           修正重點：sticky 日期列 
-           使用 env(safe-area-inset-top) 確保固定時位於狀態列下方
+           【修正核心】Sticky 日期列 
+           1. top: 0 -> 確保吸附在螢幕最頂端，不留縫隙（解決穿圖）。
+           2. padding-top: env(...) -> 增加內距，讓文字內容避開狀態列。
+           3. margin-top: -env(...) -> 用負邊距把整個區塊往上拉，讓它在非吸附狀態下不會因為 padding 變太高而造成版面突兀。
+           4. background -> 確保背景有顏色，才能遮住後面滑過去的內容。
         */
         .date-selector-sticky {
             position: sticky;
@@ -192,9 +192,18 @@
             -webkit-backdrop-filter: blur(10px);
             border-bottom: 1px solid #f0f0f0;
             z-index: 40;
-            /* 修正：同時設定 0 與 env 以相容不同裝置 */
-            top: 0; 
-            top: env(safe-area-inset-top); 
+            
+            top: 0; /* 貼齊最頂 */
+            
+            /* 針對 iPhone 瀏海/動態島的處理 */
+            padding-top: env(safe-area-inset-top);
+            margin-top: calc(-1 * env(safe-area-inset-top));
+        }
+        /* 若瀏覽器不支援 env() (例如舊版)，提供 fallback (雖然現代 iOS 都支援) */
+        @supports not (padding-top: env(safe-area-inset-top)) {
+            .date-selector-sticky {
+                top: 0;
+            }
         }
 
         .rotate-180 {
@@ -206,7 +215,7 @@
         .custom-select-wrapper select {
             -webkit-appearance: none;
             appearance: none;
-            width: 100%;\
+            width: 100%;
             height: 100%;
             opacity: 0;
             position: absolute;
@@ -235,11 +244,11 @@
             z-index: 20;
             position: relative;
         }
-        .flip-list-enter-active,\
+        .flip-list-enter-active,
         .flip-list-leave-active {
             transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
         }
-        .flip-list-enter-from,\
+        .flip-list-enter-from,
         .flip-list-leave-to {
             opacity: 0;
             transform: scale(0.95);
@@ -281,7 +290,7 @@
             height: 50px;
             border: 4px solid rgba(230, 81, 0, 0.2);
             border-top-color: #e65100;
-            border-radius: 50%;\
+            border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-bottom: 1rem;
         }
@@ -308,6 +317,7 @@
             }
         }
     </style>
+
 
 </head>
 <body>
