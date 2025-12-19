@@ -67,11 +67,14 @@
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
         }
+        /* 請刪除或註解這段，不要讓它往下推，這樣 Banner 才會滿版 */
+        /* 
         @supports (padding-top: env(safe-area-inset-top)) {
             .app-container {
                 padding-top: env(safe-area-inset-top);
             }
-        }
+        } 
+        */
 
         .login-screen {
             position: fixed;
@@ -192,9 +195,9 @@
             -webkit-backdrop-filter: blur(10px);
             border-bottom: 1px solid #f0f0f0;
             z-index: 40;
-            /* 修正：同時設定 0 與 env 以相容不同裝置 */
+            /* 修改：改為 0，讓它貼齊視窗頂部，配合下方的 Spacer 達成無縫效果 */
             top: 0; 
-            top: env(safe-area-inset-top); 
+            /* 移除 top: env(...) 以避免雙重間距 */
         }
 
         .rotate-180 {
@@ -281,7 +284,7 @@
             height: 50px;
             border: 4px solid rgba(230, 81, 0, 0.2);
             border-top-color: #e65100;
-            border-radius: 50%;\
+            border-radius: 50%; /* 原本這裡有個 \ 導致錯誤，已移除 */
             animation: spin 1s linear infinite;
             margin-bottom: 1rem;
         }
@@ -312,18 +315,21 @@
             font-family: 'Noto Sans TC', sans-serif !important;
             border-radius: 20px !important;
         }
-        /* --- 新增：iOS 狀態列安全區域遮罩 --- */
+        /* --- 修改：動態毛玻璃狀態列 --- */
         .safe-area-spacer {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             height: env(safe-area-inset-top);
-            background-color: rgba(255, 255, 255, 0.95); /* 微透明白色背景 */
-            backdrop-filter: blur(5px); /* 毛玻璃效果 */
-            -webkit-backdrop-filter: blur(5px);
-            z-index: 99999; /* 確保在最上層 */
-            pointer-events: none; /* 讓點擊穿透（雖然該區域通常不能點） */
+            /* 改為透明背景，讓底下的顏色透上來 */
+            background-color: transparent; 
+            /* 強力模糊效果，讓狀態列文字清晰，同時反映背景色 */
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            z-index: 99999;
+            pointer-events: none;
+            transition: background-color 0.3s;
         }
     </style>
 
@@ -341,7 +347,7 @@
     </div>
 
     <div id="app" class="app-container">
-        <!-- --- 新增：狀態列遮罩 (只在登入後顯示) --- -->
+        <!-- iOS 狀態列動態遮罩 -->
         <div class="safe-area-spacer" v-if="hasSelectedUser"></div>
         
         <!-- 登入畫面 -->
@@ -1459,7 +1465,7 @@
                 </button>
 
                 <!-- Shopping Modal -->
-                <div v-if="showShoppingModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[70] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                <div v-if="showShoppingModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
                         <h3 class="font-bold text-lg mb-5 text-center text-slate-800">新增購物清單 ({{ currentUser }})</h3>
                         <input v-model="newShoppingItem.name" type="text" placeholder="商品名稱" class="w-full bg-slate-50 border-none rounded-xl p-4 mb-4 focus:ring-2 focus:ring-deep-sea-blue text-sm outline-none" />
@@ -1471,7 +1477,7 @@
                 </div>
 
                 <!-- Expense Modal -->
-                <div v-if="showExpenseModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[70] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                <div v-if="showExpenseModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                         <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ editingExpenseId === null ? "記一筆" : "編輯支出" }}</h3>
                         <div class="space-y-3">
@@ -1533,7 +1539,7 @@
                 </div>
 
                 <!-- Itinerary Modal -->
-                <div v-if="showItineraryModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[70] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                <div v-if="showItineraryModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                         <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ isEditMode ? "編輯行程" : "新增行程" }}</h3>
                         <div class="space-y-3">
@@ -1575,7 +1581,7 @@
                 </div>
 
                 <!-- Member Modal -->
-                <div v-if="showMemberModal" class="fixed inset-0 bg-slate-900/50 z-[70] flex flex-col items-center justify-end sm:justify-center animate-fade-in backdrop-blur-sm">
+                <div v-if="showMemberModal" class="fixed inset-0 bg-slate-900/50 z-[9999] flex flex-col items-center justify-end sm:justify-center animate-fade-in backdrop-blur-sm">
                     <div class="bg-white w-full sm:w-[480px] sm:rounded-3xl rounded-t-3xl p-6 shadow-2xl h-[85vh] sm:h-auto sm:max-h-[85vh] flex flex-col">
                         <div class="flex items-center justify-between mb-6">
                             <h3 class="font-bold text-xl text-slate-800">成員管理後台</h3>
@@ -1619,7 +1625,7 @@
         </div>
 
         <!-- Password Modal -->
-        <div v-if="showRolePasswordModal" class="fixed inset-0 bg-slate-900/60 z-[80] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+        <div v-if="showRolePasswordModal" class="fixed inset-0 bg-slate-900/60 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
             <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl border border-orange-100">
                 <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deep-sea-blue shadow-inner">
                     <i class="fa-solid fa-shield-cat text-xl"></i>
@@ -1635,7 +1641,7 @@
         </div>
 
         <!-- Toast -->
-        <div v-if="showToast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[90] bg-slate-900/90 text-white text-sm px-4 py-2 rounded-full shadow-lg">{{ toastMessage }}</div>
+        <div v-if="showToast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] bg-slate-900/90 text-white text-sm px-4 py-2 rounded-full shadow-lg">{{ toastMessage }}</div>
     </div>
 
     <!-- JS 主程式（完整保留） -->
