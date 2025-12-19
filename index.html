@@ -98,8 +98,11 @@
             z-index: 10;
         }
         .header-image-container {
+            /* 增加上方內距，把圖片內容「推」下來，避開狀態列 */
+            padding-top: env(safe-area-inset-top); 
             width: 100%;
-            height: 250px;
+            /* 高度要加上狀態列高度，保持視覺比例 */
+            height: calc(250px + env(safe-area-inset-top)); 
             overflow: hidden;
             background-color: transparent;
             border-bottom-left-radius: 35px;
@@ -183,6 +186,7 @@
             background: linear-gradient(135deg, #ff7043 0%, #ab47bc 100%);
         }
 
+         /* --- 修改：日期欄定位 --- */
         .date-selector-sticky {
             position: sticky;
             position: -webkit-sticky;
@@ -192,11 +196,10 @@
             border-bottom: 1px solid #f0f0f0;
             z-index: 40;
             
-            /* --- 修改重點 --- */
-            top: 0; /* 貼齊視窗頂部 */
-            /* 增加內距來避開狀態列，背景色會自動延伸填滿 */
-            padding-top: env(safe-area-inset-top); 
-            margin-top: -1px; /* 微調接合處 */
+            /* 關鍵修改：黏在狀態列下方 */
+            top: env(safe-area-inset-top); 
+            /* 移除之前的 padding-top，因為現在不需要填充狀態列了 */
+            padding-top: 0;
         }
 
         .rotate-180 {
@@ -337,6 +340,33 @@
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
         }
+
+         /* --- 新增：主畫面專用的安全區域推移 --- */
+        .main-view-safe-area {
+            /* 移除 padding-top，讓內容滿版延伸到狀態列後方 */
+            padding-top: 0; 
+            background-color: #ffffff;
+            min-height: 100vh;
+            position: relative;
+        }
+
+         /* --- 修改：固定式狀態列背景 --- */
+        /* --- 修改：毛玻璃狀態列 (固定在頂部) --- */
+        .safe-area-fixed-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top);
+            
+            /* 關鍵修改：半透明背景 + 毛玻璃特效 */
+            background-color: rgba(255, 255, 255, 0.75); /* 75% 透明度的白色 */
+            backdrop-filter: blur(20px) saturate(180%); /* 高斯模糊 + 增加飽和度(讓透出來的顏色更鮮豔) */
+            -webkit-backdrop-filter: blur(20px) saturate(180%); /* Safari 必須加這個前綴 */
+            
+            z-index: 9999; /* 確保在最上層 */
+            border-bottom: 0.5px solid rgba(0, 0, 0, 0.05); /* 選擇性：加一條極細的分割線增加層次感 */
+        }
     </style>
 
 </head>
@@ -410,6 +440,12 @@
 
         <!-- 主畫面 -->
         <div v-else>
+            <!-- 1. 新增：固定在頂端的狀態列白條 -->
+            <div class="safe-area-fixed-bar"></div>
+        
+            <!-- 2. 新增：主畫面容器 (負責往下推) -->
+            <div class="main-view-safe-area">
+                
             <div class="header-bg relative">
                 <div class="header-image-container">
                     <img
