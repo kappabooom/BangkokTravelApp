@@ -21,16 +21,33 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
 
-    <style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "snow-white": "#FFFDE7",
+                        "ice-blue": "#4DB6AC",
+                        "light-snow-blue": "#FFF3E0",
+                        "deep-sea-blue": "#E65100",
+                        "accent-yellow": "#FFB300",
+                        "soft-gray": "#FAFAFA",
+                    },
+                },
+            },
+        };
+    </script>
+
+        <style>
         @import url("https://fonts.googleapis.com/css?family=Noto+Sans+TC:wght@300;400;500;700&display=swap");
 
+        /* 讓 body 不滾動，由 .app-container 負責滾動，避免 iOS sticky header 跟狀態列錯位 */
         html, body {
             height: 100%;
             margin: 0;
             padding: 0;
         }
         body {
-            /* 修改：背景色改回米黃色，讓狀態列看起來是延伸的 */
             background-color: #fff3e0;
             -webkit-tap-highlight-color: transparent;
             font-family: "Noto Sans TC", sans-serif;
@@ -38,47 +55,28 @@
             overflow: hidden;
         }
 
-        /* 
-           狀態列遮罩：
-           這是一個隱形的保護層，只有在日期欄滑上去時才會有作用。
-           平時它是透明的，讓 Header 圖片可以透出來。
-        */
-        .status-bar-curtain {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: env(safe-area-inset-top);
-            background-color: #fff3e0; /* 與背景同色 */
-            z-index: 50; /* 比日期欄高，確保狀態列文字不被內容干擾 */
-            opacity: 0; /* 預設透明，讓 Header 圖片顯示 */
-            transition: opacity 0.2s;
-            pointer-events: none; /* 讓點擊穿透 */
-        }
-        /* 當日期欄吸附時，我們需要一個機制讓遮罩現身 (需搭配 JS，但純 CSS 可用黏性佈局技巧) */
-        /* 替代方案：直接讓 sticky 元素自己長高去遮 */
-
+        /* 真正滾動容器，並處理 safe area */
         .app-container {
             max-width: 480px;
             margin: 0 auto;
             height: 100%;
-            background-color: #ffffff; /* 內容區白色 */
+            background-color: #ffffff;
             box-shadow: 0 0 30px rgba(0, 0, 0, 0.05);
             position: relative;
-            
-            /* 
-              關鍵：不使用 padding-top，讓 Header 圖片衝到最頂
-              但內容區需要自己管理留白
-            */
             padding-bottom: calc(90px + env(safe-area-inset-bottom));
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+        }
+        @supports (padding-top: env(safe-area-inset-top)) {
+            .app-container {
+                padding-top: env(safe-area-inset-top);
+            }
         }
 
         .login-screen {
             position: fixed;
             inset: 0;
-            z-index: 200;
+            z-index: 60;
             background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
             display: flex;
             flex-direction: column;
@@ -147,115 +145,187 @@
         }
 
         .app-main {
+            padding-top: 25px !important;
             position: relative;
-            /* 這裡也不要 padding-top，由結構控制 */
+            z-index: 5;
         }
-
-        /* 
-           【終極日期欄修正】
-           1. 顏色：改為 #fff3e0 (米黃色)
-           2. 穿圖：利用 top: 0 和 padding-top 填滿狀態列
-           3. 遮擋：因為有 padding-top，文字不會被瀏海擋住
-        */
-        .date-selector-sticky {
-            position: sticky;
-            position: -webkit-sticky;
-            
-            /* 讓它吸附在螢幕最頂端（包含狀態列區域） */
-            top: 0;
-            z-index: 40; 
-            
-            /* 修改：背景色改為米黃色 */
-            background-color: #fff3e0;
-            
-            /* 增加底部邊框區隔 */
-            border-bottom: 1px solid #ffe0b2;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-
-            /* 關鍵：讓此區塊「長高」去覆蓋狀態列 */
-            /* padding-top 設為安全區域高度，讓內容往下推 */
-            padding-top: env(safe-area-inset-top);
-            
-            /* 
-               Hack: 
-               為了讓它在「未吸附」時（即在 Header 下方時）不要有那麼大的頭頂留白，
-               我們需要用負 margin 把這塊多出來的 padding 吃掉嗎？
-               不，這次我們不吃掉。
-               因為我們希望當它滑到最上面時，那塊 padding 剛好填滿狀態列。
-               
-               副作用：在 Header 下方時，它內部上方會有一塊空白。
-               解法：我們在 flex 容器上做垂直置中 (items-center) 即可視覺忽略。
-            */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
         }
-        /* 針對不支援 env 的 fallback */
-        @supports not (padding-top: env(safe-area-inset-top)) {
-            .date-selector-sticky {
-                top: 0;
-            }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
-
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
         .card-shadow {
             box-shadow: 0 4px 20px rgba(230, 81, 0, 0.1);
             transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        .animate-fade-in { animation: fadeIn 0.4s ease-out; }
+        .animate-fade-in {
+            animation: fadeIn 0.4s ease-out;
+        }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        .fab-shadow { box-shadow: 0 4px 15px rgba(255, 179, 0, 0.5); }
-        .expenses-banner { background: linear-gradient(135deg, #ff7043 0%, #ab47bc 100%); }
+        .fab-shadow {
+            box-shadow: 0 4px 15px rgba(255, 179, 0, 0.5);
+        }
+        .expenses-banner {
+            background: linear-gradient(135deg, #ff7043 0%, #ab47bc 100%);
+        }
 
-        .rotate-180 { transform: rotate(180deg); }
-        .custom-select-wrapper { position: relative; }
+        /* 
+           修正重點：sticky 日期列 
+           使用 env(safe-area-inset-top) 確保固定時位於狀態列下方
+        */
+        .date-selector-sticky {
+            position: sticky;
+            position: -webkit-sticky;
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid #f0f0f0;
+            z-index: 40;
+            /* 修正：同時設定 0 與 env 以相容不同裝置 */
+            top: 0; 
+            top: env(safe-area-inset-top); 
+        }
+
+        .rotate-180 {
+            transform: rotate(180deg);
+        }
+        .custom-select-wrapper {
+            position: relative;
+        }
         .custom-select-wrapper select {
-            -webkit-appearance: none; appearance: none;
-            width: 100%; height: 100%; opacity: 0;
-            position: absolute; left: 0; top: 0;
-            cursor: pointer; z-index: 10;
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;\
+            height: 100%;
+            opacity: 0;
+            position: absolute;
+            left: 0;
+            top: 0;
+            cursor: pointer;
+            z-index: 10;
         }
-        .pulse-arrow { animation: pulse-x 1.5s infinite ease-in-out; }
+        .pulse-arrow {
+            animation: pulse-x 1.5s infinite ease-in-out;
+        }
         @keyframes pulse-x {
-            0%, 100% { transform: translateX(0); opacity: 0.8; }
-            50% { transform: translateX(5px); opacity: 1; }
+            0%,
+            100% {
+                transform: translateX(0);
+                opacity: 0.8;
+            }
+            50% {
+                transform: translateX(5px);
+                opacity: 1;
+            }
         }
 
-        .flip-list-move { transition: transform 0.5s cubic-bezier(0.2, 0, 0, 1); z-index: 20; position: relative; }
-        .flip-list-enter-active, .flip-list-leave-active { transition: all 0.3s cubic-bezier(0.2, 0, 0, 1); }
-        .flip-list-enter-from, .flip-list-leave-to { opacity: 0; transform: scale(0.95); }
-        
-        .highlight-bg { animation: highlight 1s ease-out forwards; }
+        .flip-list-move {
+            transition: transform 0.5s cubic-bezier(0.2, 0, 0, 1);
+            z-index: 20;
+            position: relative;
+        }
+        .flip-list-enter-active,\
+        .flip-list-leave-active {
+            transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+        }
+        .flip-list-enter-from,\
+        .flip-list-leave-to {
+            opacity: 0;
+            transform: scale(0.95);
+        }
+        .highlight-bg {
+            animation: highlight 1s ease-out forwards;
+        }
         @keyframes highlight {
-            0% { background-color: #fff8e1; transform: scale(1.02); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
-            100% { background-color: #ffffff; transform: scale(1); box-shadow: 0 4px 20px rgba(230, 81, 0, 0.1); }
+            0% {
+                background-color: #fff8e1;
+                transform: scale(1.02);
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            }
+            100% {
+                background-color: #ffffff;
+                transform: scale(1);
+                box-shadow: 0 4px 20px rgba(230, 81, 0, 0.1);
+            }
         }
 
         .loader-container {
-            position: fixed; inset: 0; z-index: 9999;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
             background-color: #fff3e0;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             transition: opacity 0.5s ease, visibility 0.5s ease;
         }
-        .loader-container.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
-        .spinner {
-            width: 50px; height: 50px;
-            border: 4px solid rgba(230, 81, 0, 0.2); border-top-color: #e65100;
-            border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 1rem;
+        .loader-container.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
         }
-        .loader-logo { font-size: 3rem; color: #e65100; margin-bottom: 1rem; animation: pulse-logo 1.5s infinite ease-in-out; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(230, 81, 0, 0.2);
+            border-top-color: #e65100;
+            border-radius: 50%;\
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem;
+        }
+        .loader-logo {
+            font-size: 3rem;
+            color: #e65100;
+            margin-bottom: 1rem;
+            animation: pulse-logo 1.5s infinite ease-in-out;
+        }
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
         @keyframes pulse-logo {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.8; }
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.1);
+                opacity: 0.8;
+            }
+        }
+        /* 讓 Alert 動畫更順暢 */
+        .swal2-popup {
+            font-family: 'Noto Sans TC', sans-serif !important;
+            border-radius: 20px !important;
+        }
+        /* --- 新增：iOS 狀態列安全區域遮罩 --- */
+        .safe-area-spacer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top);
+            background-color: rgba(255, 255, 255, 0.95); /* 微透明白色背景 */
+            backdrop-filter: blur(5px); /* 毛玻璃效果 */
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 99999; /* 確保在最上層 */
+            pointer-events: none; /* 讓點擊穿透（雖然該區域通常不能點） */
         }
     </style>
-
-
-
-
 
 </head>
 <body>
@@ -266,11 +336,14 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.0.2 -->
-        <p class="text-xs text-slate-400 mt-3">v1.0.2</p>
+        <!-- 版本號 v1.0.3 -->
+        <p class="text-xs text-slate-400 mt-3">v1.0.3</p>
     </div>
 
     <div id="app" class="app-container">
+        <!-- --- 新增：狀態列遮罩 (只在登入後顯示) --- -->
+        <div class="safe-area-spacer" v-if="hasSelectedUser"></div>
+        
         <!-- 登入畫面 -->
         <div v-if="!hasSelectedUser" class="login-screen animate-fade-in p-6">
             <div class="text-center mb-8">
@@ -1386,7 +1459,7 @@
                 </button>
 
                 <!-- Shopping Modal -->
-                <div v-if="showShoppingModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[100] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                <div v-if="showShoppingModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[70] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
                         <h3 class="font-bold text-lg mb-5 text-center text-slate-800">新增購物清單 ({{ currentUser }})</h3>
                         <input v-model="newShoppingItem.name" type="text" placeholder="商品名稱" class="w-full bg-slate-50 border-none rounded-xl p-4 mb-4 focus:ring-2 focus:ring-deep-sea-blue text-sm outline-none" />
@@ -1398,7 +1471,7 @@
                 </div>
 
                 <!-- Expense Modal -->
-                <div v-if="showExpenseModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[100] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                <div v-if="showExpenseModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[70] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                         <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ editingExpenseId === null ? "記一筆" : "編輯支出" }}</h3>
                         <div class="space-y-3">
@@ -1460,7 +1533,7 @@
                 </div>
 
                 <!-- Itinerary Modal -->
-                <div v-if="showItineraryModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[100] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+                <div v-if="showItineraryModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[70] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
                     <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
                         <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ isEditMode ? "編輯行程" : "新增行程" }}</h3>
                         <div class="space-y-3">
@@ -1502,7 +1575,7 @@
                 </div>
 
                 <!-- Member Modal -->
-                <div v-if="showMemberModal" class="fixed inset-0 bg-slate-900/50 z-[100] flex flex-col items-center justify-end sm:justify-center animate-fade-in backdrop-blur-sm">
+                <div v-if="showMemberModal" class="fixed inset-0 bg-slate-900/50 z-[70] flex flex-col items-center justify-end sm:justify-center animate-fade-in backdrop-blur-sm">
                     <div class="bg-white w-full sm:w-[480px] sm:rounded-3xl rounded-t-3xl p-6 shadow-2xl h-[85vh] sm:h-auto sm:max-h-[85vh] flex flex-col">
                         <div class="flex items-center justify-between mb-6">
                             <h3 class="font-bold text-xl text-slate-800">成員管理後台</h3>
@@ -1546,7 +1619,7 @@
         </div>
 
         <!-- Password Modal -->
-        <div v-if="showRolePasswordModal" class="fixed inset-0 bg-slate-900/60 z-[100] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+        <div v-if="showRolePasswordModal" class="fixed inset-0 bg-slate-900/60 z-[80] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
             <div class="bg-white rounded-3xl w-full max-w-xs p-6 shadow-2xl border border-orange-100">
                 <div class="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4 text-deep-sea-blue shadow-inner">
                     <i class="fa-solid fa-shield-cat text-xl"></i>
