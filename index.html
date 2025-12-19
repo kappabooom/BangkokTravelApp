@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.0.15 -->
-        <p class="text-xs text-slate-400 mt-3">v1.0.15</p>
+        <!-- 版本號 v1.0.16 -->
+        <p class="text-xs text-slate-400 mt-3">v1.0.16</p>
     </div>
 
     <div id="app" class="app-container">
@@ -1139,7 +1139,7 @@
                             >
                                 <li
                                     v-for="(exp, idx) in myExpenses"
-                                    :key="idx"
+                                    :key="exp.id"
                                     class="flex items-center justify-between border-b border-slate-50 last:border-0 pb-3 last:pb-0 transition-colors rounded-lg px-2 -mx-2 hover:bg-slate-50"
                                 >
                                     <div
@@ -1216,7 +1216,7 @@
                                         </div>
                                         <button
                                             @click.stop="
-                                                removeExpense(exp)
+                                                removeExpense(exp.id, exp)
                                             "
                                             class="w-8 h-8 flex items-center justify-center rounded-full text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors"
                                         >
@@ -2499,54 +2499,42 @@
                     }
                 };
 
-                const removeExpense = async (id) => {
-                    console.log("正在執行刪除，ID:", id);
-                
-                    // 1. 確保 expenses 資料已載入
-                    if (!expenses.value || expenses.value.length === 0) {
-                        console.error("錯誤：支出列表為空");
-                        await Swal.fire({ icon: 'error', title: '資料尚未載入', text: '請稍後再試' });
-                        return;
+                const removeExpense = async (id, expenseItem = null) => {
+                    // 1. 取得支出資料
+                    // 如果 HTML 有傳入 expenseItem (建議做法)，直接使用；否則嘗試去陣列中尋找
+                    let exp = expenseItem;
+                    if (!exp) {
+                        exp = expenses.value.find(e => e.id === id);
                     }
                 
-                    // 2. 取得該筆支出資料
-                    const exp = expenses.value.find(e => e.id === id);
-                    
-                    // 防呆：如果 ID 對不上導致找不到資料，跳出提示
+                    // 防呆：如果真的完全找不到 (極少見)，提示重新整理
                     if (!exp) {
                         console.error("錯誤：找不到該 ID 的支出資料", id);
                         await Swal.fire({ 
                             icon: 'error', 
-                            title: '找不到資料', 
-                            text: '系統找不到這筆支出，請重新整理頁面' 
+                            title: '資料同步錯誤', 
+                            text: '請嘗試重新整理頁面後再試' 
                         });
                         return;
                     }
                 
-                    // 3. 權限檢查邏輯
+                    // 2. 權限檢查 (直接使用 exp 物件判斷)
                     const currentUserName = currentUser.value;
-                    const currentMember = members.value.find(m => m.name === currentUserName);
-                    
-                    // 判斷身分
                     const isOwner = exp.payer === currentUserName;
-                    const isAdmin = currentMember && currentMember.role === 'admin';
+                    const isAdmin = members.value.find(m => m.name === currentUserName)?.role === 'admin';
                 
-                    console.log(`使用者: ${currentUserName}, 角色: ${currentMember?.role}, 是記帳者: ${isOwner}, 是管理員: ${isAdmin}`);
-                
-                    // 4. 執行權限阻擋
                     if (!isOwner && !isAdmin) {
-                        console.warn("阻擋刪除：權限不足");
                         await Swal.fire({
                             icon: 'error',
                             title: '權限不足',
-                            text: `只有記帳者 (${exp.payer}) 或管理員才能刪除`,
+                            text: '只有該筆支出的記帳者或管理員才能刪除',
                             timer: 2000,
                             showConfirmButton: false
                         });
                         return;
                     }
                 
-                    // 5. 權限通過，詢問是否刪除
+                    // 3. 執行刪除
                     const result = await Swal.fire({
                         title: '確定刪除?',
                         text: "刪除後無法復原",
@@ -2574,7 +2562,7 @@
                                 showConfirmButton: false
                             });
                         } catch (error) {
-                            console.error("Firebase 刪除失敗:", error);
+                            console.error("Firebase Delete Error:", error);
                             Swal.fire({
                                 icon: 'error',
                                 title: '刪除失敗',
@@ -2583,6 +2571,7 @@
                         }
                     }
                 }
+
 
 
                 const addMember = async () => {
