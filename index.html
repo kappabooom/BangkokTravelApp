@@ -183,10 +183,6 @@
             background: linear-gradient(135deg, #ff7043 0%, #ab47bc 100%);
         }
 
-        /* 
-           修正重點：sticky 日期列 
-           使用 env(safe-area-inset-top) 確保固定時位於狀態列下方
-        */
         .date-selector-sticky {
             position: sticky;
             position: -webkit-sticky;
@@ -195,9 +191,12 @@
             -webkit-backdrop-filter: blur(10px);
             border-bottom: 1px solid #f0f0f0;
             z-index: 40;
-            /* 修改：改為 0，讓它貼齊視窗頂部，配合下方的 Spacer 達成無縫效果 */
-            top: 0; 
-            /* 移除 top: env(...) 以避免雙重間距 */
+            
+            /* --- 修改重點 --- */
+            top: 0; /* 貼齊視窗頂部 */
+            /* 增加內距來避開狀態列，背景色會自動延伸填滿 */
+            padding-top: env(safe-area-inset-top); 
+            margin-top: -1px; /* 微調接合處 */
         }
 
         .rotate-180 {
@@ -315,21 +314,28 @@
             font-family: 'Noto Sans TC', sans-serif !important;
             border-radius: 20px !important;
         }
-        /* --- 修改：動態毛玻璃狀態列 --- */
+        /* --- 修改：智慧型狀態列遮罩 --- */
         .safe-area-spacer {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             height: env(safe-area-inset-top);
-            /* 改為透明背景，讓底下的顏色透上來 */
-            background-color: transparent; 
-            /* 強力模糊效果，讓狀態列文字清晰，同時反映背景色 */
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            z-index: 99999;
+            z-index: 50; /* 比 Header 高，但比 Modal 低 */
             pointer-events: none;
-            transition: background-color 0.3s;
+            transition: background-color 0.3s, backdrop-filter 0.3s;
+            
+            /* 預設狀態：透明 (讓圖片清楚顯示) */
+            background-color: transparent;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+
+        /* 當頁面捲動超過一定程度時，加上這個 class (稍後在 JS 實作) */
+        .safe-area-spacer.scrolled {
+            background-color: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
     </style>
 
@@ -342,8 +348,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.0.3 -->
-        <p class="text-xs text-slate-400 mt-3">v1.0.3</p>
+        <!-- 版本號 v1.0.4 -->
+        <p class="text-xs text-slate-400 mt-3">v1.0.4</p>
     </div>
 
     <div id="app" class="app-container">
@@ -1464,164 +1470,164 @@
                     <i class="fa-solid fa-plus"></i>
                 </button>
 
-                <!-- Shopping Modal -->
-                <div v-if="showShoppingModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-                    <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
-                        <h3 class="font-bold text-lg mb-5 text-center text-slate-800">新增購物清單 ({{ currentUser }})</h3>
-                        <input v-model="newShoppingItem.name" type="text" placeholder="商品名稱" class="w-full bg-slate-50 border-none rounded-xl p-4 mb-4 focus:ring-2 focus:ring-deep-sea-blue text-sm outline-none" />
-                        <div class="flex space-x-3">
-                            <button @click="showShoppingModal = false" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
-                            <button @click="addShoppingItem" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30">新增</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Expense Modal -->
-                <div v-if="showExpenseModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-                    <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-                        <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ editingExpenseId === null ? "記一筆" : "編輯支出" }}</h3>
-                        <div class="space-y-3">
-                            <input v-model="newExpense.date" type="date" class="w-full bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none" />
-                            <input v-model="newExpense.name" type="text" placeholder="項目名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
-                            <div class="grid grid-cols-2 gap-3">
-                                <select v-model="newExpense.payer" class="bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
-                                    <option v-for="member in members" :key="member.id" :value="member.name">{{ member.name }} (支付)</option>
-                                </select>
-                                <select v-model="newExpense.payment" class="bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
-                                    <option value="cash">現金</option>
-                                    <option value="card">信用卡</option>
-                                </select>
-                            </div>
-                            <div class="flex space-x-2">
-                                <select v-model="newExpense.currency" class="bg-slate-50 rounded-xl p-3 text-sm outline-none font-bold text-slate-700 w-24">
-                                    <option value="THB">฿ THB</option>
-                                    <option value="TWD">$ TWD</option>
-                                </select>
-                                <input v-model.number="newExpense.amount" type="number" placeholder="金額" class="flex-1 bg-slate-50 rounded-xl p-3 text-sm outline-none" />
-                            </div>
-                            <select v-model="newExpense.category" class="w-full bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
-                                <option value="food">飲食</option>
-                                <option value="transport">交通</option>
-                                <option value="shopping">購物</option>
-                                <option value="sightseeing">娛樂</option>
-                                <option value="accommodation">住宿</option>
-                                <option value="ticket">門票</option>
-                                <option value="other">其他</option>
-                            </select>
-                            <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 mt-2">
-                                <div class="flex items-center justify-between mb-3">
-                                    <span class="text-xs font-bold text-slate-500"><i class="fa-solid fa-user-group mr-1"></i> 多人分帳</span>
-                                </div>
-                                <div class="flex space-x-1 mb-3 bg-white p-1 rounded-lg border border-slate-200">
-                                    <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'personal' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'personal'">個人</button>
-                                    <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'equal' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'equal'">均分</button>
-                                    <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'ratio' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'ratio'">比例</button>
-                                    <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'amount' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'amount'">金額</button>
-                                </div>
-                                <div v-if="newExpense.splitMethod !== 'personal'">
-                                    <div v-if="splitMembers.length > 0" class="space-y-2 max-h-32 overflow-y-auto pr-1">
-                                        <div v-if="newExpense.splitMethod === 'equal'" class="text-xs text-slate-500 p-2 text-center bg-white rounded border border-slate-100">將由 {{ splitMembers.length }} 位啟用成員均分</div>
-                                        <div v-else>
-                                            <div v-for="member in splitMembers" :key="member" class="flex items-center justify-between mb-2 last:mb-0">
-                                                <span class="text-xs text-slate-600 truncate w-20">{{ member }}</span>
-                                                <input v-model="newExpense.splitDetails[member]" type="number" :placeholder="newExpense.splitMethod === 'ratio' ? '比例' : '金額'" class="flex-1 bg-white p-1.5 rounded border border-slate-200 text-xs text-right outline-none" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="flex space-x-3 mt-6">
-                            <button @click="showExpenseModal = false; editingExpenseId = null;" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
-                            <button @click="saveExpense" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30">{{ editingExpenseId === null ? "儲存" : "更新" }}</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Itinerary Modal -->
-                <div v-if="showItineraryModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
-                    <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
-                        <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ isEditMode ? "編輯行程" : "新增行程" }}</h3>
-                        <div class="space-y-3">
-                            <select v-model="newItinerary.category" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none">
-                                <option value="sightseeing">景點</option>
-                                <option value="food">飲食</option>
-                                <option value="shopping">購物</option>
-                                <option value="accommodation">住宿</option>
-                                <option value="ticket">門票</option>
-                                <option value="other">其他</option>
-                            </select>
-                            <input v-model="newItinerary.startTime" type="text" placeholder="時間" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
-                            <input v-model="newItinerary.name" type="text" placeholder="行程名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
-                            <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-2">
-                                <p class="text-[10px] text-slate-400 font-bold ml-1">前往此處的交通 (上一站 → 這裡)</p>
-                                <div class="flex space-x-2">
-                                    <select v-model="newItinerary.transportType" class="bg-white rounded-lg p-2 text-sm text-slate-600 outline-none border border-slate-200 w-1/3">
-                                        <option value="car">包車/計程車</option>
-                                        <option value="public">大眾運輸/船</option>
-                                        <option value="walk">步行</option>
-                                        <option value="flight">飛機</option>
-                                    </select>
-                                    <input v-model="newItinerary.travelTime" type="text" placeholder="移動時間 (ex: 約20分鐘)" class="flex-1 bg-white rounded-lg p-2 text-sm outline-none border border-slate-200" />
-                                </div>
-                            </div>
-                            <input v-model="newItinerary.address" type="text" placeholder="地址 / 導航用名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
-                            <textarea v-model="newItinerary.note" rows="3" placeholder="備註" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none"></textarea>
-                            <div class="grid grid-cols-2 gap-3">
-                                <input v-model="newItinerary.hours" type="text" placeholder="營業時間" class="bg-slate-50 rounded-xl p-3 text-sm outline-none" />
-                                <input v-model="newItinerary.price" type="text" placeholder="預算" class="bg-slate-50 rounded-xl p-3 text-sm outline-none" />
-                            </div>
-                        </div>
-                        <div class="flex space-x-3 mt-6">
-                            <button @click="showItineraryModal = false; isEditMode = false;" :class="isEditMode ? 'w-1/3' : 'flex-1'" class="py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
-                            <button v-if="isEditMode && canEditItinerary" @click="removeItineraryItem(newItinerary.id)" class="w-1/3 py-3 rounded-xl bg-red-100 text-red-600 font-bold text-sm hover:bg-red-200 transition-colors"><i class="fa-solid fa-trash-can mr-1"></i> 刪除</button>
-                            <button @click="saveItineraryItem" :disabled="!canEditItinerary" :class="['py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30', isEditMode ? 'w-1/3' : 'flex-1', !canEditItinerary ? 'opacity-60 cursor-not-allowed' : '']">{{ isEditMode ? "儲存" : "新增" }}</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Member Modal -->
-                <div v-if="showMemberModal" class="fixed inset-0 bg-slate-900/50 z-[9999] flex flex-col items-center justify-end sm:justify-center animate-fade-in backdrop-blur-sm">
-                    <div class="bg-white w-full sm:w-[480px] sm:rounded-3xl rounded-t-3xl p-6 shadow-2xl h-[85vh] sm:h-auto sm:max-h-[85vh] flex flex-col">
-                        <div class="flex items-center justify-between mb-6">
-                            <h3 class="font-bold text-xl text-slate-800">成員管理後台</h3>
-                            <button @click="closeMemberModal" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-times"></i></button>
-                        </div>
-                        <div class="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
-                            <div v-for="m in members" :key="m.id" class="flex items-center justify-between bg-white rounded-2xl p-4 border border-orange-100 shadow-sm">
-                                <div class="flex items-center space-x-3 flex-1 min-w-0 mr-2">
-                                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0" :class="m.role === 'admin' ? 'bg-orange-500' : 'bg-ice-blue'">{{ m.name.substring(0, 1).toUpperCase() }}</div>
-                                    <div class="flex flex-col min-w-0 flex-1">
-                                        <div class="flex items-center min-w-0">
-                                            <template v-if="editingMemberId === m.id">
-                                                <input v-model="tempMemberName" @keyup.enter="saveMemberName(m)" @blur="saveMemberName(m)" ref="editInput" class="w-full text-sm font-bold bg-white border border-blue-400 rounded px-2 py-1 outline-none" />
-                                            </template>
-                                            <template v-else>
-                                                <span class="font-bold text-slate-700 truncate block">{{ m.name }}</span>
-                                                <button @click="startEditMember(m)" class="ml-2 text-slate-400 hover:text-blue-500 flex-shrink-0 p-1"><i class="fa-solid fa-pen text-xs"></i></button>
-                                            </template>
-                                        </div>
-                                        <span class="text-[10px] text-slate-400 truncate">{{ m.role === "admin" ? "管理員" : "一般成員" }}</span>
-                                    </div>
-                                </div>
-                                <div class="flex items-center space-x-2 flex-shrink-0 flex-nowrap">
-                                    <button @click="toggleMemberActive(m)" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors min-w-[50px] text-center" :class="m.active ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'">{{ m.active ? "參與" : "隱藏" }}</button>
-                                    <button @click="updateMemberRole(m, m.role === 'admin' ? 'viewer' : 'admin')" class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors flex-shrink-0" :class="m.role === 'admin' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-400'"><i class="fa-solid fa-crown text-xs"></i></button>
-                                    <button @click="openSetPasswordMode(m)" class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors flex-shrink-0" :class="m.password ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'"><i class="fa-solid fa-key text-xs"></i></button>
-                                    <button v-if="m.name !== '我'" @click="removeMember(m.id)" class="w-8 h-8 rounded-lg bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-trash-can text-xs"></i></button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mt-auto pt-4 border-t border-slate-100">
-                            <div class="flex space-x-2">
-                                <input v-model="newMemberName" @keyup.enter="addMember" placeholder="輸入新成員名稱..." class="flex-1 bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-transparent focus:border-deep-sea-blue focus:bg-white transition-all" />
-                                <button @click="addMember" class="px-6 rounded-xl bg-deep-sea-blue text-white text-sm font-bold shadow-lg shadow-deep-sea-blue/20 hover:scale-105 transition-transform"><i class="fa-solid fa-plus mr-1"></i> 新增</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
             </main>
+        </div>
+
+        <!-- Shopping Modal -->
+        <div v-if="showShoppingModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+            <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
+                <h3 class="font-bold text-lg mb-5 text-center text-slate-800">新增購物清單 ({{ currentUser }})</h3>
+                <input v-model="newShoppingItem.name" type="text" placeholder="商品名稱" class="w-full bg-slate-50 border-none rounded-xl p-4 mb-4 focus:ring-2 focus:ring-deep-sea-blue text-sm outline-none" />
+                <div class="flex space-x-3">
+                    <button @click="showShoppingModal = false" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
+                    <button @click="addShoppingItem" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30">新增</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Expense Modal -->
+        <div v-if="showExpenseModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+            <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+                <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ editingExpenseId === null ? "記一筆" : "編輯支出" }}</h3>
+                <div class="space-y-3">
+                    <input v-model="newExpense.date" type="date" class="w-full bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none" />
+                    <input v-model="newExpense.name" type="text" placeholder="項目名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                    <div class="grid grid-cols-2 gap-3">
+                        <select v-model="newExpense.payer" class="bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
+                            <option v-for="member in members" :key="member.id" :value="member.name">{{ member.name }} (支付)</option>
+                        </select>
+                        <select v-model="newExpense.payment" class="bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
+                            <option value="cash">現金</option>
+                            <option value="card">信用卡</option>
+                        </select>
+                    </div>
+                    <div class="flex space-x-2">
+                        <select v-model="newExpense.currency" class="bg-slate-50 rounded-xl p-3 text-sm outline-none font-bold text-slate-700 w-24">
+                            <option value="THB">฿ THB</option>
+                            <option value="TWD">$ TWD</option>
+                        </select>
+                        <input v-model.number="newExpense.amount" type="number" placeholder="金額" class="flex-1 bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                    </div>
+                    <select v-model="newExpense.category" class="w-full bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
+                        <option value="food">飲食</option>
+                        <option value="transport">交通</option>
+                        <option value="shopping">購物</option>
+                        <option value="sightseeing">娛樂</option>
+                        <option value="accommodation">住宿</option>
+                        <option value="ticket">門票</option>
+                        <option value="other">其他</option>
+                    </select>
+                    <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 mt-2">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold text-slate-500"><i class="fa-solid fa-user-group mr-1"></i> 多人分帳</span>
+                        </div>
+                        <div class="flex space-x-1 mb-3 bg-white p-1 rounded-lg border border-slate-200">
+                            <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'personal' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'personal'">個人</button>
+                            <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'equal' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'equal'">均分</button>
+                            <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'ratio' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'ratio'">比例</button>
+                            <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'amount' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'amount'">金額</button>
+                        </div>
+                        <div v-if="newExpense.splitMethod !== 'personal'">
+                            <div v-if="splitMembers.length > 0" class="space-y-2 max-h-32 overflow-y-auto pr-1">
+                                <div v-if="newExpense.splitMethod === 'equal'" class="text-xs text-slate-500 p-2 text-center bg-white rounded border border-slate-100">將由 {{ splitMembers.length }} 位啟用成員均分</div>
+                                <div v-else>
+                                    <div v-for="member in splitMembers" :key="member" class="flex items-center justify-between mb-2 last:mb-0">
+                                        <span class="text-xs text-slate-600 truncate w-20">{{ member }}</span>
+                                        <input v-model="newExpense.splitDetails[member]" type="number" :placeholder="newExpense.splitMethod === 'ratio' ? '比例' : '金額'" class="flex-1 bg-white p-1.5 rounded border border-slate-200 text-xs text-right outline-none" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex space-x-3 mt-6">
+                    <button @click="showExpenseModal = false; editingExpenseId = null;" class="flex-1 py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
+                    <button @click="saveExpense" class="flex-1 py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30">{{ editingExpenseId === null ? "儲存" : "更新" }}</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Itinerary Modal -->
+        <div v-if="showItineraryModal" class="fixed inset-0 bg-deep-sea-blue/40 z-[9999] flex items-center justify-center p-6 backdrop-blur-sm animate-fade-in">
+            <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+                <h3 class="font-bold text-lg mb-5 text-center text-slate-800">{{ isEditMode ? "編輯行程" : "新增行程" }}</h3>
+                <div class="space-y-3">
+                    <select v-model="newItinerary.category" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none">
+                        <option value="sightseeing">景點</option>
+                        <option value="food">飲食</option>
+                        <option value="shopping">購物</option>
+                        <option value="accommodation">住宿</option>
+                        <option value="ticket">門票</option>
+                        <option value="other">其他</option>
+                    </select>
+                    <input v-model="newItinerary.startTime" type="text" placeholder="時間" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                    <input v-model="newItinerary.name" type="text" placeholder="行程名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                    <div class="bg-slate-50 rounded-xl p-3 border border-slate-100 space-y-2">
+                        <p class="text-[10px] text-slate-400 font-bold ml-1">前往此處的交通 (上一站 → 這裡)</p>
+                        <div class="flex space-x-2">
+                            <select v-model="newItinerary.transportType" class="bg-white rounded-lg p-2 text-sm text-slate-600 outline-none border border-slate-200 w-1/3">
+                                <option value="car">包車/計程車</option>
+                                <option value="public">大眾運輸/船</option>
+                                <option value="walk">步行</option>
+                                <option value="flight">飛機</option>
+                            </select>
+                            <input v-model="newItinerary.travelTime" type="text" placeholder="移動時間 (ex: 約20分鐘)" class="flex-1 bg-white rounded-lg p-2 text-sm outline-none border border-slate-200" />
+                        </div>
+                    </div>
+                    <input v-model="newItinerary.address" type="text" placeholder="地址 / 導航用名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                    <textarea v-model="newItinerary.note" rows="3" placeholder="備註" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none"></textarea>
+                    <div class="grid grid-cols-2 gap-3">
+                        <input v-model="newItinerary.hours" type="text" placeholder="營業時間" class="bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                        <input v-model="newItinerary.price" type="text" placeholder="預算" class="bg-slate-50 rounded-xl p-3 text-sm outline-none" />
+                    </div>
+                </div>
+                <div class="flex space-x-3 mt-6">
+                    <button @click="showItineraryModal = false; isEditMode = false;" :class="isEditMode ? 'w-1/3' : 'flex-1'" class="py-3 rounded-xl bg-slate-100 text-slate-500 font-bold text-sm">取消</button>
+                    <button v-if="isEditMode && canEditItinerary" @click="removeItineraryItem(newItinerary.id)" class="w-1/3 py-3 rounded-xl bg-red-100 text-red-600 font-bold text-sm hover:bg-red-200 transition-colors"><i class="fa-solid fa-trash-can mr-1"></i> 刪除</button>
+                    <button @click="saveItineraryItem" :disabled="!canEditItinerary" :class="['py-3 rounded-xl bg-deep-sea-blue text-white font-bold text-sm shadow-lg shadow-deep-sea-blue/30', isEditMode ? 'w-1/3' : 'flex-1', !canEditItinerary ? 'opacity-60 cursor-not-allowed' : '']">{{ isEditMode ? "儲存" : "新增" }}</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Member Modal -->
+        <div v-if="showMemberModal" class="fixed inset-0 bg-slate-900/50 z-[9999] flex flex-col items-center justify-end sm:justify-center animate-fade-in backdrop-blur-sm">
+            <div class="bg-white w-full sm:w-[480px] sm:rounded-3xl rounded-t-3xl p-6 shadow-2xl h-[85vh] sm:h-auto sm:max-h-[85vh] flex flex-col">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="font-bold text-xl text-slate-800">成員管理後台</h3>
+                    <button @click="closeMemberModal" class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 hover:bg-slate-200"><i class="fa-solid fa-times"></i></button>
+                </div>
+                <div class="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
+                    <div v-for="m in members" :key="m.id" class="flex items-center justify-between bg-white rounded-2xl p-4 border border-orange-100 shadow-sm">
+                        <div class="flex items-center space-x-3 flex-1 min-w-0 mr-2">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-lg flex-shrink-0" :class="m.role === 'admin' ? 'bg-orange-500' : 'bg-ice-blue'">{{ m.name.substring(0, 1).toUpperCase() }}</div>
+                            <div class="flex flex-col min-w-0 flex-1">
+                                <div class="flex items-center min-w-0">
+                                    <template v-if="editingMemberId === m.id">
+                                        <input v-model="tempMemberName" @keyup.enter="saveMemberName(m)" @blur="saveMemberName(m)" ref="editInput" class="w-full text-sm font-bold bg-white border border-blue-400 rounded px-2 py-1 outline-none" />
+                                    </template>
+                                    <template v-else>
+                                        <span class="font-bold text-slate-700 truncate block">{{ m.name }}</span>
+                                        <button @click="startEditMember(m)" class="ml-2 text-slate-400 hover:text-blue-500 flex-shrink-0 p-1"><i class="fa-solid fa-pen text-xs"></i></button>
+                                    </template>
+                                </div>
+                                <span class="text-[10px] text-slate-400 truncate">{{ m.role === "admin" ? "管理員" : "一般成員" }}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 flex-shrink-0 flex-nowrap">
+                            <button @click="toggleMemberActive(m)" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors min-w-[50px] text-center" :class="m.active ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-100 text-slate-400'">{{ m.active ? "參與" : "隱藏" }}</button>
+                            <button @click="updateMemberRole(m, m.role === 'admin' ? 'viewer' : 'admin')" class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors flex-shrink-0" :class="m.role === 'admin' ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-400'"><i class="fa-solid fa-crown text-xs"></i></button>
+                            <button @click="openSetPasswordMode(m)" class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors flex-shrink-0" :class="m.password ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-400'"><i class="fa-solid fa-key text-xs"></i></button>
+                            <button v-if="m.name !== '我'" @click="removeMember(m.id)" class="w-8 h-8 rounded-lg bg-red-50 text-red-400 hover:bg-red-500 hover:text-white transition-colors flex items-center justify-center flex-shrink-0"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-auto pt-4 border-t border-slate-100">
+                    <div class="flex space-x-2">
+                        <input v-model="newMemberName" @keyup.enter="addMember" placeholder="輸入新成員名稱..." class="flex-1 bg-slate-50 rounded-xl px-4 py-3 text-sm outline-none border border-transparent focus:border-deep-sea-blue focus:bg-white transition-all" />
+                        <button @click="addMember" class="px-6 rounded-xl bg-deep-sea-blue text-white text-sm font-bold shadow-lg shadow-deep-sea-blue/20 hover:scale-105 transition-transform"><i class="fa-solid fa-plus mr-1"></i> 新增</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Password Modal -->
@@ -1726,6 +1732,7 @@
 
         const app = createApp({
             setup() {
+                const isScrolled = ref(false);
                 const TRIP_YEAR = 2026;
                 const EXCHANGE_RATE = ref(0.92);
                 const WEATHER_API_KEY = "e5e727b85066927db1d248be29dfa632";
@@ -1892,6 +1899,12 @@
                               .toString()
                               .replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                         : "0";
+
+                // 加入捲動監聽
+                const handleScroll = (e) => {
+                    // 當捲動超過 50px (約圖片上方)，狀態列變色
+                    isScrolled.value = e.target.scrollTop > 50;
+                };
 
                 onMounted(async () => {
                     onSnapshot(collection(db, "expenses"), (snapshot) => {
