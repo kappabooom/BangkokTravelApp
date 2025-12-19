@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.0.8 -->
-        <p class="text-xs text-slate-400 mt-3">v1.0.8</p>
+        <!-- 版本號 v1.0.9 -->
+        <p class="text-xs text-slate-400 mt-3">v1.0.9</p>
     </div>
 
     <div id="app" class="app-container">
@@ -881,32 +881,45 @@
                                 :key="hotel.name"
                                 class="bg-rose-50 rounded-xl p-4 border border-rose-100 relative overflow-hidden flex flex-row items-start justify-between gap-3 shadow-sm"
                             >
-                                <!-- 左側資訊 -->
-                                <div class="flex-1 min-w-0"> <!-- min-w-0 用於讓 truncate 生效 -->
-                                    <p class="font-bold text-deep-sea-blue mb-2 text-lg truncate">
+                                <!-- 左側資訊區 -->
+                                <div class="flex-1 min-w-0 space-y-2"> <!-- space-y-2 增加行距 -->
+                                    <!-- 飯店名稱 -->
+                                    <p class="font-bold text-deep-sea-blue text-lg truncate leading-tight">
                                         {{ hotel.name }}
                                     </p>
                                     
-                                    <p class="text-xs text-slate-500 mb-1 flex items-center font-bold">
-                                        <i class="fa-solid fa-calendar-days w-5 text-center mr-1 text-rose-400"></i>
-                                        {{ hotel.date }}
-                                    </p>
+                                    <!-- 日期 -->
+                                    <div class="flex items-start">
+                                        <div class="w-6 flex-shrink-0 flex justify-center mt-0.5"> <!-- 固定寬度容器，微調 mt -->
+                                            <i class="fa-solid fa-calendar-days text-rose-400 text-sm"></i>
+                                        </div>
+                                        <span class="text-xs text-slate-500 font-bold pt-0.5">{{ hotel.date }}</span>
+                                    </div>
                                     
-                                    <p class="text-xs text-slate-500 mb-1 flex items-center">
-                                        <i class="fa-solid fa-phone w-5 text-center mr-1 text-rose-400"></i>
-                                        <a :href="`tel:${hotel.phone}`" class="hover:text-rose-600 transition-colors">
+                                    <!-- 電話 -->
+                                    <div class="flex items-start">
+                                        <div class="w-6 flex-shrink-0 flex justify-center mt-0.5">
+                                            <i class="fa-solid fa-phone text-rose-400 text-sm"></i>
+                                        </div>
+                                        <a :href="`tel:${hotel.phone}`" class="text-xs text-slate-500 hover:text-rose-600 transition-colors pt-0.5">
                                             {{ hotel.phone }}
                                         </a>
-                                    </p>
+                                    </div>
                                     
-                                    <p class="text-xs text-slate-500 flex items-start">
-                                        <i class="fa-solid fa-location-dot w-5 text-center mr-1 mt-0.5 text-rose-400"></i>
-                                        <span class="break-words leading-tight">{{ hotel.address }}</span>
-                                    </p>
+                                    <!-- 地址 (關鍵修改：Flex Start 對齊) -->
+                                    <div class="flex items-start">
+                                        <div class="w-6 flex-shrink-0 flex justify-center mt-0.5"> <!-- Icon 獨立容器，確保不被壓縮 -->
+                                            <i class="fa-solid fa-location-dot text-rose-400 text-sm"></i>
+                                        </div>
+                                        <!-- 文字區塊，允許換行 -->
+                                        <span class="text-xs text-slate-500 break-words leading-tight pt-0.5">
+                                            {{ hotel.address }}
+                                        </span>
+                                    </div>
                                 </div>
                             
-                                <!-- 右側大 Icon (裝飾用) -->
-                                <div class="flex-shrink-0 self-center opacity-20">
+                                <!-- 右側裝飾大 Icon -->
+                                <div class="flex-shrink-0 self-center opacity-20 pl-2">
                                     <i class="fa-solid fa-bed text-5xl text-rose-400"></i>
                                 </div>
                             </li>
@@ -2566,17 +2579,48 @@
                 };
 
                 const addShoppingItem = async () => {
-                    if (newShoppingItem.value.name) {
+                    if (!newShoppingItem.value.name) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: '請輸入名稱',
+                            timer: 1000,
+                            showConfirmButton: false,
+                            // 讓它顯示在彈窗上方，不要被遮住
+                            target: document.getElementById('shopping-modal-content') || 'body' 
+                        });
+                        return;
+                    }
+                
+                    // 顯示 Loading
+                    Swal.fire({
+                        title: '加入中...',
+                        didOpen: () => Swal.showLoading()
+                    });
+                
+                    try {
                         await addDoc(collection(db, "shopping_list"), {
                             name: newShoppingItem.value.name,
                             checked: false,
                             owner: currentUser.value,
                         });
                         newShoppingItem.value.name = "";
-                        showShoppingModal.value = false;
-                        triggerToast("✅ 商品已加入");
+                        
+                        // 成功提示
+                        Swal.fire({
+                            icon: 'success',
+                            title: '已加入清單',
+                            timer: 1000,
+                            showConfirmButton: false
+                        });
+                        
+                        // 購物清單通常希望連續輸入，所以這裡可以選擇「不關閉視窗」
+                        // 如果想關閉，請加 showShoppingModal.value = false;
+                        
+                    } catch (e) {
+                        Swal.fire('錯誤', e.message, 'error');
                     }
                 };
+
 
                 const toggleShoppingItem = async (item) => {
                     await updateDoc(
@@ -2588,11 +2632,23 @@
                 };
 
                 const removeShoppingItem = async (id) => {
-                    if (confirm("確定要刪除這個商品嗎？")) {
+                    const result = await Swal.fire({
+                        title: '刪除商品？',
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: '刪除',
+                        cancelButtonText: '取消'
+                    });
+                
+                    if (result.isConfirmed) {
+                        Swal.fire({ title: '刪除中...', didOpen: () => Swal.showLoading() });
                         await deleteDoc(doc(db, "shopping_list", id));
-                        triggerToast("🗑️ 商品已刪除");
+                        Swal.fire({ icon: 'success', title: '已刪除', timer: 1000, showConfirmButton: false });
                     }
                 };
+
 
                 const saveItineraryItem = async () => {
                     if (!canEditItinerary.value) {
@@ -2691,6 +2747,7 @@
                         
                         try {
                             await deleteDoc(doc(db, `itinerary_day_${selectedDateIndex.value}`, id));
+                            showItineraryModal.value = false;
                             Swal.fire({ icon: 'success', title: '已刪除', timer: 1500, showConfirmButton: false });
                         } catch (e) {
                             Swal.fire('錯誤', e.message, 'error');
