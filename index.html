@@ -16,6 +16,7 @@
 
     <!-- UI 函式庫 -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -378,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.0.6 -->
-        <p class="text-xs text-slate-400 mt-3">v1.0.6</p>
+        <!-- 版本號 v1.0.7 -->
+        <p class="text-xs text-slate-400 mt-3">v1.0.7</p>
     </div>
 
     <div id="app" class="app-container">
@@ -2415,37 +2416,70 @@
                     }
                 };
 
-                const saveExpense = async () => {
-                    if (!newExpense.value.name || !newExpense.value.amount) {
-                        triggerToast("❌ 請輸入名稱與金額");
+                const saveExpense = async () => { // 原本可能沒有名字，建議給它一個名字並綁定回去
+                    if (!newExpense.value.item || !newExpense.value.amount) {
+                         Swal.fire({
+                            icon: 'warning',
+                            title: '資料不完整',
+                            text: '請輸入項目名稱與金額',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
                         return;
                     }
+                    
+                    // --- 顯示 Loading ---
+                    Swal.fire({
+                        title: '記帳中...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
                     const data = JSON.parse(
                         JSON.stringify(newExpense.value)
                     );
+
                     try {
                         if (editingExpenseId.value === null) {
                             await addDoc(
                                 collection(db, "expenses"),
                                 data
                             );
-                            triggerToast("✅ 支出新增成功！");
                         } else {
                             await updateDoc(
-                                doc(
-                                    db,
-                                    "expenses",
-                                    editingExpenseId.value
-                                ),
+                                doc(db, "expenses", editingExpenseId.value),
                                 data
                             );
-                            triggerToast("✅ 支出更新成功！");
                         }
+                        
                         showExpenseModal.value = false;
-                        editingExpenseId.value = null;
-                    } catch (e) {
-                        console.error("Save failed:", e);
-                        triggerToast("❌ 儲存失敗，請檢查網路");
+                        // 重置表單
+                        newExpense.value = {
+                            payer: currentUser.value,
+                            item: "",
+                            amount: "",
+                            split: "equal",
+                            customSplit: {},
+                            currency: "THB", // 預設 THB
+                        };
+                        
+                        // --- 顯示成功 ---
+                        Swal.fire({
+                            icon: 'success',
+                            title: '記帳成功',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+
+                    } catch (error) {
+                        console.error("Save Expense Error:", error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: '發生錯誤',
+                            text: error.message
+                        });
                     }
                 };
 
@@ -2547,27 +2581,75 @@
 
                 const saveItineraryItem = async () => {
                     if (!canEditItinerary.value) {
-                        triggerToast("你目前是 Viewer，無法編輯行程");
+                        // 使用 SweetAlert 取代原本的 Toast
+                        Swal.fire({
+                            icon: 'error',
+                            title: '權限不足',
+                            text: '你目前是 Viewer，無法編輯行程',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
                         return;
                     }
-                    if (!newItinerary.value.name) return;
-                    const dataToSave = JSON.parse(
-                        JSON.stringify(newItinerary.value)
-                    );
-                    delete dataToSave.isNoteExpanded;
-                    const col = collection(
-                        db,
-                        `itinerary_day_${selectedDateIndex.value}`
-                    );
-                    if (isEditMode.value) {
-                        await updateDoc(
-                            doc(col, dataToSave.id),
-                            dataToSave
-                        );
-                    } else {
-                        await addDoc(col, dataToSave);
+                    if (!newItinerary.value.name) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: '欄位未填',
+                            text: '請輸入行程名稱',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        return;
                     }
-                    showItineraryModal.value = false;
+
+                    // --- 顯示 Loading ---
+                    Swal.fire({
+                        title: '儲存中...',
+                        text: '正在將行程寫入資料庫',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    try {
+                        const dataToSave = JSON.parse(
+                            JSON.stringify(newItinerary.value)
+                        );
+                        delete dataToSave.isNoteExpanded;
+                        const col = collection(
+                            db,
+                            `itinerary_day_${selectedDateIndex.value}`
+                        );
+                        
+                        if (isEditMode.value) {
+                            await updateDoc(
+                                doc(col, dataToSave.id),
+                                dataToSave
+                            );
+                        } else {
+                            await addDoc(col, dataToSave);
+                        }
+                        
+                        showItineraryModal.value = false;
+                        
+                        // --- 顯示成功 ---
+                        Swal.fire({
+                            icon: 'success',
+                            title: isEditMode.value ? '更新成功' : '新增成功',
+                            text: '行程已同步至雲端',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+
+                    } catch (error) {
+                        console.error("Save Itinerary Error:", error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: '儲存失敗',
+                            text: error.message,
+                        });
+                    }
                 };
 
                 const removeItineraryItem = async (id) => {
