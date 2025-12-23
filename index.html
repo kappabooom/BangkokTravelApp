@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.0.16 -->
-        <p class="text-xs text-slate-400 mt-3">v1.0.16</p>
+        <!-- 版本號 v1.0.17 -->
+        <p class="text-xs text-slate-400 mt-3">v1.0.17</p>
     </div>
 
     <div id="app" class="app-container">
@@ -732,18 +732,10 @@
                                             class="fa-solid fa-pencil text-sm"
                                         ></i>
                                     </button>
-                                    <a
-                                      :href="item.mapsUrl 
-                                        ? item.mapsUrl 
-                                        : `https://www.google.com/maps/search?api=1&query=${
-                                            encodeURIComponent(
-                                              ((item.address || '') + ' ' + (item.name || '')).trim()
-                                            )
-                                          }`"
-                                      target="_blank"
-                                      class="w-9 h-9 bg-ice-blue text-white rounded-full flex items-center justify-center hover:bg-deep-sea-blue transition-colors shadow-md shadow-ice-blue/30"
-                                      @click.stop
-                                    >
+                                    <a :href="getMapsUrl(item)" 
+                                       target="_blank"
+                                       class="w-9 h-9 bg-ice-blue text-white rounded-full flex items-center justify-center hover:bg-deep-sea-blue transition-colors shadow-md shadow-ice-blue/30"
+                                       @click.stop>
                                       <i class="fa-solid fa-location-arrow text-sm"></i>
                                     </a>
                                 </div>
@@ -3049,6 +3041,25 @@
                     newItinerary.value = JSON.parse(JSON.stringify(i));
                     showItineraryModal.value = true;
                 };
+
+                const getMapsUrl = computed(() => (item) => {
+                  // 如果有自訂 mapsUrl，直接使用
+                  if (item.mapsUrl && item.mapsUrl.trim()) {
+                    return item.mapsUrl;
+                  }
+                  // 沒有自訂 URL，使用關鍵字搜尋
+                  const searchQuery = [(item.address || ''), (item.name || '')]
+                    .filter(Boolean)
+                    .join(' ')
+                    .trim();
+                  
+                  if (searchQuery) {
+                    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery)}`;
+                  }
+                  
+                  // 完全沒資料時，跳到曼谷
+                  return 'https://www.google.com/maps/search/?api=1&query=Bangkok';
+                });
 
                 resetNewExpense();
 
