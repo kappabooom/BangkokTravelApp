@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.0.17 -->
-        <p class="text-xs text-slate-400 mt-3">v1.0.17</p>
+        <!-- 版本號 v1.0.18 -->
+        <p class="text-xs text-slate-400 mt-3">v1.0.18</p>
     </div>
 
     <div id="app" class="app-container">
@@ -2028,18 +2028,25 @@
                     }
 
                     // --- 新增：檢查是否有儲存的登入者 ---
-                    const savedUser = localStorage.getItem("travelAppUser");
+                    const savedUser = localStorage.getItem('travelAppUser');
                     if (savedUser) {
                         try {
-                            const userObj = JSON.parse(savedUser);
-                            // 自動登入
-                            currentUser.value = userObj.name;
-                            pendingUser.value = userObj.name;
+                          const userData = JSON.parse(savedUser);
+                          // 檢查是否過期
+                          if (userData.expiresAt && Date.now() > userData.expiresAt) {
+                            // 過期了，清掉 localStorage
+                            localStorage.removeItem('travelAppUser');
+                            console.log('使用者登入已過期 (12小時)，請重新選擇');
+                          } else {
+                            // 還沒過期，自動登入
+                            currentUser.value = userData.name;
+                            pendingUser.value = userData.name;
                             hasSelectedUser.value = true;
-                            // 這裡不跳 Toast，以免每次重整都跳
+                            triggerToast(`${userData.name} 自動登入`);
+                          }
                         } catch (e) {
-                            console.error("Auto login failed", e);
-                            localStorage.removeItem("travelAppUser");
+                          // JSON 解析失敗也清掉
+                          localStorage.removeItem('travelAppUser');
                         }
                     }
 
@@ -2057,7 +2064,6 @@
                 const switchUser = (userName) => {
                     hasSelectedUser.value = false;
                     currentUser.value = "";
-                    // --- 新增：清除紀錄 ---
                     localStorage.removeItem("travelAppUser");
                     const member = members.value.find(
                         (m) => m.name === userName
@@ -2085,6 +2091,12 @@
                     currentUser.value = member.name;
                     pendingUser.value = member.name;
                     hasSelectedUser.value = true;
+                    // 記住使用者 12 小時 (12 * 60 * 60 * 1000 = 43200000 ms)
+                    const expiresAt = Date.now() + 12 * 60 * 60 * 1000;
+                    const userData = {
+                    ...member,
+                    expiresAt: expiresAt
+                    };
                     localStorage.setItem("travelAppUser", JSON.stringify(member)); 
                     triggerToast(`歡迎回來，${member.name}`);
                 };
