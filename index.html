@@ -3042,11 +3042,12 @@
                     showItineraryModal.value = true;
                 };
 
-                const getMapsUrl = computed(() => (item) => {
+                const getMapsUrl = (item) => {
                   // 如果有自訂 mapsUrl，直接使用
                   if (item.mapsUrl && item.mapsUrl.trim()) {
                     return item.mapsUrl;
                   }
+                  
                   // 沒有自訂 URL，使用關鍵字搜尋
                   const searchQuery = [(item.address || ''), (item.name || '')]
                     .filter(Boolean)
@@ -3059,8 +3060,7 @@
                   
                   // 完全沒資料時，跳到曼谷
                   return 'https://www.google.com/maps/search/?api=1&query=Bangkok';
-                });
-
+                };
                 resetNewExpense();
 
                 return {
