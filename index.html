@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.0.18 -->
-        <p class="text-xs text-slate-400 mt-3">v1.0.18</p>
+        <!-- 版本號 v1.0.19 -->
+        <p class="text-xs text-slate-400 mt-3">v1.0.19</p>
     </div>
 
     <div id="app" class="app-container">
@@ -1958,6 +1958,20 @@
                 };
 
                 onMounted(async () => {
+                    // 1. 初始檢查
+                    checkAuthExpiration();
+                
+                    // 2. 監聽網頁可見性變化 (當使用者從背景切回來時觸發)
+                    document.addEventListener('visibilitychange', () => {
+                        if (document.visibilityState === 'visible') {
+                            checkAuthExpiration();
+                        }
+                    });
+
+                    // (可選) 針對 iOS PWA 喚醒的額外保險，監聽 focus
+                    window.addEventListener('focus', checkAuthExpiration);
+
+                    
                     onSnapshot(collection(db, "expenses"), (snapshot) => {
                         expenses.value = snapshot.docs.map((d) => ({
                             id: d.id,
@@ -3073,6 +3087,39 @@
                   // 完全沒資料時，跳到曼谷
                   return 'https://www.google.com/maps/search/?api=1&query=Bangkok';
                 };
+
+                const checkAuthExpiration = () => {
+                    const savedUser = localStorage.getItem('travelAppUser');
+                    if (savedUser) {
+                        try {
+                            const userData = JSON.parse(savedUser);
+                            // 檢查是否過期
+                            if (userData.expiresAt && Date.now() > userData.expiresAt) {
+                                console.log('使用者登入已過期，自動登出');
+                                // 清除資料
+                                localStorage.removeItem('travelAppUser');
+                                currentUser.value = '';
+                                hasSelectedUser.value = false;
+                                triggerToast('登入已過期，請重新選擇使用者');
+                            } else {
+                                // 未過期，確保狀態正確
+                                if (!hasSelectedUser.value) {
+                                    currentUser.value = userData.name;
+                                    pendingUser.value = userData.name;
+                                    hasSelectedUser.value = true;
+                                }
+                            }
+                        } catch (e) {
+                            localStorage.removeItem('travelAppUser');
+                            hasSelectedUser.value = false;
+                        }
+                    } else {
+                        // 沒有存檔，確保是登出狀態
+                        hasSelectedUser.value = false;
+                        currentUser.value = '';
+                    }
+                };
+                
                 resetNewExpense();
 
                 return {
@@ -3161,6 +3208,7 @@
                     fetchExchangeRate,
                     isRatesLoading,
                     getMapsUrl,
+                    checkAuthExpiration,
                 };
             },
         });
