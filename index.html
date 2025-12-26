@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.0.20 -->
-        <p class="text-xs text-slate-400 mt-3">v1.0.20</p>
+        <!-- 版本號 v1.1.0 -->
+        <p class="text-xs text-slate-400 mt-3">v1.1.0</p>
     </div>
 
     <div id="app" class="app-container">
@@ -2058,6 +2058,12 @@
                     // (可選) 針對 iOS PWA 喚醒的額外保險，監聽 focus
                     window.addEventListener('focus', checkAuthExpiration);
 
+
+                     // 每 60 秒主動檢查一次是否過期
+                    setInterval(() => {
+                        checkAuthExpiration();
+                    }, 60000); 
+                    
                     
                     onSnapshot(collection(db, "expenses"), (snapshot) => {
                         expenses.value = snapshot.docs.map((d) => ({
@@ -2193,7 +2199,8 @@
                     pendingUser.value = member.name;
                     hasSelectedUser.value = true;
                     // 記住使用者 12 小時 (12 * 60 * 60 * 1000 = 43200000 ms)
-                    const expiresAt = Date.now() + 12 * 60 * 60 * 1000;
+                    //const expiresAt = Date.now() + 12 * 60 * 60 * 1000;
+                    const expiresAt = Date.now() + 60 * 1000;
                     const userData = {
                     ...member,
                     expiresAt: expiresAt
