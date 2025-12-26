@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.1.3 -->
-        <p class="text-xs text-slate-400 mt-3">v1.1.3</p>
+        <!-- 版本號 v1.1.4 -->
+        <p class="text-xs text-slate-400 mt-3">v1.1.4</p>
     </div>
 
     <div id="app" class="app-container">
@@ -2199,8 +2199,7 @@
                     pendingUser.value = member.name;
                     hasSelectedUser.value = true;
                     // 記住使用者 12 小時 (12 * 60 * 60 * 1000 = 43200000 ms)
-                    //const expiresAt = Date.now() + 12 * 60 * 60 * 1000;
-                    const expiresAt = Date.now() + 3 * 60 * 1000;
+                    const expiresAt = Date.now() + 12 * 60 * 60 * 1000;
                     const userData = {
                     ...member,
                     expiresAt: expiresAt
