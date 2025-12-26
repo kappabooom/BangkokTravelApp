@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.1.0 -->
-        <p class="text-xs text-slate-400 mt-3">v1.1.0</p>
+        <!-- 版本號 v1.1.1 -->
+        <p class="text-xs text-slate-400 mt-3">v1.1.1</p>
     </div>
 
     <div id="app" class="app-container">
@@ -2200,7 +2200,7 @@
                     hasSelectedUser.value = true;
                     // 記住使用者 12 小時 (12 * 60 * 60 * 1000 = 43200000 ms)
                     //const expiresAt = Date.now() + 12 * 60 * 60 * 1000;
-                    const expiresAt = Date.now() + 60 * 1000;
+                    const expiresAt = Date.now() + 3 * 60 * 1000;
                     const userData = {
                     ...member,
                     expiresAt: expiresAt
@@ -3184,19 +3184,25 @@
 
                 const checkAuthExpiration = () => {
                     const savedUser = localStorage.getItem('travelAppUser');
+                    
                     if (savedUser) {
                         try {
                             const userData = JSON.parse(savedUser);
-                            // 檢查是否過期
-                            if (userData.expiresAt && Date.now() > userData.expiresAt) {
-                                console.log('使用者登入已過期，自動登出');
-                                // 清除資料
+                            
+                            // ---【核心修正】---
+                            // 條件 1: !userData.expiresAt -> 舊資料沒有時間欄位，視為過期
+                            // 條件 2: userData.expiresAt < Date.now() -> 時間已到，視為過期
+                            if (!userData.expiresAt || userData.expiresAt < Date.now()) {
+                                console.log('Session expired or invalid');
                                 localStorage.removeItem('travelAppUser');
+                                
+                                // 清除登入狀態
                                 currentUser.value = '';
                                 hasSelectedUser.value = false;
-                                triggerToast('登入已過期，請重新選擇使用者');
+                                
+                                triggerToast('登入已過期，請重新登入');
                             } else {
-                                // 未過期，確保狀態正確
+                                // 尚未過期，恢復登入狀態
                                 if (!hasSelectedUser.value) {
                                     currentUser.value = userData.name;
                                     pendingUser.value = userData.name;
@@ -3204,15 +3210,20 @@
                                 }
                             }
                         } catch (e) {
+                            // JSON 解析失敗，防呆清除
+                            console.error('Auth data corrupted', e);
                             localStorage.removeItem('travelAppUser');
+                            currentUser.value = '';
                             hasSelectedUser.value = false;
                         }
                     } else {
-                        // 沒有存檔，確保是登出狀態
+                        // 沒有存檔資料
                         hasSelectedUser.value = false;
                         currentUser.value = '';
+                        resetNewExpense(); // 確保表單狀態重置
                     }
-                };
+                }
+
                 
                 resetNewExpense();
 
