@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.1.1 -->
-        <p class="text-xs text-slate-400 mt-3">v1.1.1</p>
+        <!-- 版本號 v1.1.2 -->
+        <p class="text-xs text-slate-400 mt-3">v1.1.2</p>
     </div>
 
     <div id="app" class="app-container">
@@ -3188,7 +3188,12 @@
                     if (savedUser) {
                         try {
                             const userData = JSON.parse(savedUser);
-                            
+                            // ---【加入這行來檢查】---
+                            console.log('檢查登入:', 
+                                '目前時間:', new Date(Date.now()).toLocaleString(),
+                                '過期時間:', new Date(userData.expiresAt).toLocaleString(),
+                                '是否過期:', userData.expiresAt < Date.now()
+                            );
                             // ---【核心修正】---
                             // 條件 1: !userData.expiresAt -> 舊資料沒有時間欄位，視為過期
                             // 條件 2: userData.expiresAt < Date.now() -> 時間已到，視為過期
