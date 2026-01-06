@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.1.6 -->
-        <p class="text-xs text-slate-400 mt-3">v1.1.6</p>
+        <!-- 版本號 v1.1.7 -->
+        <p class="text-xs text-slate-400 mt-3">v1.1.7</p>
     </div>
 
     <div id="app" class="app-container">
@@ -618,6 +618,14 @@
                                     'highlight-bg': recentlyMovedId === item.id,
                                 }"
                             >
+                                <!-- [NEW] 右上角訂位標籤 (仿包車資訊風格) -->
+                                <div 
+                                    v-if="item.isBooked" 
+                                    class="absolute top-0 right-0 bg-rose-100 text-rose-600 text-[10px] font-bold px-3 py-1 rounded-bl-xl z-20 shadow-sm"
+                                >
+                                    <i class="fa-solid fa-check mr-1 text-[8px]"></i>訂位
+                                </div>
+                                
                                 <div
                                     class="flex flex-col items-center justify-center mr-3 w-10 shrink-0 space-y-1"
                                 >
@@ -677,14 +685,6 @@
                                             class="text-lg font-bold text-slate-800 leading-tight break-words"
                                         >
                                             {{ item.name }}
-                                            <span 
-                                                v-if="item.isBooked" 
-                                                class="inline-flex items-center ml-2 align-middle"
-                                            >
-                                                <span class="bg-rose-50 text-rose-500 text-[10px] px-1.5 py-0.5 rounded border border-rose-100 font-bold flex items-center shadow-sm">
-                                                    <i class="fa-solid fa-check mr-1 text-[8px]"></i>訂位
-                                                </span>
-                                            </span>
                                         </h3>
                                     </div>
                                     <div
