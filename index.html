@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.1.7 -->
-        <p class="text-xs text-slate-400 mt-3">v1.1.7</p>
+        <!-- 版本號 v1.1.8 -->
+        <p class="text-xs text-slate-400 mt-3">v1.1.8</p>
     </div>
 
     <div id="app" class="app-container">
@@ -618,14 +618,6 @@
                                     'highlight-bg': recentlyMovedId === item.id,
                                 }"
                             >
-                                <!-- [NEW] 右上角訂位標籤 (仿包車資訊風格) -->
-                                <div 
-                                    v-if="item.isBooked" 
-                                    class="absolute top-0 right-0 bg-rose-100 text-rose-600 text-[10px] font-bold px-3 py-1 rounded-bl-xl z-20 shadow-sm"
-                                >
-                                    <i class="fa-solid fa-check mr-1 text-[8px]"></i>訂位
-                                </div>
-                                
                                 <div
                                     class="flex flex-col items-center justify-center mr-3 w-10 shrink-0 space-y-1"
                                 >
@@ -673,7 +665,7 @@
                                 </div>
 
                                 <div
-                                    class="flex-1 min-w-0 flex flex-col justify-center py-1"
+                                    class="flex-1 min-w-0 flex flex-col justify-center py-1 relative"
                                 >
                                     <div class="flex items-baseline mb-1">
                                         <span
