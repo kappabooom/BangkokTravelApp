@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.2.0 -->
-        <p class="text-xs text-slate-400 mt-3">v1.2.0</p>
+        <!-- 版本號 v1.2.1 -->
+        <p class="text-xs text-slate-400 mt-3">v1.2.1</p>
     </div>
 
     <div id="app" class="app-container">
@@ -3237,6 +3237,94 @@
 
                 
                 resetNewExpense();
+
+                // [修正] 頂部下拉重整功能 (Pull Down to Refresh)
+                const touchStartY = ref(0);
+                const touchCurrentY = ref(0);
+                const isPullingDown = ref(false);
+        
+                // 1. 手指按下 (紀錄起始點)
+                const handleTouchStart = (e) => {
+                    const appContainer = document.querySelector('.app-container');
+                    // 只有當頁面在最頂端 (scrollTop === 0) 時才啟動偵測
+                    if (appContainer.scrollTop === 0) {
+                        touchStartY.value = e.touches[0].clientY;
+                        isPullingDown.value = true;
+                    } else {
+                        isPullingDown.value = false;
+                    }
+                };
+        
+                // 2. 手指移動 (判斷是否往下拉)
+                const handleTouchMove = (e) => {
+                    if (!isPullingDown.value) return;
+                    
+                    touchCurrentY.value = e.touches[0].clientY;
+                    const diff = touchCurrentY.value - touchStartY.value;
+        
+                    // 如果是往上滑 (diff < 0) 就不管
+                    if (diff < 0) {
+                        isPullingDown.value = false; 
+                    }
+                };
+        
+                // 3. 手指放開 (觸發重整)
+                const handleTouchEnd = (e) => {
+                    if (!isPullingDown.value) return;
+        
+                    const appContainer = document.querySelector('.app-container');
+                    // 二度確認是否還在頂部
+                    if (appContainer.scrollTop > 0) return;
+        
+                    const diff = touchCurrentY.value - touchStartY.value;
+                    // 設定一個門檻值 (例如下拉超過 150px)
+                    const THRESHOLD = 150;
+        
+                    if (diff > THRESHOLD) {
+                        // 顯示提示
+                        const Toast = Swal.mixin({
+                            toast: true,
+                            position: 'top', // 改為頂部顯示
+                            showConfirmButton: false,
+                            timer: 1500,
+                            background: '#334155', // 深色背景
+                            color: '#fff',
+                            customClass: {
+                                popup: 'mt-12' // 稍微避開狀態列
+                            }
+                        });
+        
+                        Toast.fire({
+                            icon: 'success', // 用綠色勾勾表示成功觸發
+                            title: '放開以重新整理...'
+                        });
+        
+                        // 震動回饋 (如果裝置支援)
+                        if (navigator.vibrate) navigator.vibrate(50);
+        
+                        // 執行重整
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 800);
+                    }
+                    
+                    // 重置狀態
+                    isPullingDown.value = false;
+                    touchStartY.value = 0;
+                    touchCurrentY.value = 0;
+                };
+        
+                // 4. 綁定事件 (onMounted)
+                onMounted(async () => {
+                    // ... (原有的 onMounted 內容) ...
+                    
+                    const appContainer = document.querySelector('.app-container');
+                    if (appContainer) {
+                        appContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+                        appContainer.addEventListener('touchmove', handleTouchMove, { passive: true }); // 加入 touchmove 才能即時追蹤
+                        appContainer.addEventListener('touchend', handleTouchEnd);
+                    }
+                });
 
                 return {
                     currentTab,
