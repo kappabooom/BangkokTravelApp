@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.2.4 -->
-        <p class="text-xs text-slate-400 mt-3">v1.2.4</p>
+        <!-- 版本號 v1.2.5 -->
+        <p class="text-xs text-slate-400 mt-3">v1.2.5</p>
     </div>
 
     <div id="app" class="app-container"
@@ -389,24 +389,21 @@
         @touchend="handleTouchEnd"
         style="overflow-y: auto;"> <!-- 確保容器可滾動 -->
 
-        <!-- 下拉重整提示區塊 (無文字、背景無縫版) -->
-        <div class="refresh-indicator w-full overflow-hidden flex flex-col items-center justify-center transition-all duration-200 bg-[#fff3e0]"
+        <!-- 下拉重整提示區塊 (修正版：背景同狀態列、確保圖示顯示) -->
+        <div class="refresh-indicator w-full overflow-hidden flex flex-col items-center justify-center transition-all duration-200"
+             style="background-color: #fff3e0;"
              :style="{ height: pullHeight + 'px', opacity: pullHeight > 0 ? 1 : 0 }">
             
-            <!-- 圖示區塊 (移除文字，放大圖示至 text-xl，顏色設為與標題一致的深色或淡灰色) -->
-            <div class="flex items-center justify-center text-xl text-slate-400">
-                <!-- 下拉/釋放 狀態圖示 -->
-                <i class="fa-solid" 
-                   :class="{ 
-                       'fa-arrow-down': !isRefreshing && pullHeight < refreshThreshold,
-                       'fa-arrow-up': !isRefreshing && pullHeight >= refreshThreshold,
-                       'fa-spinner fa-spin': isRefreshing 
-                   }"
-                   :style="{ transform: `rotate(${pullHeight * 2}deg)` }"
-                   v-if="!isRefreshing"></i>
+            <!-- 圖示區塊 -->
+            <div class="flex items-center justify-center text-xl text-orange-400">
+                <!-- 下拉/釋放箭頭 (未重整時顯示) -->
+                <i class="fa-solid fa-arrow-down transition-transform duration-200" 
+                   v-if="!isRefreshing"
+                   :class="{ 'rotate-180': pullHeight >= refreshThreshold }"
+                   :style="{ transform: `rotate(${pullHeight * 2}deg)` }"></i>
                    
-                <!-- 載入中 狀態圖示 -->
-                <i class="fa-solid fa-spinner fa-spin text-orange-500" v-else></i>
+                <!-- 載入中轉圈圈 (重整時顯示) -->
+                <i class="fa-solid fa-spinner fa-spin" v-else></i>
             </div>
         </div>
  
@@ -3301,19 +3298,22 @@
                 };
 
                 const handleTouchEnd = () => {
+                    // 如果正在重整中，忽略操作
                     if (isRefreshing.value) return;
 
+                    // 如果下拉高度超過門檻 (80px)
                     if (pullHeight.value >= refreshThreshold) {
-                        // 觸發重整
+                        // 1. 設定為重整狀態
                         isRefreshing.value = true;
-                        pullHeight.value = 60; // 固定在載入高度
+                        // 2. 高度停留在 60px 顯示轉圈圈
+                        pullHeight.value = 60;
                         
-                        // 執行重整邏輯 (這裡使用重新整理頁面，確保資料完全同步)
+                        // 3. 延遲 500ms 後執行重整，讓使用者看得到轉圈動畫
                         setTimeout(() => {
                             window.location.reload();
-                        }, 800); // 延遲一下讓使用者看到轉圈動畫
+                        }, 500);
                     } else {
-                        // 未達門檻，彈回
+                        // 未達門檻，直接彈回
                         pullHeight.value = 0;
                     }
                 };
