@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.1.9 -->
-        <p class="text-xs text-slate-400 mt-3">v1.1.9</p>
+        <!-- 版本號 v1.2.0 -->
+        <p class="text-xs text-slate-400 mt-3">v1.2.0</p>
     </div>
 
     <div id="app" class="app-container">
@@ -613,11 +613,17 @@
 
                             <!-- 卡片 -->
                             <div
-                                class="bg-white rounded-3xl p-3 pr-4 card-shadow flex border border-ice-blue/50 overflow-hidden items-stretch"
+                                class="bg-white rounded-3xl p-3 pr-4 card-shadow flex border border-ice-blue/50 overflow-hidden items-stretch relative"
                                 :class="{
                                     'highlight-bg': recentlyMovedId === item.id,
                                 }"
                             >
+                                <div 
+                                    v-if="item.isBooked" 
+                                    class="absolute top-0 right-0 bg-orange-100 text-orange-800 text-[10px] font-bold px-3 py-1 rounded-bl-2xl z-20 shadow-sm"
+                                >
+                                    <i class="fa-solid fa-check mr-1 text-[9px]"></i>訂位
+                                </div>
                                 <div
                                     class="flex flex-col items-center justify-center mr-3 w-10 shrink-0 space-y-1"
                                 >
@@ -665,14 +671,8 @@
                                 </div>
 
                                 <div
-                                    class="flex-1 min-w-0 flex flex-col justify-center py-1 relative"
+                                    class="flex-1 min-w-0 flex flex-col justify-center py-1"
                                 >
-                                    <div 
-                                        v-if="item.isBooked" 
-                                        class="absolute top-0 right-0 -mt-1 -mr-2 bg-orange-100 text-orange-700 text-[9px] font-bold px-2 py-0.5 rounded-bl-lg z-10 shadow-sm border-b border-l border-orange-200/50"
-                                    >
-                                        <i class="fa-solid fa-check mr-0.5 text-[8px]"></i>訂位
-                                    </div>
                                     <div class="flex items-baseline mb-1">
                                         <span
                                             v-if="item.startTime"
@@ -1848,7 +1848,7 @@
                 { category: "food", name: "午餐：廣銘珍 / 媽媽桑", startTime: "11:40", address: "市場旁", note: "看完火車就近吃雲吞麵或泡麵。", order: 3, transportType: "walk", travelTime: "步行" },
                 { category: "sightseeing", name: "安帕瓦水上市場", startTime: "13:00", address: "Amphawa",mapsUrl: 'https://maps.app.goo.gl/vna5Y3wweBZ4m7DT7?g_st=ipc', note: "搭車前往，約 20 分鐘。包船遊河，逛市集吃點心。", order: 4, transportType: "car", travelTime: "美功 → 安帕瓦 20 分" },
                 { category: "accommodation", name: "入住 CityVilla EM", startTime: "17:00", address: "20 Soi Rong Phim, Watthana",mapsUrl: 'https://maps.app.goo.gl/1wiV6u5ocQdYUqnX7?g_st=ipc', note: "15:30 離開安帕瓦，預計 17:00-17:30 抵達通羅。Check-in 休息。", order: 5, transportType: "car", travelTime: "安帕瓦 → 通羅 2 小時" },
-                { category: "food", name: "晚餐：頌通酒家", startTime: "19:00", address: "2829 Rama IV Rd", note: "老牌海鮮餐廳，必吃咖哩蟹。叫車前往。", order: 6, transportType: "car", travelTime: "通羅 → 頌通 15 分" },
+                { category: "food", name: "晚餐：頌通酒家", isBooked: true, startTime: "19:00", address: "2829 Rama IV Rd", note: "老牌海鮮餐廳，必吃咖哩蟹。叫車前往。", order: 6, transportType: "car", travelTime: "通羅 → 頌通 15 分" },
                 { category: "other", name: "Tichuca Rooftop Bar", startTime: "21:00", address: "T-One Building", mapsUrl: 'https://maps.app.goo.gl/jHCAPsaHxoPKtizk8?g_st=ipc',note: "水母酒吧喝一杯。人多需排隊。", order: 7, transportType: "car", travelTime: "頌通 → Tichuca 15 分" },
             ],
             [
