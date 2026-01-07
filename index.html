@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.1.8 -->
-        <p class="text-xs text-slate-400 mt-3">v1.1.8</p>
+        <!-- 版本號 v1.1.9 -->
+        <p class="text-xs text-slate-400 mt-3">v1.1.9</p>
     </div>
 
     <div id="app" class="app-container">
@@ -667,6 +667,12 @@
                                 <div
                                     class="flex-1 min-w-0 flex flex-col justify-center py-1 relative"
                                 >
+                                    <div 
+                                        v-if="item.isBooked" 
+                                        class="absolute top-0 right-0 -mt-1 -mr-2 bg-orange-100 text-orange-700 text-[9px] font-bold px-2 py-0.5 rounded-bl-lg z-10 shadow-sm border-b border-l border-orange-200/50"
+                                    >
+                                        <i class="fa-solid fa-check mr-0.5 text-[8px]"></i>訂位
+                                    </div>
                                     <div class="flex items-baseline mb-1">
                                         <span
                                             v-if="item.startTime"
