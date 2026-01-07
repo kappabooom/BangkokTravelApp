@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.2.7 -->
-        <p class="text-xs text-slate-400 mt-3">v1.2.7</p>
+        <!-- 版本號 v1.2.8 -->
+        <p class="text-xs text-slate-400 mt-3">v1.2.8</p>
     </div>
 
     <!-- 加入 ref="appContainer" -->
@@ -395,7 +395,7 @@
         <!-- 重點：加入 flex-shrink-0 確保不被壓縮，並明確設定圖示顏色 -->
         <div class="refresh-indicator w-full overflow-hidden flex flex-col items-center justify-center transition-all duration-0"
              style="background-color: #fff3e0;"
-     :style="{ height: pullHeight + 'px', minHeight: pullHeight + 'px', opacity: pullHeight > 0 ? 1 : 0 }">
+             :style="{ height: pullHeight + 'px', minHeight: pullHeight + 'px', opacity: pullHeight > 0 ? 1 : 0 }">
             
             <div class="flex items-center justify-center h-full pb-2"> <!-- 加入 h-full 確保置中 -->
                  <!-- 箭頭圖示：加入 text-orange-500 強制上色 -->
@@ -2079,14 +2079,11 @@
                 };
 
                 onMounted(async () => {
-                    // 強制檢查 DOM 是否綁定成功
-                    await nextTick();
-                    if (!appContainer.value) {
-                        console.warn("App container not bound yet, retrying...");
-                        // 嘗試手動獲取，作為備案
-                        appContainer.value = document.getElementById('app');
-                    }
-
+                    // 確保 DOM 綁定
+                    setTimeout(() => {
+                        if (!appContainer.value) appContainer.value = document.getElementById('app');
+                    }, 500);
+    
                     // 1. 初始檢查
                     checkAuthExpiration();
                 
@@ -3277,13 +3274,13 @@
                 const refreshThreshold = 80;
 
                 const handleTouchStart = (e) => {
-                    // 如果還在 loading (例如沒有選使用者)，禁止下拉
+                    // 如果還在 loading 或未登入，禁止下拉
                     if (!hasSelectedUser.value) return;
 
                     // 安全獲取容器
                     const container = appContainer.value || document.getElementById('app');
                     if (!container) return;
-                    
+
                     // 只有當捲軸在最頂部時才記錄起始點
                     if (container.scrollTop <= 0) {
                         startY.value = e.touches[0].clientY;
@@ -3339,7 +3336,6 @@
                 resetNewExpense();
 
                 return {
-                    appContainer,
                     currentTab,
                     selectedDateIndex,
                     showShoppingModal,
@@ -3426,6 +3422,7 @@
                     isRatesLoading,
                     getMapsUrl,
                     checkAuthExpiration,
+                    appContainer,
                     pullHeight,
                     isRefreshing,
                     refreshText,
