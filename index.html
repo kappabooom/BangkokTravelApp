@@ -368,43 +368,10 @@
             z-index: 9999; /* 確保在最上層 */
             border-bottom: 0.5px solid rgba(0, 0, 0, 0.05); /* 選擇性：加一條極細的分割線增加層次感 */
         }
-
-        /* 下拉重整的提示容器 */
-        .pull-refresh-indicator {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 60px; /* 提示區塊高度 */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #f1f5f9; /* 淺灰背景 */
-            color: #64748b;
-            font-size: 14px;
-            font-weight: bold;
-            z-index: 1; /* 放在內容下層，或上層視設計而定，這裡建議放在最底層讓內容滑開露出它 */
-            margin-top: -60px; /* 預設隱藏在頂部上方 */
-            transition: margin-top 0.2s; /* 平滑回彈 */
-        }
-        
-        /* 內容容器需要能被推動 */
-        .app-container {
-            transition: transform 0.1s linear; /* 手指拖動時的即時反應 */
-            will-change: transform;
-        }
-            
     </style>
 
 </head>
 <body>
-    <div id="app" class="app-container">
-        <!-- [新增] 下拉重整提示區塊 -->
-        <div id="refresh-indicator" class="pull-refresh-indicator">
-            <i class="fa-solid fa-arrow-down mr-2 transition-transform duration-300" id="refresh-icon"></i>
-            <span id="refresh-text">下拉以重新整理...</span>
-        </div>
-    
     <!-- Loading -->
     <div id="loading-screen" class="loader-container">
         <i class="fa-solid fa-plane-departure loader-logo"></i>
@@ -412,11 +379,38 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.2.2 -->
-        <p class="text-xs text-slate-400 mt-3">v1.2.2</p>
+        <!-- 版本號 v1.2.3 -->
+        <p class="text-xs text-slate-400 mt-3">v1.2.3</p>
     </div>
 
     <div id="app" class="app-container">
+        @touchstart="handleTouchStart"
+        @touchmove="handleTouchMove" 
+        @touchend="handleTouchEnd"
+        style="overflow-y: auto;"> <!-- 確保容器可滾動 -->
+
+        <!-- 下拉重整提示區塊 (新增) -->
+        <div class="refresh-indicator w-full overflow-hidden flex flex-col items-center justify-center transition-all duration-200 bg-slate-50"
+             :style="{ height: pullHeight + 'px', opacity: pullHeight > 0 ? 1 : 0 }">
+            
+            <!-- 旋轉圖示/提示 -->
+            <div class="flex items-center space-x-2 text-sm font-medium text-slate-500">
+                <i class="fa-solid" 
+                   :class="{ 
+                       'fa-arrow-down': !isRefreshing && pullHeight < refreshThreshold,
+                       'fa-arrow-up': !isRefreshing && pullHeight >= refreshThreshold,
+                       'fa-spinner fa-spin': isRefreshing 
+                   }"
+                   :style="{ transform: `rotate(${pullHeight * 2}deg)` }"
+                   v-if="!isRefreshing"></i>
+                <i class="fa-solid fa-spinner fa-spin text-orange-400" v-else></i>
+                
+                <span>{{ refreshText }}</span>
+            </div>
+        </div>
+ 
+
+         
         <!-- iOS 狀態列動態遮罩 -->
         <div class="safe-area-spacer" v-if="hasSelectedUser"></div>
         
@@ -3268,109 +3262,64 @@
                     }
                 }
 
-                
-                resetNewExpense();
+                // --- 下拉重整功能變數與函式 ---
+                const pullHeight = ref(0);
+                const isRefreshing = ref(false);
+                const startY = ref(0);
+                const refreshThreshold = 80; // 超過此高度觸發重整 (單位 px)
 
-                // [修正版] 視覺化頂部下拉重整 (Visual Pull Down to Refresh)
-                const touchStartY = ref(0);
-                const isPulling = ref(false);
-                const PULL_THRESHOLD = 100; // 觸發重整的門檻距離
-        
+                // 計算顯示文字
+                const refreshText = computed(() => {
+                    if (isRefreshing.value) return "正在重整...";
+                    if (pullHeight.value >= refreshThreshold) return "釋放以重整"; // 超過底部下拉出現的提示
+                    return "下拉以重整";
+                });
+
                 const handleTouchStart = (e) => {
-                    const appContainer = document.querySelector('.app-container');
-                    if (appContainer.scrollTop <= 0) { // 在頂部
-                        touchStartY.value = e.touches[0].clientY;
-                        isPulling.value = true;
-                    } else {
-                        isPulling.value = false;
+                    const container = document.querySelector('.app-container');
+                    // 只有當捲軸在最頂部時才記錄起始點
+                    if (container.scrollTop <= 0) {
+                        startY.value = e.touches[0].clientY;
                     }
                 };
-        
+
                 const handleTouchMove = (e) => {
-                    if (!isPulling.value) return;
-        
-                    const touchY = e.touches[0].clientY;
-                    const diff = touchY - touchStartY.value;
-                    const appContainer = document.querySelector('.app-container');
-                    
-                    // 確保是在頂部且往下拉
-                    if (diff > 0 && appContainer.scrollTop <= 0) {
-                        // 阻止原生捲動 (這很重要，不然會變成普通滑動)
-                        if (e.cancelable) e.preventDefault();
-        
-                        // 增加阻尼感 (拉越長越難拉)
-                        const moveY = Math.min(diff * 0.5, 150); 
-                        
-                        // 移動整個容器，露出上方的提示
-                        appContainer.style.transform = `translateY(${moveY}px)`;
-                        
-                        // 更新提示文字與圖示
-                        const icon = document.getElementById('refresh-icon');
-                        const text = document.getElementById('refresh-text');
-                        const indicator = document.getElementById('refresh-indicator');
-                        
-                        // 讓提示區塊跟著出現 (如果你希望它固定在頂部被蓋住，可以不用動它，只動 container)
-                        // 這裡示範簡單的：提示區塊預設在 -60px，現在讓它顯示出來
-                        if (indicator) indicator.style.marginTop = '0px';
-        
-                        if (moveY > 60) { // 超過一定距離，改變提示
-                            if(text) text.innerText = "放開以重新整理";
-                            if(icon) icon.style.transform = "rotate(180deg)"; // 箭頭轉向
-                        } else {
-                            if(text) text.innerText = "下拉以重新整理...";
-                            if(icon) icon.style.transform = "rotate(0deg)";
-                        }
+                    const container = document.querySelector('.app-container');
+                    // 如果正在重整中，或是頁面不在最頂部，則不執行
+                    if (container.scrollTop > 0 || isRefreshing.value) return;
+
+                    const currentY = e.touches[0].clientY;
+                    const diff = currentY - startY.value;
+
+                    // 只有往下拉 (diff > 0) 才處理
+                    if (diff > 0) {
+                        // 增加阻尼感 (Damping)，讓拉動感覺更有質感
+                        // 限制最大高度為 120px，避免拉太長
+                        pullHeight.value = Math.min(diff * 0.4, 120); 
                     }
                 };
-        
+
                 const handleTouchEnd = () => {
-                    if (!isPulling.value) return;
-                    isPulling.value = false;
-                    
-                    const appContainer = document.querySelector('.app-container');
-                    const currentTransform = appContainer.style.transform;
-                    const moveY = parseFloat(currentTransform.replace('translateY(', '').replace('px)', '')) || 0;
-        
-                    const indicator = document.getElementById('refresh-indicator');
-        
-                    if (moveY > 60) { // 超過門檻，觸發重整
-                        // 顯示載入中狀態
-                        const text = document.getElementById('refresh-text');
-                        const icon = document.getElementById('refresh-icon');
-                        if(text) text.innerText = "正在重新整理...";
-                        if(icon) icon.className = "fa-solid fa-spinner fa-spin mr-2"; // 變轉圈圈
+                    if (isRefreshing.value) return;
+
+                    if (pullHeight.value >= refreshThreshold) {
+                        // 觸發重整
+                        isRefreshing.value = true;
+                        pullHeight.value = 60; // 固定在載入高度
                         
-                        // 停留在展開狀態
-                        appContainer.style.transition = 'transform 0.2s';
-                        appContainer.style.transform = 'translateY(60px)';
-                        
-                        // 執行重整
+                        // 執行重整邏輯 (這裡使用重新整理頁面，確保資料完全同步)
                         setTimeout(() => {
                             window.location.reload();
-                        }, 800);
+                        }, 800); // 延遲一下讓使用者看到轉圈動畫
                     } else {
-                        // 沒超過，回彈
-                        appContainer.style.transition = 'transform 0.3s ease-out';
-                        appContainer.style.transform = 'translateY(0px)';
-                        if (indicator) indicator.style.marginTop = '-60px'; // 隱藏提示
+                        // 未達門檻，彈回
+                        pullHeight.value = 0;
                     }
-                    
-                    // 重置 transition 屬性 (避免影響後續滑動)
-                    setTimeout(() => {
-                        appContainer.style.transition = '';
-                    }, 300);
                 };
-        
-                onMounted(() => {
-                    // ... 原本的 mounted ...
-                    const appContainer = document.querySelector('.app-container');
-                    if (appContainer) {
-                        appContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
-                        // 注意：這裡不能用 passive: true，因為我們要 preventDefault 阻止原生捲動
-                        appContainer.addEventListener('touchmove', handleTouchMove, { passive: false }); 
-                        appContainer.addEventListener('touchend', handleTouchEnd);
-                    }
-                });
+                // --- 下拉重整功能結束 ---
+
+                
+                resetNewExpense();
 
                 return {
                     currentTab,
@@ -3459,6 +3408,13 @@
                     isRatesLoading,
                     getMapsUrl,
                     checkAuthExpiration,
+                    pullHeight,
+                    isRefreshing,
+                    refreshText,
+                    refreshThreshold,
+                    handleTouchStart,
+                    handleTouchMove,
+                    handleTouchEnd,
                 };
             },
         });
