@@ -379,31 +379,32 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.2.5 -->
-        <p class="text-xs text-slate-400 mt-3">v1.2.5</p>
+        <!-- 版本號 v1.2.6 -->
+        <p class="text-xs text-slate-400 mt-3">v1.2.6</p>
     </div>
 
-    <div id="app" class="app-container"
-        @touchstart="handleTouchStart"
-        @touchmove="handleTouchMove" 
-        @touchend="handleTouchEnd"
-        style="overflow-y: auto;"> <!-- 確保容器可滾動 -->
+    <!-- 加入 ref="appContainer" -->
+    <div class="app-container" id="app" 
+         ref="appContainer"
+         @touchstart="handleTouchStart" 
+         @touchmove="handleTouchMove" 
+         @touchend="handleTouchEnd"
+         style="overflow-y: auto;">
 
-        <!-- 下拉重整提示區塊 (修正版：背景同狀態列、確保圖示顯示) -->
-        <div class="refresh-indicator w-full overflow-hidden flex flex-col items-center justify-center transition-all duration-200"
+        <!-- 下拉重整提示區塊 (修正版) -->
+        <!-- 重點：加入 flex-shrink-0 確保不被壓縮，並明確設定圖示顏色 -->
+        <div class="refresh-indicator w-full overflow-hidden flex flex-col items-center justify-center transition-all duration-0"
              style="background-color: #fff3e0;"
-             :style="{ height: pullHeight + 'px', opacity: pullHeight > 0 ? 1 : 0 }">
+             :style="{ height: pullHeight + 'px', minHeight: pullHeight + 'px', opacity: pullHeight > 0 ? 1 : 0 }">
             
-            <!-- 圖示區塊 -->
-            <div class="flex items-center justify-center text-xl text-orange-400">
-                <!-- 下拉/釋放箭頭 (未重整時顯示) -->
-                <i class="fa-solid fa-arrow-down transition-transform duration-200" 
-                   v-if="!isRefreshing"
-                   :class="{ 'rotate-180': pullHeight >= refreshThreshold }"
-                   :style="{ transform: `rotate(${pullHeight * 2}deg)` }"></i>
-                   
-                <!-- 載入中轉圈圈 (重整時顯示) -->
-                <i class="fa-solid fa-spinner fa-spin" v-else></i>
+            <div class="flex items-center justify-center h-full pb-2"> <!-- 加入 h-full 確保置中 -->
+                 <!-- 箭頭圖示：加入 text-orange-500 強制上色 -->
+                 <i class="fa-solid fa-arrow-down text-2xl text-orange-500 transition-transform duration-200"
+                    v-if="!isRefreshing"
+                    :style="{ transform: `rotate(${pullHeight * 2}deg)` }"></i>
+                 
+                 <!-- 轉圈圖示 -->
+                 <i class="fa-solid fa-spinner fa-spin text-2xl text-orange-500" v-else></i>
             </div>
         </div>
  
@@ -1896,6 +1897,7 @@
 
         const app = createApp({
             setup() {
+                const appContainer = ref(null); // 對應 HTML 裡的 ref="appContainer"
                 const isScrolled = ref(false);
                 const TRIP_YEAR = 2026;
                 const EXCHANGE_RATE = ref(0.92);
@@ -3260,64 +3262,67 @@
                     }
                 }
 
-                // --- 下拉重整功能變數與函式 ---
+                // --- 下拉重整邏輯 (修正版) ---
                 const pullHeight = ref(0);
                 const isRefreshing = ref(false);
                 const startY = ref(0);
-                const refreshThreshold = 80; // 超過此高度觸發重整 (單位 px)
-
-                // 計算顯示文字
-                const refreshText = computed(() => {
-                    if (isRefreshing.value) return "正在重整...";
-                    if (pullHeight.value >= refreshThreshold) return "釋放以重整"; // 超過底部下拉出現的提示
-                    return "下拉以重整";
-                });
+                const refreshThreshold = 80;
 
                 const handleTouchStart = (e) => {
-                    const container = document.querySelector('.app-container');
-                    // 只有當捲軸在最頂部時才記錄起始點
-                    if (container.scrollTop <= 0) {
+                    // 確保容器存在
+                    if (!appContainer.value) return;
+                    
+                    // 只有當捲軸在最頂部 (scrollTop === 0) 時才啟動
+                    if (appContainer.value.scrollTop === 0) {
                         startY.value = e.touches[0].clientY;
+                    } else {
+                        // 如果不在頂部，重置 startY 避免誤判
+                        startY.value = -1; 
                     }
                 };
 
                 const handleTouchMove = (e) => {
-                    const container = document.querySelector('.app-container');
-                    // 如果正在重整中，或是頁面不在最頂部，則不執行
-                    if (container.scrollTop > 0 || isRefreshing.value) return;
+                    // 基礎檢查
+                    if (startY.value < 0 || isRefreshing.value) return;
+                    if (!appContainer.value) return;
 
                     const currentY = e.touches[0].clientY;
                     const diff = currentY - startY.value;
 
-                    // 只有往下拉 (diff > 0) 才處理
-                    if (diff > 0) {
-                        // 增加阻尼感 (Damping)，讓拉動感覺更有質感
-                        // 限制最大高度為 120px，避免拉太長
-                        pullHeight.value = Math.min(diff * 0.4, 120); 
+                    // 只有當 scrollTop 為 0 且是用戶往下拉 (diff > 0) 時才攔截
+                    if (appContainer.value.scrollTop === 0 && diff > 0) {
+                        // 關鍵：這裡不使用 preventDefault()，讓原生的捲動效果與我們的下拉共存
+                        // 但我們只在「真的拉得動」時改變高度
+                        
+                        // 加入阻尼效果 (0.4 系數)，並限制最大高度 150px
+                        pullHeight.value = Math.min(diff * 0.45, 150);
+                    } else {
+                        // 如果使用者往回推導致 scrollTop 變大，或是本來就不在頂部，歸零
+                        pullHeight.value = 0;
                     }
                 };
 
                 const handleTouchEnd = () => {
-                    // 如果正在重整中，忽略操作
                     if (isRefreshing.value) return;
 
-                    // 如果下拉高度超過門檻 (80px)
                     if (pullHeight.value >= refreshThreshold) {
-                        // 1. 設定為重整狀態
+                        // 觸發重整
                         isRefreshing.value = true;
-                        // 2. 高度停留在 60px 顯示轉圈圈
-                        pullHeight.value = 60;
+                        pullHeight.value = 60; // 停留在載入高度
                         
-                        // 3. 延遲 500ms 後執行重整，讓使用者看得到轉圈動畫
+                        // 觸覺回饋 (如果裝置支援)
+                        if (navigator.vibrate) navigator.vibrate(50);
+
                         setTimeout(() => {
                             window.location.reload();
-                        }, 500);
+                        }, 800);
                     } else {
-                        // 未達門檻，直接彈回
+                        // 未達門檻，平滑收回
                         pullHeight.value = 0;
+                        startY.value = -1;
                     }
                 };
-                // --- 下拉重整功能結束 ---
+                // --- 邏輯結束 ---
 
                 
                 resetNewExpense();
@@ -3409,6 +3414,7 @@
                     isRatesLoading,
                     getMapsUrl,
                     checkAuthExpiration,
+                    appContainer,
                     pullHeight,
                     isRefreshing,
                     refreshText,
