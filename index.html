@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.2.0 -->
-        <p class="text-xs text-slate-400 mt-3">v1.2.0</p>
+        <!-- 版本號 v1.2.1 -->
+        <p class="text-xs text-slate-400 mt-3">v1.2.1</p>
     </div>
 
     <div id="app" class="app-container">
@@ -404,7 +404,7 @@
 
             <div v-else class="grid grid-cols-2 gap-4 w-full max-w-sm">
                 <div
-                    v-for="member in members"
+                    v-for="member in activeMembers"
                     :key="member.id"
                     @click="attemptLogin(member)"
                     class="bg-white p-4 rounded-2xl shadow-sm border border-orange-100 flex flex-col items-center justify-center cursor-pointer hover:shadow-md hover:scale-105 transition-all relative overflow-hidden group"
@@ -1627,7 +1627,7 @@
                     <input v-model="newExpense.name" type="text" placeholder="項目名稱" class="w-full bg-slate-50 rounded-xl p-3 text-sm outline-none" />
                     <div class="grid grid-cols-2 gap-3">
                         <select v-model="newExpense.payer" class="bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
-                            <option v-for="member in members" :key="member.id" :value="member.name">{{ member.name }} (支付)</option>
+                            <option v-for="member in activeMembers" :key="member.id" :value="member.name">{{ member.name }} (支付)</option>
                         </select>
                         <select v-model="newExpense.payment" class="bg-slate-50 rounded-xl p-3 text-sm text-slate-600 outline-none">
                             <option value="cash">現金</option>
@@ -1940,6 +1940,10 @@
                     "blackblacknu",
                 ];
                 const members = ref([]);
+                //篩選出啟用的成員
+                const activeMembers = computed(() => {
+                    return members.value.filter(m => m.active);
+                });
 
                 const allShoppingList = ref([]);
                 const expenses = ref([]);
@@ -2446,7 +2450,7 @@
 
                 const memberBalances = computed(() => {
                     const balances = {};
-                    members.value.forEach((m) => {
+                    members.value.filter(m => m.active).forEach((m) => {
                         balances[m.name] = 0;
                     });
                     expenses.value.forEach((exp) => {
