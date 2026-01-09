@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.2.1 -->
-        <p class="text-xs text-slate-400 mt-3">v1.2.1</p>
+        <!-- 版本號 v1.2.2 -->
+        <p class="text-xs text-slate-400 mt-3">v1.2.2</p>
     </div>
 
     <div id="app" class="app-container">
@@ -1037,7 +1037,7 @@
                                     class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                                 >
                                     <option
-                                        v-for="m in members"
+                                        v-for="m in activeMembers"
                                         :key="m.id"
                                         :value="m.name"
                                     >
@@ -3258,6 +3258,7 @@
                     hotels,
                     expenses,
                     members,
+                    activeMembers,
                     newShoppingItem,
                     newExpense,
                     newItinerary,
