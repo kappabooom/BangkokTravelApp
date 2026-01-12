@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.2.3 -->
-        <p class="text-xs text-slate-400 mt-3">v1.2.3</p>
+        <!-- 版本號 v1.2.4 -->
+        <p class="text-xs text-slate-400 mt-3">v1.2.4</p>
     </div>
 
     <div id="app" class="app-container">
@@ -553,46 +553,53 @@
                                 >
                             </div>
                         </div>
-                        <div class="flex flex-col items-end justify-center pl-3 space-y-1">
-                            <!-- 天氣描述 + 外部查證連結 -->
-                            <div class="flex items-center gap-2">
-                              <span class="font-bold text-slate-700 text-sm">
-                                {{ getWeatherDescription(weatherData[selectedDateIndex].condition) }}
-                              </span>
-                              <!-- 外部連結：連到 OpenWeatherMap 曼谷頁面 -->
-                              <a href="https://openweathermap.org/city/1609350" target="_blank" 
-                                 class="text-slate-300 hover:text-sky-500 transition-colors p-1" 
-                                 title="前往 OpenWeatherMap 確認原始資料">
-                                <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
-                              </a>
-                            </div>
+                        <!-- 新版天氣卡片右側設計 (請貼上取代原本的 div) -->
+                        <div class="flex flex-col items-end justify-center pl-4 border-l border-sky-100/50 min-w-[100px]">
                             
-                            <!-- 下方狀態列：呼吸燈號 + 包車圖示 -->
-                            <div class="flex items-center gap-3">
-                              <!-- 燈號膠囊 -->
-                              <div class="flex items-center bg-white/60 rounded-full px-2 py-0.5 border border-slate-100 shadow-sm"
-                                   :title="weatherData[selectedDateIndex].isFallback ? '歷史平均氣溫 (非即時)' : '即時預報數據'">
-                                   
-                                   <!-- 燈號點點 (即時資料會閃爍) -->
-                                   <span :class="['w-2 h-2 rounded-full inline-block mr-1.5 shadow-sm', 
-                                          weatherData[selectedDateIndex].isFallback ? 'bg-orange-400' : 'bg-emerald-500 animate-pulse']">
-                                   </span>
-                                   
-                                   <!-- 文字狀態 -->
-                                   <span class="text-10px font-bold tracking-wide" 
-                                         :class="weatherData[selectedDateIndex].isFallback ? 'text-orange-400' : 'text-emerald-600'">
-                                      {{ weatherData[selectedDateIndex].isFallback ? '歷史均溫' : 'LIVE' }}
-                                   </span>
-                              </div>
-            
-                              <!-- 包車圖示 -->
-                              <div v-if="dates[selectedDateIndex].hasCar" 
-                                   class="text-deep-sea-blue font-bold text-xs flex items-center" 
-                                   title="當日有包車">
-                                  <i class="fa-solid fa-car-side text-accent-yellow"></i>
-                              </div>
+                            <!-- 第一排：天氣狀況文字 + 外部連結 -->
+                            <div class="flex items-center justify-end gap-2 mb-1">
+                                <!-- 天氣文字：放大並加深顏色 -->
+                                <span class="text-lg font-bold text-slate-700 tracking-tight leading-none">
+                                    {{ getWeatherDescription(weatherData[selectedDateIndex].condition) }}
+                                </span>
+                                
+                                <!-- 外部連結：縮小並淡化，滑鼠移過去變色 -->
+                                <a href="https://openweathermap.org/city/1609350" target="_blank" 
+                                   class="text-slate-300 hover:text-sky-600 transition-colors pt-0.5" 
+                                   title="前往 OpenWeatherMap 確認">
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+                                </a>
                             </div>
-                          </div>
+                        
+                            <!-- 第二排：資訊列 (狀態燈 + 包車圖示) -->
+                            <div class="flex items-center gap-2 mt-1">
+                                
+                                <!-- 包車圖示 (若有) -->
+                                <div v-if="dates[selectedDateIndex].hasCar" 
+                                     class="bg-orange-100 text-deep-sea-blue px-1.5 py-0.5 rounded text-[10px] font-bold flex items-center shadow-sm"
+                                     title="包車行程">
+                                    <i class="fa-solid fa-car-side mr-1 text-[10px]"></i>
+                                    <span>包車</span>
+                                </div>
+                        
+                                <!-- 狀態燈號：極簡膠囊設計 -->
+                                <div class="flex items-center bg-white border rounded-full px-2 py-0.5 shadow-sm"
+                                     :class="weatherData[selectedDateIndex].isFallback ? 'border-orange-200' : 'border-emerald-200'"
+                                     :title="weatherData[selectedDateIndex].isFallback ? '歷史均溫' : '即時連線'">
+                                     
+                                     <!-- 燈號點點：縮小至 6px (w-1.5) -->
+                                     <span :class="['w-1.5 h-1.5 rounded-full mr-1.5', 
+                                            weatherData[selectedDateIndex].isFallback ? 'bg-orange-400' : 'bg-emerald-500 animate-pulse']">
+                                     </span>
+                                     
+                                     <!-- 狀態文字：精緻化小字 -->
+                                     <span class="text-[9px] font-bold tracking-wider uppercase" 
+                                           :class="weatherData[selectedDateIndex].isFallback ? 'text-orange-400' : 'text-emerald-600'">
+                                        {{ weatherData[selectedDateIndex].isFallback ? 'HISTORICAL' : 'LIVE' }}
+                                     </span>
+                                </div>
+                            </div>
+                        </div>
 
                     </div>
 
