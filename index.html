@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.2.2 -->
-        <p class="text-xs text-slate-400 mt-3">v1.2.2</p>
+        <!-- 版本號 v1.2.3 -->
+        <p class="text-xs text-slate-400 mt-3">v1.2.3</p>
     </div>
 
     <div id="app" class="app-container">
@@ -553,34 +553,47 @@
                                 >
                             </div>
                         </div>
-                        <div class="text-right text-xs text-slate-600 pl-3">
-                            <span
-                                class="font-bold block text-slate-700"
-                                >{{
-                                    getWeatherDescription(
-                                        weatherData[selectedDateIndex].condition
-                                    )
-                                }}</span
-                            >
-                            <span
-                                v-if="weatherData[selectedDateIndex].isFallback"
-                                class="block text-[11px] text-orange-500 mt-1 bg-orange-100 px-2 py-1 rounded inline-block"
-                                >1月歷史平均<br />(距出發大於5天)</span
-                            >
-                            <span
-                                v-else
-                                class="block text-[11px] text-emerald-600 mt-1 bg-emerald-100 px-2 py-1 rounded inline-block"
-                                >即時天氣預報<br />(出發前5天更新)</span
-                            >
-                            <span
-                                v-if="dates[selectedDateIndex].hasCar"
-                                class="mt-1 block text-deep-sea-blue font-bold"
-                                ><i
-                                    class="fa-solid fa-car-side mr-1 text-accent-yellow"
-                                ></i>
-                                租車日</span
-                            >
-                        </div>
+                        <div class="flex flex-col items-end justify-center pl-3 space-y-1">
+                            <!-- 天氣描述 + 外部查證連結 -->
+                            <div class="flex items-center gap-2">
+                              <span class="font-bold text-slate-700 text-sm">
+                                {{ getWeatherDescription(weatherData[selectedDateIndex].condition) }}
+                              </span>
+                              <!-- 外部連結：連到 OpenWeatherMap 曼谷頁面 -->
+                              <a href="https://openweathermap.org/city/1609350" target="_blank" 
+                                 class="text-slate-300 hover:text-sky-500 transition-colors p-1" 
+                                 title="前往 OpenWeatherMap 確認原始資料">
+                                <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                              </a>
+                            </div>
+                            
+                            <!-- 下方狀態列：呼吸燈號 + 包車圖示 -->
+                            <div class="flex items-center gap-3">
+                              <!-- 燈號膠囊 -->
+                              <div class="flex items-center bg-white/60 rounded-full px-2 py-0.5 border border-slate-100 shadow-sm"
+                                   :title="weatherData[selectedDateIndex].isFallback ? '歷史平均氣溫 (非即時)' : '即時預報數據'">
+                                   
+                                   <!-- 燈號點點 (即時資料會閃爍) -->
+                                   <span :class="['w-2 h-2 rounded-full inline-block mr-1.5 shadow-sm', 
+                                          weatherData[selectedDateIndex].isFallback ? 'bg-orange-400' : 'bg-emerald-500 animate-pulse']">
+                                   </span>
+                                   
+                                   <!-- 文字狀態 -->
+                                   <span class="text-10px font-bold tracking-wide" 
+                                         :class="weatherData[selectedDateIndex].isFallback ? 'text-orange-400' : 'text-emerald-600'">
+                                      {{ weatherData[selectedDateIndex].isFallback ? '歷史均溫' : 'LIVE' }}
+                                   </span>
+                              </div>
+            
+                              <!-- 包車圖示 -->
+                              <div v-if="dates[selectedDateIndex].hasCar" 
+                                   class="text-deep-sea-blue font-bold text-xs flex items-center" 
+                                   title="當日有包車">
+                                  <i class="fa-solid fa-car-side text-accent-yellow"></i>
+                              </div>
+                            </div>
+                          </div>
+
                     </div>
 
                     <!-- 行程列表 -->
