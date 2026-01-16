@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.2.6 -->
-        <p class="text-xs text-slate-400 mt-3">v1.2.6</p>
+        <!-- 版本號 v1.2.7 -->
+        <p class="text-xs text-slate-400 mt-3">v1.2.7</p>
     </div>
 
     <div id="app" class="app-container">
@@ -1682,7 +1682,21 @@
                         </div>
                         <div v-if="newExpense.splitMethod !== 'personal'">
                             <div v-if="splitMembers.length > 0" class="space-y-2 max-h-32 overflow-y-auto pr-1">
-                                <div v-if="newExpense.splitMethod === 'equal'" class="text-xs text-slate-500 p-2 text-center bg-white rounded border border-slate-100">將由 {{ splitMembers.length }} 位啟用成員均分</div>
+                                <div v-if="newExpense.splitMethod === 'equal'" class="space-y-2">
+                                    <div class="text-10px text-slate-400 font-bold mb-2 uppercase">選擇參與分擔成員</div>
+                                    <div class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-1">
+                                        <div v-for="member in activeMembers" :key="member.id" 
+                                             @click="toggleSelectedMember(member.name)"
+                                             class="flex items-center p-2 rounded-lg border transition-all cursor-pointer"
+                                             :class="newExpense.selectedSplitMembers.includes(member.name) ? 'bg-deep-sea-blue border-deep-sea-blue text-white' : 'bg-slate-50 border-slate-100 text-slate-500'">
+                                            <i class="fa-solid mr-2" :class="newExpense.selectedSplitMembers.includes(member.name) ? 'fa-check-circle' : 'fa-circle'"></i>
+                                            <span class="text-xs font-bold">{{ member.name }}</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-center text-10px text-slate-400 mt-2">
+                                        每人分擔: {{ Math.round(newExpense.amount / (newExpense.selectedSplitMembers.length || 1)) }} {{ newExpense.currency }}
+                                    </div>
+                                </div>
                                 <div v-else>
                                     <div v-for="member in splitMembers" :key="member" class="flex items-center justify-between mb-2 last:mb-0">
                                         <span class="text-xs text-slate-600 truncate w-20">{{ member }}</span>
@@ -2060,6 +2074,7 @@
                         currency: "THB",
                         payer: currentUser.value,
                         splitMethod: "personal",
+                        selectedSplitMembers: activeMembers.value.map(m => m.name), 
                         splitDetails: {},
                     };
                 };
@@ -2378,14 +2393,15 @@
                     expenses.value
                         .filter((exp) => {
                             if (exp.payer === currentUser.value) return true;
-                            if (
-                                exp.splitMethod === "equal" &&
-                                members.value.find(
-                                    (m) =>
-                                        m.name === currentUser.value &&
-                                        m.active
-                                )
-                            )
+                            if (exp.splitMethod === "equal") {
+                                // 先算出這筆支出真正有參與分攤的人
+                                const participants =
+                                    exp.selectedSplitMembers ||
+                                    members.value.filter((m) => m.active).map((m) => m.name); // 舊資料相容
+                            
+                                // 如果自己名字在 participants 裡 → 這筆支出會出現在「我的支出」清單
+                                if (participants.includes(currentUser.value)) return true;
+                            }
                                 return true;
                             if (
                                 exp.splitMethod === "amount" ||
@@ -2485,15 +2501,14 @@
                         }
                         switch (exp.splitMethod) {
                             case "equal": {
-                                const participants = members.value
-                                    .filter((m) => m.active)
-                                    .map((m) => m.name);
+                                const participants = exp.selectedSplitMembers || members.value.filter(m => m.active).map(m => m.name);
                                 const count = participants.length;
                                 if (count > 0) {
                                     const share = amountInTWD / count;
-                                    participants.forEach((name) => {
-                                        if (balances[name] !== undefined)
+                                    participants.forEach(name => {
+                                        if (balances[name] !== undefined) {
                                             balances[name] -= share;
+                                        }
                                     });
                                 }
                                 break;
@@ -2780,6 +2795,18 @@
                     await updateDoc(doc(db, "members", m.id), {
                         active: !m.active,
                     });
+                };
+
+                const toggleSelectedMember = (name) => {
+                    const index = newExpense.value.selectedSplitMembers.indexOf(name);
+                    if (index > -1) {
+                        // 至少保留一人
+                        if (newExpense.value.selectedSplitMembers.length > 1) {
+                            newExpense.value.selectedSplitMembers.splice(index, 1);
+                        }
+                    } else {
+                        newExpense.value.selectedSplitMembers.push(name);
+                    }
                 };
 
                 const removeMember = async (id) => {
@@ -3351,6 +3378,7 @@
                     isRatesLoading,
                     getMapsUrl,
                     checkAuthExpiration,
+                    toggleSelectedMember,
                 };
             },
         });
