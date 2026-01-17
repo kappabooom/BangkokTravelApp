@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.2.7 -->
-        <p class="text-xs text-slate-400 mt-3">v1.2.7</p>
+        <!-- 版本號 v1.2.8 -->
+        <p class="text-xs text-slate-400 mt-3">v1.2.8</p>
     </div>
 
     <div id="app" class="app-container">
@@ -2424,11 +2424,16 @@
                             ) {
                                 myShare = totalAmount;
                             } else if (exp.splitMethod === "equal") {
-                                const activeCount = members.value.filter(
-                                    (m) => m.active
-                                ).length;
-                                const count = activeCount || 1;
-                                myShare = Math.round(totalAmount / count);
+                                // 優先使用勾選的成員名單，若為舊資料則回退到全員 active 名單
+                                const participants = exp.selectedSplitMembers || 
+                                                     members.value.filter(m => m.active).map(m => m.name);
+                                
+                                // 計算這筆均分真正參與的人數
+                                const count = participants.length || 1;
+                                
+                                // 只有當「目前的登入者」在勾選名單內時，才顯示該分攤金額，否則為 0
+                                const isIn = participants.includes(currentUser.value);
+                                myShare = isIn ? Math.round(totalAmount / count) : 0;
                             } else if (exp.splitMethod === "amount") {
                                 myShare =
                                     Number(
@@ -2501,14 +2506,15 @@
                         }
                         switch (exp.splitMethod) {
                             case "equal": {
-                                const participants = exp.selectedSplitMembers || members.value.filter(m => m.active).map(m => m.name);
+                                // 這裡也要同步改用 exp.selectedSplitMembers
+                                const participants = exp.selectedSplitMembers || 
+                                                     members.value.filter((m) => m.active).map((m) => m.name);
                                 const count = participants.length;
                                 if (count > 0) {
                                     const share = amountInTWD / count;
-                                    participants.forEach(name => {
-                                        if (balances[name] !== undefined) {
+                                    participants.forEach((name) => {
+                                        if (balances[name] !== undefined)
                                             balances[name] -= share;
-                                        }
                                     });
                                 }
                                 break;
