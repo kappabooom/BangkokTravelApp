@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.2.8 -->
-        <p class="text-xs text-slate-400 mt-3">v1.2.8</p>
+        <!-- 版本號 v1.2.9 -->
+        <p class="text-xs text-slate-400 mt-3">v1.2.9</p>
     </div>
 
     <div id="app" class="app-container">
@@ -2065,11 +2065,13 @@
                 });
 
                 const resetNewExpense = () => {
+                    // 獲取當天日期並格式化為 YYYY-MM-DD
+                    const today = new Date().toLocaleDateString('sv-SE');
                     newExpense.value = {
                         name: "",
                         amount: null,
                         category: "food",
-                        date: "2026-01-16",
+                        date: today,
                         payment: "cash",
                         currency: "THB",
                         payer: currentUser.value,
