@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.2.9 -->
-        <p class="text-xs text-slate-400 mt-3">v1.2.9</p>
+        <!-- 版本號 v1.3.0 -->
+        <p class="text-xs text-slate-400 mt-3">v1.3.0</p>
     </div>
 
     <div id="app" class="app-container">
@@ -1680,27 +1680,63 @@
                             <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'ratio' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'ratio'">比例</button>
                             <button class="flex-1 py-1 text-[10px] rounded transition-colors" :class="newExpense.splitMethod === 'amount' ? 'bg-deep-sea-blue text-white shadow' : 'text-slate-500'" @click="newExpense.splitMethod = 'amount'">金額</button>
                         </div>
+                        <!-- 分帳成員選擇與金額輸入區 -->
                         <div v-if="newExpense.splitMethod !== 'personal'">
-                            <div v-if="splitMembers.length > 0" class="space-y-2 max-h-32 overflow-y-auto pr-1">
-                                <div v-if="newExpense.splitMethod === 'equal'" class="space-y-2">
-                                    <div class="text-10px text-slate-400 font-bold mb-2 uppercase">選擇參與分擔成員</div>
-                                    <div class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-1">
-                                        <div v-for="member in activeMembers" :key="member.id" 
-                                             @click="toggleSelectedMember(member.name)"
-                                             class="flex items-center p-2 rounded-lg border transition-all cursor-pointer"
-                                             :class="newExpense.selectedSplitMembers.includes(member.name) ? 'bg-deep-sea-blue border-deep-sea-blue text-white' : 'bg-slate-50 border-slate-100 text-slate-500'">
-                                            <i class="fa-solid mr-2" :class="newExpense.selectedSplitMembers.includes(member.name) ? 'fa-check-circle' : 'fa-circle'"></i>
-                                            <span class="text-xs font-bold">{{ member.name }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="text-center text-10px text-slate-400 mt-2">
-                                        每人分擔: {{ Math.round(newExpense.amount / (newExpense.selectedSplitMembers.length || 1)) }} {{ newExpense.currency }}
+                            <!-- 均分模式 (Equal) -->
+                            <div v-if="newExpense.splitMethod === 'equal'" class="space-y-2">
+                                <div class="text-[10px] text-slate-400 font-bold mb-2 uppercase">選擇分帳成員</div>
+                                <div class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-1">
+                                    <div v-for="member in activeMembers" :key="member.id"
+                                         @click="toggleSelectedMember(member.name)"
+                                         class="flex items-center p-2 rounded-lg border transition-all cursor-pointer"
+                                         :class="newExpense.selectedSplitMembers.includes(member.name) ? 'bg-deep-sea-blue border-deep-sea-blue text-white' : 'bg-slate-50 border-slate-100 text-slate-500'">
+                                        <i class="fa-solid mr-2" 
+                                           :class="newExpense.selectedSplitMembers.includes(member.name) ? 'fa-check-circle' : 'fa-circle'"></i>
+                                        <span class="text-xs font-bold">{{ member.name }}</span>
+                                        <!-- 新增：均分金額預覽 -->
+                                        <span v-if="newExpense.selectedSplitMembers.includes(member.name) && newExpense.amount && previewSplits[member.name]" 
+                                              class="text-[10px] font-bold ml-auto"
+                                              :class="newExpense.selectedSplitMembers.includes(member.name) ? 'text-green-200' : 'text-green-600'">
+                                            ${{ previewSplits[member.name] }}
+                                        </span>
                                     </div>
                                 </div>
-                                <div v-else>
-                                    <div v-for="member in splitMembers" :key="member" class="flex items-center justify-between mb-2 last:mb-0">
-                                        <span class="text-xs text-slate-600 truncate w-20">{{ member }}</span>
-                                        <input v-model="newExpense.splitDetails[member]" type="number" :placeholder="newExpense.splitMethod === 'ratio' ? '比例' : '金額'" class="flex-1 bg-white p-1.5 rounded border border-slate-200 text-xs text-right outline-none" />
+                                <!-- 均分說明 -->
+                                <div class="text-center text-[10px] text-slate-400 mt-2">
+                                    每人約 {{ Math.round(newExpense.amount / (newExpense.selectedSplitMembers.length || 1)) }} {{ newExpense.currency }}
+                                </div>
+                            </div>
+                        
+                            <!-- 自行輸入 (Amount) 與 比例分配 (Ratio) -->
+                            <div v-else class="space-y-2 max-h-40 overflow-y-auto p-1">
+                                <div v-for="member in splitMembers" :key="member" 
+                                     class="flex items-center justify-between mb-2 last:mb-0 p-1">
+                                    <span class="text-xs text-slate-600 truncate w-20 font-bold">{{ member }}</span>
+                                    
+                                    <div class="flex-1 flex items-center">
+                                        <input v-model="newExpense.splitDetails[member]" type="number" 
+                                               :placeholder="newExpense.splitMethod === 'ratio' ? '比例' : '金額'"
+                                               class="w-full bg-white p-2 rounded-lg border border-slate-200 text-sm text-right outline-none focus:border-deep-sea-blue transition-colors">
+                                        
+                                        <!-- 新增：比例分配金額預覽 -->
+                                        <span v-if="newExpense.splitMethod === 'ratio' && newExpense.amount && previewSplits[member]" 
+                                              class="text-[10px] text-green-600 font-bold ml-2 min-w-[40px] text-right">
+                                            ${{ previewSplits[member] }}
+                                        </span>
+                                    </div>
+                                </div>
+                        
+                                <!-- 新增：自行輸入金額總和檢核訊息 -->
+                                <div v-if="newExpense.splitMethod === 'amount' && newExpense.amount" 
+                                     class="mt-3 p-3 rounded-xl border transition-colors"
+                                     :class="customSplitValid ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-[10px] text-slate-500 font-bold">金額檢核</span>
+                                        <div class="text-xs font-bold flex items-center"
+                                             :class="customSplitValid ? 'text-green-600' : 'text-red-600'">
+                                            <span>加總: {{ customSplitTotal }} / 應為: {{ newExpense.amount }}</span>
+                                            <i class="fa-solid ml-2" :class="customSplitValid ? 'fa-check-circle' : 'fa-circle-xmark'"></i>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2508,16 +2544,34 @@
                         }
                         switch (exp.splitMethod) {
                             case "equal": {
-                                // 這裡也要同步改用 exp.selectedSplitMembers
-                                const participants = exp.selectedSplitMembers || 
-                                                     members.value.filter((m) => m.active).map((m) => m.name);
-                                const count = participants.length;
-                                if (count > 0) {
-                                    const share = amountInTWD / count;
-                                    participants.forEach((name) => {
-                                        if (balances[name] !== undefined)
-                                            balances[name] -= share;
-                                    });
+                                // 1. 優先使用存檔的詳細金額 (新資料)
+                                if (exp.splitDetails && Object.keys(exp.splitDetails).length > 0) {
+                                    for (const [name, val] of Object.entries(exp.splitDetails)) {
+                                            if (balances[name] !== undefined) {
+                                                const valTWD = exp.currency === 'TWD' ? val : val * EXCHANGERATE.value;
+                                                balances[name] -= valTWD;
+                                            }
+                                    }
+                                } 
+                                // 2. 處理舊資料 (強制轉為整數邏輯)
+                                else {
+                                    const participants = exp.selectedSplitMembers || members.value.filter(m => m.active).map(m => m.name);
+                                    const count = participants.length;
+                                    if (count > 0) {
+                                        // 計算整數均分
+                                        const perPerson = Math.floor(amountInTWD / count);
+                                        const remainder = Math.round(amountInTWD - (perPerson * count)); // 餘數
+                                        
+                                        participants.forEach((name, index) => {
+                                            // 強制分配規則：依照人員順序，前 remainder 個人多付 1 元
+                                            // 這樣結果是固定的，不會每次重新整理都變
+                                            const extra = index < remainder ? 1 : 0;
+                                            
+                                            if (balances[name] !== undefined) {
+                                                balances[name] -= (perPerson + extra);
+                                            }
+                                        });
+                                    }
                                 }
                                 break;
                             }
@@ -2575,6 +2629,59 @@
                     return balances;
                 });
 
+                // 1. 計算自訂金額總和
+                const customSplitTotal = computed(() => {
+                    if (newExpense.value.splitMethod !== 'amount') return 0;
+                    // 只計算選中的成員 (active members) 且有輸入金額的部分
+                    return activeMembers.value.reduce((sum, member) => {
+                        const val = parseFloat(newExpense.value.splitDetails[member.name]);
+                        return sum + (isNaN(val) ? 0 : val);
+                    }, 0);
+                });
+            
+                // 2. 驗證自訂金額是否與總額相符 (允許 1 元誤差)
+                const customSplitValid = computed(() => {
+                    if (newExpense.value.splitMethod !== 'amount') return true;
+                    const total = parseFloat(newExpense.value.amount) || 0;
+                    return Math.abs(customSplitTotal.value - total) <= 1; 
+                });
+            
+                // 3. 預覽每人分配金額
+                const previewSplits = computed(() => {
+                    const amount = parseFloat(newExpense.value.amount) || 0;
+                    const splits = {};
+                    
+                    if (newExpense.value.splitMethod === 'equal') {
+                        const selected = newExpense.value.selectedSplitMembers;
+                        if (selected && selected.length > 0) {
+                            const count = selected.length;
+                            const perPerson = Math.floor(amount / count);
+                            const remainder = amount - (perPerson * count);
+                            
+                            selected.forEach((name, index) => {
+                                // 預覽時，為了介面穩定，我們只顯示前幾個人會多拿 1 元
+                                // (實際存檔時才會隨機分配，這裡僅供參考金額)
+                                const extra = index < remainder ? 1 : 0;
+                                splits[name] = perPerson + extra;
+                            });
+                        }
+                    } else if (newExpense.value.splitMethod === 'ratio') {
+                        const selected = splitMembers.value; // 這是所有參與分帳的成員名稱陣列
+                        // 計算總比例
+                        const totalRatio = selected.reduce((sum, name) => {
+                            return sum + (parseFloat(newExpense.value.splitDetails[name]) || 0);
+                        }, 0);
+                        
+                        if (totalRatio > 0) {
+                            selected.forEach(name => {
+                                const ratio = parseFloat(newExpense.value.splitDetails[name]) || 0;
+                                splits[name] = Math.round(amount * (ratio / totalRatio));
+                            });
+                        }
+                    }
+                    return splits;
+                });
+
                 const handleAddClick = () => {
                     if (currentTab.value === "shopping") {
                         showShoppingModal.value = true;
@@ -2620,6 +2727,16 @@
                         });
                         return;
                     }
+
+                    // --- 新增檢核代碼 ---
+                    if (newExpense.value.splitMethod === 'amount' && !customSplitValid.value) {
+                         Swal.fire({
+                            icon: 'warning',
+                            title: '金額不符',
+                            text: `輸入總和 ${customSplitTotal.value} 與總額 ${newExpense.value.amount} 不符`
+                        });
+                        return;
+                    }
                     
                     // --- 顯示 Loading ---
                     Swal.fire({
@@ -2633,6 +2750,38 @@
                     const data = JSON.parse(
                         JSON.stringify(newExpense.value)
                     );
+
+                    // --- 新增隨機分配邏輯 ---
+                    if (data.splitMethod === 'equal') {
+                        const amount = parseFloat(data.amount);
+                        const selected = data.selectedSplitMembers;
+                        if (selected && selected.length > 0) {
+                            const count = selected.length;
+                            const perPerson = Math.floor(amount / count);
+                            const remainder = amount - (perPerson * count);
+                            
+                            // 隨機打亂索引
+                            const indices = [...Array(count).keys()];
+                            // Fisher-Yates Shuffle
+                            for (let i = indices.length - 1; i > 0; i--) {
+                                const j = Math.floor(Math.random() * (i + 1));
+                                [indices[i], indices[j]] = [indices[j], indices[i]];
+                            }
+                            
+                            // 建立 splitDetails 來儲存確切金額
+                            data.splitDetails = {};
+                            selected.forEach((name, idx) => {
+                                // 如果原始索引在隨機陣列的前 remainder 個位置，則多給 1 元
+                                // 修正：直接用 indices 陣列的前 remainder 個值作為"幸運兒"的索引
+                                const isLucky = indices.indexOf(idx) < remainder; 
+                                data.splitDetails[name] = perPerson + (isLucky ? 1 : 0);
+                            });
+                            
+                            // 改為 'amount' 模式儲存，這樣才能確保每個人金額固定
+                            // 或者：保持 'equal' 模式，但在 memberBalances 裡讀取 splitDetails
+                            // 建議方案：保持 'equal'，但讓 memberBalances 優先讀取 splitDetails
+                        }
+                    }
 
                     try {
                         if (editingExpenseId.value === null) {
@@ -3387,6 +3536,9 @@
                     getMapsUrl,
                     checkAuthExpiration,
                     toggleSelectedMember,
+                    customSplitTotal,
+                    customSplitValid,
+                    previewSplits,      
                 };
             },
         });
