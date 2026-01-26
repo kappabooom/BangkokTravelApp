@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.3.1 -->
-        <p class="text-xs text-slate-400 mt-3">v1.3.1</p>
+        <!-- 版本號 v1.3.2 -->
+        <p class="text-xs text-slate-400 mt-3">v1.3.2</p>
     </div>
 
     <div id="app" class="app-container">
@@ -2431,27 +2431,22 @@
                     expenses.value
                         .filter((exp) => {
                             if (exp.payer === currentUser.value) return true;
-                            if (exp.splitMethod === "equal") {
-                                // 先算出這筆支出真正有參與分攤的人
+
+                              if (exp.splitMethod === "equal") {
                                 const participants =
-                                    exp.selectedSplitMembers ||
-                                    members.value.filter((m) => m.active).map((m) => m.name); // 舊資料相容
+                                  exp.selectedSplitMembers ||
+                                  members.value.filter(m => m.active).map(m => m.name);
+                                return participants.includes(currentUser.value);
+                              }
                             
-                                // 如果自己名字在 participants 裡 → 這筆支出會出現在「我的支出」清單
-                                if (participants.includes(currentUser.value)) return true;
-                            }
-                                return true;
-                            if (
-                                exp.splitMethod === "amount" ||
-                                exp.splitMethod === "ratio"
-                            )
+                              if (exp.splitMethod === "amount" || exp.splitMethod === "ratio") {
                                 return (
-                                    exp.splitDetails &&
-                                    Number(
-                                        exp.splitDetails[currentUser.value]
-                                    ) > 0
+                                  exp.splitDetails &&
+                                  Number(exp.splitDetails[currentUser.value] || 0) > 0
                                 );
-                            return false;
+                              }
+                            
+                              return false;
                         })
                         .map((exp) => {
                             let myShare = 0;
@@ -2462,16 +2457,25 @@
                             ) {
                                 myShare = totalAmount;
                             } else if (exp.splitMethod === "equal") {
-                                // 優先使用勾選的成員名單，若為舊資料則回退到全員 active 名單
-                                const participants = exp.selectedSplitMembers || 
-                                                     members.value.filter(m => m.active).map(m => m.name);
-                                
-                                // 計算這筆均分真正參與的人數
+                                const participants =
+                                exp.selectedSplitMembers ||
+                                members.value.filter(m => m.active).map(m => m.name);
+                            
+                              const isIn = participants.includes(currentUser.value);
+                              if (!isIn) {
+                                myShare = 0;
+                              } else if (exp.splitDetails && exp.splitDetails[currentUser.value] != null) {
+                                // 新資料：saveExpense 已把「隨機餘數分配後的每人金額」寫進 splitDetails
+                                myShare = Number(exp.splitDetails[currentUser.value]) || 0;
+                              } else {
+                                // 舊資料：沒有 splitDetails 時，才用 deterministic 的整數分配（避免每次重算跳動）
                                 const count = participants.length || 1;
+                                const perPerson = Math.floor(totalAmount / count);
+                                const remainder = totalAmount - perPerson * count;
+                                const idx = participants.indexOf(currentUser.value);
+                                myShare = perPerson + (idx >= 0 && idx < remainder ? 1 : 0);
+                              }
                                 
-                                // 只有當「目前的登入者」在勾選名單內時，才顯示該分攤金額，否則為 0
-                                const isIn = participants.includes(currentUser.value);
-                                myShare = isIn ? Math.round(totalAmount / count) : 0;
                             } else if (exp.splitMethod === "amount") {
                                 myShare =
                                     Number(
