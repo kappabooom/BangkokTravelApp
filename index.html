@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.3.2 -->
-        <p class="text-xs text-slate-400 mt-3">v1.3.2</p>
+        <!-- 版本號 v1.3.3 -->
+        <p class="text-xs text-slate-400 mt-3">v1.3.3</p>
     </div>
 
     <div id="app" class="app-container">
@@ -2428,84 +2428,71 @@
                 );
 
                 const myExpenses = computed(() =>
-                    expenses.value
-                        .filter((exp) => {
-                            if (exp.payer === currentUser.value) return true;
-
-                              if (exp.splitMethod === "equal") {
-                                const participants =
-                                  exp.selectedSplitMembers ||
-                                  members.value.filter(m => m.active).map(m => m.name);
-                                return participants.includes(currentUser.value);
-                              }
-                            
-                              if (exp.splitMethod === "amount" || exp.splitMethod === "ratio") {
-                                return (
-                                  exp.splitDetails &&
-                                  Number(exp.splitDetails[currentUser.value] || 0) > 0
-                                );
-                              }
-                            
-                              return false;
-                        })
-                        .map((exp) => {
-                            let myShare = 0;
-                            const totalAmount = Number(exp.amount) || 0;
-                            if (
-                                exp.payer === currentUser.value &&
-                                exp.splitMethod === "personal"
-                            ) {
-                                myShare = totalAmount;
-                            } else if (exp.splitMethod === "equal") {
-                                const participants =
-                                exp.selectedSplitMembers ||
-                                members.value.filter(m => m.active).map(m => m.name);
-                            
-                              const isIn = participants.includes(currentUser.value);
-                              if (!isIn) {
-                                myShare = 0;
-                              } else if (exp.splitDetails && exp.splitDetails[currentUser.value] != null) {
-                                // 新資料：saveExpense 已把「隨機餘數分配後的每人金額」寫進 splitDetails
-                                myShare = Number(exp.splitDetails[currentUser.value]) || 0;
-                              } else {
-                                // 舊資料：沒有 splitDetails 時，才用 deterministic 的整數分配（避免每次重算跳動）
-                                const count = participants.length || 1;
-                                const perPerson = Math.floor(totalAmount / count);
-                                const remainder = totalAmount - perPerson * count;
-                                const idx = participants.indexOf(currentUser.value);
-                                myShare = perPerson + (idx >= 0 && idx < remainder ? 1 : 0);
-                              }
-                                
-                            } else if (exp.splitMethod === "amount") {
-                                myShare =
-                                    Number(
-                                        exp.splitDetails[currentUser.value]
-                                    ) || 0;
-                            } else if (exp.splitMethod === "ratio") {
-                                const totalRatio = Object.values(
-                                    exp.splitDetails
-                                ).reduce(
-                                    (sum, r) => sum + (Number(r) || 0),
-                                    0
-                                );
-                                const myRatio =
-                                    Number(
-                                        exp.splitDetails[currentUser.value]
-                                    ) || 0;
-                                if (totalRatio > 0)
-                                    myShare =
-                                        (totalAmount * myRatio) / totalRatio;
-                            }
-                            return {
-                                ...exp,
-                                displayAmount: myShare,
-                            };
-                        })
-                        .sort(
-                            (a, b) =>
-                                new Date(b.date) - new Date(a.date)
-                        )
+                  expenses.value
+                    .filter((exp) => {
+                      // 自己付錢的一定算
+                      if (exp.payer === currentUser.value) return true;
+                
+                      // 均分：看 selectedSplitMembers（新舊相容），或退回用 active members
+                      if (exp.splitMethod === "equal") {
+                        const participants =
+                          exp.selectedSplitMembers ||
+                          members.value.filter((m) => m.active).map((m) => m.name);
+                        return participants.includes(currentUser.value);
+                      }
+                
+                      // 自訂金額 / 比例：看 splitDetails 裡自己有沒有分到
+                      if (exp.splitMethod === "amount" || exp.splitMethod === "ratio") {
+                        return (
+                          exp.splitDetails &&
+                          Number(exp.splitDetails[currentUser.value] || 0) > 0
+                        );
+                      }
+                
+                      // personal：非付款人就不算
+                      return false;
+                    })
+                    .map((exp) => {
+                      let myShare = 0;
+                      const totalAmount = Number(exp.amount) || 0;
+                
+                      if (exp.payer === currentUser.value && exp.splitMethod === "personal") {
+                        myShare = totalAmount;
+                      } else if (exp.splitMethod === "equal") {
+                        const participants =
+                          exp.selectedSplitMembers ||
+                          members.value.filter((m) => m.active).map((m) => m.name);
+                
+                        const isIn = participants.includes(currentUser.value);
+                        if (!isIn) {
+                          myShare = 0;
+                        } else if (exp.splitDetails && exp.splitDetails[currentUser.value] != null) {
+                          // 新資料：直接使用你存檔時寫死的「最終金額」（含餘數分配）
+                          myShare = Number(exp.splitDetails[currentUser.value]) || 0;
+                        } else {
+                          // 舊資料：沒有 splitDetails → 用固定規則整數化（不隨機、避免跳動）
+                          const count = participants.length || 1;
+                          const perPerson = Math.floor(totalAmount / count);
+                          const remainder = totalAmount - perPerson * count;
+                          const idx = participants.indexOf(currentUser.value);
+                          myShare = perPerson + (idx >= 0 && idx < remainder ? 1 : 0);
+                        }
+                      } else if (exp.splitMethod === "amount") {
+                        myShare = Number(exp.splitDetails?.[currentUser.value]) || 0;
+                      } else if (exp.splitMethod === "ratio") {
+                        const totalRatio = Object.values(exp.splitDetails || {}).reduce(
+                          (sum, r) => sum + (Number(r) || 0),
+                          0
+                        );
+                        const myRatio = Number(exp.splitDetails?.[currentUser.value]) || 0;
+                        myShare = totalRatio > 0 ? (totalAmount * myRatio) / totalRatio : 0;
+                      }
+                
+                      return { ...exp, displayAmount: myShare };
+                    })
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
                 );
+
 
                 const totalTHB = computed(() =>
                     myExpenses.value
