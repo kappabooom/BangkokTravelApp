@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.3.0 -->
-        <p class="text-xs text-slate-400 mt-3">v1.3.0</p>
+        <!-- 版本號 v1.3.1 -->
+        <p class="text-xs text-slate-400 mt-3">v1.3.1</p>
     </div>
 
     <div id="app" class="app-container">
@@ -2548,7 +2548,7 @@
                                 if (exp.splitDetails && Object.keys(exp.splitDetails).length > 0) {
                                     for (const [name, val] of Object.entries(exp.splitDetails)) {
                                             if (balances[name] !== undefined) {
-                                                const valTWD = exp.currency === 'TWD' ? val : val * EXCHANGERATE.value;
+                                                const valTWD = exp.currency === 'TWD' ? val : val * EXCHANGE_RATE.value;
                                                 balances[name] -= valTWD;
                                             }
                                     }
@@ -2797,15 +2797,8 @@
                         }
                         
                         showExpenseModal.value = false;
-                        // 重置表單
-                        newExpense.value = {
-                            payer: currentUser.value,
-                            item: "",
-                            amount: "",
-                            split: "equal",
-                            customSplit: {},
-                            currency: "THB", // 預設 THB
-                        };
+                        editingExpenseId.value = null;   // 建議：存檔成功後離開編輯狀態
+                        resetNewExpense();               // 正確：用同一套結構重置表單
                         
                         // --- 顯示成功 ---
                         Swal.fire({
@@ -3538,7 +3531,8 @@
                     toggleSelectedMember,
                     customSplitTotal,
                     customSplitValid,
-                    previewSplits,      
+                    previewSplits,    
+                    resetNewExpense,
                 };
             },
         });
