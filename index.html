@@ -17,6 +17,8 @@
     <!-- UI 函式庫 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
     <link
         rel="stylesheet"
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -369,7 +371,6 @@
             border-bottom: 0.5px solid rgba(0, 0, 0, 0.05); /* 選擇性：加一條極細的分割線增加層次感 */
         }
     </style>
-
 </head>
 <body>
     <!-- Loading -->
@@ -379,8 +380,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.3.6 -->
-        <p class="text-xs text-slate-400 mt-3">v1.3.6</p>
+        <!-- 版本號 v1.3.7 -->
+        <p class="text-xs text-slate-400 mt-3">v1.3.7</p>
     </div>
 
     <div id="app" class="app-container">
@@ -1600,18 +1601,26 @@
                     </div>
                 </div>
 
-                <!-- 匯出 CSV -->
-                <div class="mt-6 bg-white rounded-3xl p-5 card-shadow">
+                <!-- 匯出 -->
+                <div class="mt-6 bg-white rounded-3xl p-5 card-shadow space-y-3">
                   <button
                     @click="exportExpensesCsv"
                     class="w-full py-3 rounded-2xl bg-deep-sea-blue text-white font-bold shadow-lg shadow-deep-sea-blue/20 hover:opacity-95 transition"
                   >
                     <i class="fa-solid fa-file-csv mr-2"></i>
-                    輸出支出項目（TWD）
+                    輸出支出項目（CSV）
                   </button>
                 
-                  <p class="text-xs text-slate-400 mt-2 text-center">
-                    會以目前匯率換算成 TWD 匯出
+                  <button
+                    @click="exportExpensesChartImages"
+                    class="w-full py-3 rounded-2xl bg-slate-800 text-white font-bold shadow-lg shadow-slate-900/20 hover:opacity-95 transition"
+                  >
+                    <i class="fa-solid fa-chart-column mr-2"></i>
+                    匯出成圖表（PNG）
+                  </button>
+                
+                  <p class="text-xs text-slate-400 text-center">
+                    下載 2 張圖：花費報表 + 分享封面
                   </p>
                 </div>
                 
@@ -3660,6 +3669,185 @@
                   URL.revokeObjectURL(url);
                 };
 
+                const downloadDataUrl = (dataUrl, filename) => {
+                  const a = document.createElement("a");
+                  a.href = dataUrl;
+                  a.download = filename;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                };
+                
+                const drawRoundRect = (ctx, x, y, w, h, r) => {
+                  const rr = Math.min(r, w / 2, h / 2);
+                  ctx.beginPath();
+                  ctx.moveTo(x + rr, y);
+                  ctx.arcTo(x + w, y, x + w, y + h, rr);
+                  ctx.arcTo(x + w, y + h, x, y + h, rr);
+                  ctx.arcTo(x, y + h, x, y, rr);
+                  ctx.arcTo(x, y, x + w, y, rr);
+                  ctx.closePath();
+                };
+                
+                const exportExpensesChartImages = async () => {
+                  // 1) 確保匯率更新（THB->TWD）；TWD 支出視為 1.0000
+                  if (!EXCHANGE_RATE.value || isNaN(Number(EXCHANGE_RATE.value)) || isRatesLoading.value) {
+                    try { await fetchExchangeRate(); } catch (e) {}
+                  }
+                
+                  const memberNames = members.value.filter((m) => m.active).map((m) => m.name);
+                
+                  // 2) 彙總：每人總花費（TWD）、分類總花費（TWD）
+                  const perMemberTWD = Object.fromEntries(memberNames.map((n) => [n, 0]));
+                  const byCategoryTWD = {}; // {food: 123, ...}
+                  let grandTotalTWD = 0;
+                
+                  expenses.value.forEach((exp) => {
+                    const currency = exp.currency || "THB";
+                    const totalSrc = Number(exp.amount) || 0;
+                    const rateUsed = currency === "TWD" ? 1 : Number(EXCHANGE_RATE.value) || 0;
+                    const totalTWD = Math.round(totalSrc * rateUsed);
+                
+                    grandTotalTWD += totalTWD;
+                    byCategoryTWD[exp.category || "other"] = (byCategoryTWD[exp.category || "other"] || 0) + totalTWD;
+                
+                    const sharesTWD = calcExpenseSharesTWD(exp, memberNames);
+                    memberNames.forEach((n) => (perMemberTWD[n] += Number(sharesTWD[n] || 0)));
+                  });
+                
+                  // 3) 用 Chart.js 在「離屏 canvas」畫兩張圖：bar + pie
+                  const barCanvas = document.createElement("canvas");
+                  barCanvas.width = 1000; barCanvas.height = 520;
+                
+                  const pieCanvas = document.createElement("canvas");
+                  pieCanvas.width = 520; pieCanvas.height = 520;
+                
+                  // bar
+                  const barChart = new Chart(barCanvas.getContext("2d"), {
+                    type: "bar",
+                    data: {
+                      labels: memberNames,
+                      datasets: [{
+                        label: "每人總花費 (TWD)",
+                        data: memberNames.map((n) => Math.round(perMemberTWD[n] || 0)),
+                        backgroundColor: "rgba(230, 81, 0, 0.85)",
+                        borderRadius: 12,
+                      }],
+                    },
+                    options: {
+                      responsive: false,
+                      plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: true },
+                      },
+                      scales: {
+                        x: { ticks: { color: "#111827" } },
+                        y: { ticks: { color: "#111827" }, grid: { color: "rgba(17,24,39,0.08)" } },
+                      },
+                    },
+                  });
+                
+                  // pie
+                  const catEntries = Object.entries(byCategoryTWD).sort((a, b) => b[1] - a[1]);
+                  const pieChart = new Chart(pieCanvas.getContext("2d"), {
+                    type: "doughnut",
+                    data: {
+                      labels: catEntries.map(([k]) => k),
+                      datasets: [{
+                        data: catEntries.map(([, v]) => Math.round(v)),
+                        backgroundColor: [
+                          "#E65100", "#4DB6AC", "#AB47BC", "#FFB300", "#78909C", "#5C6BC0", "#8D6E63", "#9E9E9E",
+                        ],
+                        borderWidth: 0,
+                      }],
+                    },
+                    options: {
+                      responsive: false,
+                      cutout: "60%",
+                      plugins: {
+                        legend: { position: "bottom", labels: { color: "#111827" } },
+                      },
+                    },
+                  });
+                
+                  // 4) 合成「報表大圖」：背景 + 標題 + bar + pie + 轉帳建議文字
+                  const out = document.createElement("canvas");
+                  out.width = 1200; out.height = 1600;
+                  const ctx = out.getContext("2d");
+                
+                  const bg = ctx.createLinearGradient(0, 0, out.width, out.height);
+                  bg.addColorStop(0, "#ff7043");
+                  bg.addColorStop(1, "#ab47bc");
+                  ctx.fillStyle = bg;
+                  ctx.fillRect(0, 0, out.width, out.height);
+                
+                  ctx.fillStyle = "rgba(255,255,255,0.93)";
+                  drawRoundRect(ctx, 60, 60, out.width - 120, out.height - 120, 40);
+                  ctx.fill();
+                
+                  ctx.fillStyle = "#111827";
+                  ctx.font = "bold 44px 'Noto Sans TC', sans-serif";
+                  ctx.fillText("花費報表（TWD）", 110, 150);
+                
+                  ctx.fillStyle = "#374151";
+                  ctx.font = "26px 'Noto Sans TC', sans-serif";
+                  ctx.fillText(`總花費：NT$ ${Math.round(grandTotalTWD).toLocaleString()}`, 110, 205);
+                  ctx.fillText(`THB→TWD：${Number(EXCHANGE_RATE.value || 0).toFixed(4)}（TWD=1.0000）`, 110, 245);
+                
+                  // 貼 bar / pie
+                  ctx.drawImage(barCanvas, 110, 300);
+                  ctx.drawImage(pieCanvas, 570, 860);
+                
+                  // 轉帳建議（用你現有 transferSuggestions）[file:13]
+                  ctx.fillStyle = "#111827";
+                  ctx.font = "bold 30px 'Noto Sans TC', sans-serif";
+                  ctx.fillText("轉帳建議", 110, 900);
+                
+                  ctx.fillStyle = "#374151";
+                  ctx.font = "26px 'Noto Sans TC', sans-serif";
+                  const tx = transferSuggestions.value || [];
+                  if (tx.length === 0) {
+                    ctx.fillText("帳務已平衡，無需轉帳", 110, 940);
+                  } else {
+                    tx.slice(0, 9).forEach((t, i) => {
+                      ctx.fillText(`${t.from} → ${t.to}：NT$ ${Number(t.amount).toLocaleString()}`, 110, 940 + i * 36);
+                    });
+                  }
+                
+                  // 下載報表圖
+                  downloadDataUrl(out.toDataURL("image/png"), `expenses_report_${new Date().toLocaleDateString("sv-SE")}.png`);
+                
+                  // 5) 第二張：主題封面（純 Canvas 生成，適合分享）
+                  const cover = document.createElement("canvas");
+                  cover.width = 1200; cover.height = 675; // 16:9
+                  const c2 = cover.getContext("2d");
+                  const cg = c2.createLinearGradient(0, 0, cover.width, cover.height);
+                  cg.addColorStop(0, "#FFF3E0");
+                  cg.addColorStop(0.55, "#FF7043");
+                  cg.addColorStop(1, "#AB47BC");
+                  c2.fillStyle = cg;
+                  c2.fillRect(0, 0, cover.width, cover.height);
+                
+                  c2.fillStyle = "rgba(255,255,255,0.86)";
+                  drawRoundRect(c2, 90, 120, 520, 420, 28);
+                  c2.fill();
+                
+                  c2.fillStyle = "#111827";
+                  c2.font = "bold 48px 'Noto Sans TC', sans-serif";
+                  c2.fillText("旅遊花費報表", 130, 200);
+                  c2.fillStyle = "#374151";
+                  c2.font = "28px 'Noto Sans TC', sans-serif";
+                  c2.fillText("手機友善 · 一鍵生成圖表", 130, 250);
+                
+                  // 把 pie 的圖貼到封面上（更有「報表」感）
+                  c2.drawImage(pieCanvas, 760, 160, 340, 340);
+                
+                  downloadDataUrl(cover.toDataURL("image/png"), `expenses_cover_${new Date().toLocaleDateString("sv-SE")}.png`);
+                
+                  // 清掉 chart instance（避免記憶體累積）
+                  barChart.destroy();
+                  pieChart.destroy();
+                };
 
                 
                 resetNewExpense();
@@ -3758,6 +3946,7 @@
                     previewSplits,    
                     resetNewExpense,
                     exportExpensesCsv,
+                    exportExpensesChartImages,
                 };
             },
         });
