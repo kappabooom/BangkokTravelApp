@@ -380,8 +380,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.3.8 -->
-        <p class="text-xs text-slate-400 mt-3">v1.3.8</p>
+        <!-- 版本號 v1.3.9 -->
+        <p class="text-xs text-slate-400 mt-3">v1.3.9</p>
     </div>
 
     <div id="app" class="app-container">
@@ -3760,12 +3760,9 @@
                         tooltip: { enabled: true },
                       },
                       scales: {
-                        x: { ticks: { color: "#111827" } },
-                        y: {
-                          ticks: { color: "#111827" },
-                          grid: { color: "rgba(17,24,39,0.08)" },
-                        },
-                      },
+                          x: { ticks: { color: "#111827", autoSkip: true, maxRotation: 0, minRotation: 0 } },
+                          y: { ticks: { color: "#111827" }, grid: { color: "rgba(17,24,39,0.08)" } }
+                        }
                     },
                   });
                 
@@ -3808,60 +3805,122 @@
                   // 等 Chart.js 確實把圖畫完（有些裝置不等會抓到空白）
                   await waitNextPaint();
                 
-                  // 3) 合成「報表大圖」
-                  const out = document.createElement("canvas");
-                  out.width = 1200;
-                  out.height = 1600;
-                  const ctx = out.getContext("2d");
+                  // 3) 合成「報表大圖」（新版排版，不擠在一起）
+                const out = document.createElement("canvas");
+                out.width = 1200;
+                out.height = 1800; // ✅ 加高一點，避免內容擠在同一屏
+                const ctx = out.getContext("2d");
                 
-                  const bg = ctx.createLinearGradient(0, 0, out.width, out.height);
-                  bg.addColorStop(0, "#ff7043");
-                  bg.addColorStop(1, "#ab47bc");
-                  ctx.fillStyle = bg;
-                  ctx.fillRect(0, 0, out.width, out.height);
+                // 背景
+                const bg = ctx.createLinearGradient(0, 0, out.width, out.height);
+                bg.addColorStop(0, "#ff7043");
+                bg.addColorStop(1, "#ab47bc");
+                ctx.fillStyle = bg;
+                ctx.fillRect(0, 0, out.width, out.height);
                 
-                  ctx.fillStyle = "rgba(255,255,255,0.93)";
-                  drawRoundRect(ctx, 60, 60, out.width - 120, out.height - 120, 40);
-                  ctx.fill();
+                // 白卡
+                ctx.fillStyle = "rgba(255,255,255,0.93)";
+                drawRoundRect(ctx, 60, 60, out.width - 120, out.height - 120, 40);
+                ctx.fill();
                 
-                  ctx.fillStyle = "#111827";
-                  ctx.font = "bold 44px 'Noto Sans TC', sans-serif";
-                  ctx.fillText("花費報表（TWD）", 110, 150);
+                // ---- Header
+                ctx.fillStyle = "#111827";
+                ctx.font = "bold 44px 'Noto Sans TC', sans-serif";
+                ctx.fillText("花費報表（TWD）", 110, 150);
                 
-                  ctx.fillStyle = "#374151";
-                  ctx.font = "26px 'Noto Sans TC', sans-serif";
-                  ctx.fillText(`總花費：NT$ ${Math.round(grandTotalTWD).toLocaleString()}`, 110, 205);
-                  ctx.fillText(
-                    `THB→TWD：${Number(EXCHANGE_RATE.value || 0).toFixed(4)}（TWD=1.0000）`,
-                    110,
-                    245
-                  );
+                ctx.fillStyle = "#374151";
+                ctx.font = "26px 'Noto Sans TC', sans-serif";
+                ctx.fillText(`總花費：NT$ ${Math.round(grandTotalTWD).toLocaleString()}`, 110, 205);
+                ctx.fillText(
+                `THB→TWD：${Number(EXCHANGE_RATE.value || 0).toFixed(4)}（TWD=1.0000）`,
+                110,
+                245
+                );
                 
-                  // Bar / Pie 貼上去
-                  ctx.drawImage(barCanvas, 110, 300);
-                  ctx.drawImage(pieCanvas, 650, 820);
+                // ---- Bar 區塊（放上方，留出足夠 margin）
+                const barX = 110;
+                const barY = 300;
+                ctx.fillStyle = "#111827";
+                ctx.font = "bold 30px 'Noto Sans TC', sans-serif";
+                ctx.fillText("每人總花費", barX, barY - 20);
                 
-                  // 轉帳建議（你現有 transferSuggestions computed）
-                  ctx.fillStyle = "#111827";
-                  ctx.font = "bold 30px 'Noto Sans TC', sans-serif";
-                  ctx.fillText("轉帳建議", 110, 820);
+                ctx.fillStyle = "rgba(255,255,255,0.55)";
+                drawRoundRect(ctx, barX - 10, barY - 10, 1020, 540, 28);
+                ctx.fill();
                 
-                  ctx.fillStyle = "#374151";
-                  ctx.font = "26px 'Noto Sans TC', sans-serif";
-                  const tx = transferSuggestions.value || [];
-                  if (tx.length === 0) {
-                    ctx.fillText("帳務已平衡，無需轉帳", 110, 860);
-                  } else {
-                    tx.slice(0, 10).forEach((t, i) => {
-                      ctx.fillText(
-                        `${t.from} → ${t.to}：NT$ ${Number(t.amount).toLocaleString()}`,
-                        110,
-                        860 + i * 36
-                      );
-                    });
-                  }
+                ctx.drawImage(barCanvas, barX, barY);
                 
-                  const reportDataUrl = out.toDataURL("image/png");
+                // ---- 下半部：左轉帳、右圓餅（兩欄）
+                const sectionTop = barY + 560 + 40; // ✅ 560=bar區塊含底板高度，40=間距
+                
+                // 左：轉帳建議面板
+                const txX = 110;
+                const txY = sectionTop;
+                const txW = 650;
+                const txH = out.height - txY - 140;
+                
+                ctx.fillStyle = "rgba(255,255,255,0.70)";
+                drawRoundRect(ctx, txX - 10, txY - 10, txW + 20, txH + 20, 28);
+                ctx.fill();
+                
+                ctx.fillStyle = "#111827";
+                ctx.font = "bold 30px 'Noto Sans TC', sans-serif";
+                ctx.fillText("轉帳建議", txX, txY + 35);
+                
+                ctx.fillStyle = "#374151";
+                ctx.font = "24px 'Noto Sans TC', sans-serif";
+                
+                // ✅ 用 clip 限制轉帳清單只畫在面板內，不會跑去蓋到圖表
+                ctx.save();
+                ctx.beginPath();
+                ctx.rect(txX, txY + 60, txW, txH - 70);
+                ctx.clip();
+                
+                const tx = transferSuggestions.value || [];
+                if (tx.length === 0) {
+                ctx.fillText("帳務已平衡，無需轉帳", txX, txY + 105);
+                } else {
+                const lineH = 34;
+                const maxLines = Math.floor((txH - 90) / lineH);
+                tx.slice(0, maxLines).forEach((t, i) => {
+                ctx.fillText(
+                  `${t.from} → ${t.to}：NT$ ${Number(t.amount).toLocaleString()}`,
+                  txX,
+                  txY + 105 + i * lineH
+                );
+                });
+                if (tx.length > maxLines) {
+                ctx.fillText(`…其餘 ${tx.length - maxLines} 筆請看 App 內`, txX, txY + 105 + maxLines * lineH);
+                }
+                }
+                ctx.restore();
+                
+                // 右：分類圓餅面板（縮小 + 右側獨立）
+                const piePanelX = 810;
+                const piePanelY = sectionTop;
+                const piePanelW = 280;
+                const piePanelH = 520;
+                
+                ctx.fillStyle = "rgba(255,255,255,0.70)";
+                drawRoundRect(ctx, piePanelX - 10, piePanelY - 10, piePanelW + 20, piePanelH + 20, 28);
+                ctx.fill();
+                
+                ctx.fillStyle = "#111827";
+                ctx.font = "bold 30px 'Noto Sans TC', sans-serif";
+                ctx.fillText("分類占比", piePanelX, piePanelY + 35);
+                
+                // ✅ 縮小 pie，避免壓到其他內容；也避免 donut 透明區塊看起來像「跑出卡片」
+                ctx.drawImage(pieCanvas, piePanelX, piePanelY + 60, 260, 260);
+                
+                // 可選：在右側再補一行總花費，讓版面更平衡
+                ctx.fillStyle = "#374151";
+                ctx.font = "24px 'Noto Sans TC', sans-serif";
+                ctx.fillText(`Total`, piePanelX, piePanelY + 360);
+                ctx.fillStyle = "#111827";
+                ctx.font = "bold 28px 'Noto Sans TC', sans-serif";
+                ctx.fillText(`NT$ ${Math.round(grandTotalTWD).toLocaleString()}`, piePanelX, piePanelY + 400);
+                
+                const reportDataUrl = out.toDataURL("image/png");
                 
                   // 4) 合成「分享封面圖」(16:9)
                   const cover = document.createElement("canvas");
