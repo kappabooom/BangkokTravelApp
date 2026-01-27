@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.3.4 -->
-        <p class="text-xs text-slate-400 mt-3">v1.3.4</p>
+        <!-- 版本號 v1.3.5 -->
+        <p class="text-xs text-slate-400 mt-3">v1.3.5</p>
     </div>
 
     <div id="app" class="app-container">
@@ -1601,14 +1601,20 @@
                 </div>
 
                 <!-- 匯出 CSV -->
-                <button
-                  @click="exportExpensesCsv"
-                  class="w-full py-3 rounded-2xl bg-deep-sea-blue text-white font-bold shadow-lg shadow-deep-sea-blue/20 hover:opacity-95 transition"
-                >
-                  <i class="fa-solid fa-file-csv mr-2"></i>
-                  輸出支出項目
-                </button>
-
+                <div class="mt-6 bg-white rounded-3xl p-5 card-shadow">
+                  <button
+                    @click="exportExpensesCsv"
+                    class="w-full py-3 rounded-2xl bg-deep-sea-blue text-white font-bold shadow-lg shadow-deep-sea-blue/20 hover:opacity-95 transition"
+                  >
+                    <i class="fa-solid fa-file-csv mr-2"></i>
+                    輸出支出項目（TWD）
+                  </button>
+                
+                  <p class="text-xs text-slate-400 mt-2 text-center">
+                    會以目前匯率換算成 TWD 匯出
+                  </p>
+                </div>
+                
                 <!-- 浮動新增按鈕 -->
                 <button
                     v-if="currentTab === 'itinerary' && canEditItinerary"
@@ -3516,9 +3522,42 @@
                 
                   return shares;
                 };
+
+
+                // 把「原幣別分攤」換算成「TWD 分攤」，並確保加總 = round(總額*匯率)
+                const calcExpenseSharesTWD = (exp, memberNames) => {
+                  const sharesSrc = calcExpenseShares(exp, memberNames); // 原幣別分攤
+                  const currency = exp.currency || "THB";
+                
+                  // 本來就是 TWD 就直接回傳
+                  if (currency === "TWD") return sharesSrc;
+                
+                  const rate = Number(EXCHANGE_RATE.value) || 0; // THB -> TWD（即時抓回來的值）
+                  const totalSrc = Number(exp.amount) || 0;
+                  const totalTWD = Math.round(totalSrc * rate);
+                
+                  // 先 floor，再用「小數最大者優先」補齊差額，避免逐格 round 造成加總對不起來
+                  const items = memberNames.map((name) => {
+                    const raw = (Number(sharesSrc[name]) || 0) * rate;
+                    const base = Math.floor(raw);
+                    return { name, base, frac: raw - base };
+                  });
+                
+                  let used = items.reduce((s, x) => s + x.base, 0);
+                  let rem = totalTWD - used;
+                
+                  items.sort((a, b) => b.frac - a.frac);
+                  for (let i = 0; i < items.length && rem > 0; i++, rem--) {
+                    items[i].base += 1;
+                  }
+                
+                  const out = Object.fromEntries(memberNames.map((n) => [n, 0]));
+                  items.forEach((x) => (out[x.name] = x.base));
+                  return out;
+                };
                 
                 const exportExpensesCsv = async () => {
-                  // 若匯率還沒抓到或正在載入，先嘗試更新一次（失敗就用目前值）
+                  // 匯出前確保匯率是最新的（失敗就用目前值）
                   if (!EXCHANGE_RATE.value || isNaN(Number(EXCHANGE_RATE.value)) || isRatesLoading.value) {
                     try { await fetchExchangeRate(); } catch (e) {}
                   }
@@ -3526,24 +3565,42 @@
                   const memberNames = members.value.filter((m) => m.active).map((m) => m.name);
                 
                   const header = [
-                    `花費項目(墊付者/日期/原幣別) [金額: TWD] (1 THB = ${Number(EXCHANGE_RATE.value || 0).toFixed(4)} TWD)`,
-                    ...memberNames,
+                    "花費項目",
+                    "墊付者",
+                    "日期",
+                    "原幣別",
+                    "原幣別總額",
+                    `THB->TWD匯率(當下)`,
+                    "換算後TWD總額",
+                    ...memberNames.map((n) => `${n}(原幣別)`),
+                    ...memberNames.map((n) => `${n}(TWD)`),
                   ];
                 
                   const rows = expenses.value
                     .slice()
                     .sort((a, b) => new Date(a.date) - new Date(b.date))
                     .map((exp) => {
+                      const currency = exp.currency || "THB";
+                      const totalSrc = Number(exp.amount) || 0;
+                      const rate = Number(EXCHANGE_RATE.value) || 0;
+                
+                      // 每人原幣別分攤（由你的 splitMethod + splitDetails 算出）
+                      const sharesSrc = calcExpenseShares(exp, memberNames);
+                
+                      // 每人換算後 TWD 分攤（確保加總=round(總額*匯率)）
                       const sharesTWD = calcExpenseSharesTWD(exp, memberNames);
                 
-                      const itemLabel =
-                        `${exp.name || "(未命名)"} ` +
-                        `(墊付:${exp.payer || ""}) ` +
-                        `${exp.date || ""} ` +
-                        `[原幣別:${exp.currency || ""}]`;
+                      const totalTWD = currency === "TWD" ? Math.round(totalSrc) : Math.round(totalSrc * rate);
                 
                       return [
-                        itemLabel,
+                        exp.name || "(未命名)",
+                        exp.payer || "",
+                        exp.date || "",
+                        currency,
+                        totalSrc,
+                        currency === "TWD" ? "" : rate.toFixed(4),
+                        totalTWD,
+                        ...memberNames.map((n) => (sharesSrc[n] ? sharesSrc[n] : "")),
                         ...memberNames.map((n) => (sharesTWD[n] ? sharesTWD[n] : "")),
                       ];
                     });
@@ -3557,7 +3614,7 @@
                 
                   const a = document.createElement("a");
                   a.href = url;
-                  a.download = `expenses_TWD_${new Date().toLocaleDateString("sv-SE")}.csv`;
+                  a.download = `expenses_dual_${new Date().toLocaleDateString("sv-SE")}.csv`;
                   document.body.appendChild(a);
                   a.click();
                   document.body.removeChild(a);
