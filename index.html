@@ -380,8 +380,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.3.7 -->
-        <p class="text-xs text-slate-400 mt-3">v1.3.7</p>
+        <!-- 版本號 v1.3.8 -->
+        <p class="text-xs text-slate-400 mt-3">v1.3.8</p>
     </div>
 
     <div id="app" class="app-container">
@@ -3668,7 +3668,11 @@
                   document.body.removeChild(a);
                   URL.revokeObjectURL(url);
                 };
-
+                
+                // ===== helpers =====
+                const waitNextPaint = () =>
+                  new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                
                 const downloadDataUrl = (dataUrl, filename) => {
                   const a = document.createElement("a");
                   a.href = dataUrl;
@@ -3689,17 +3693,23 @@
                   ctx.closePath();
                 };
                 
+                // ===== main export =====
+                // 會產生兩張 PNG：report + cover，並用 SweetAlert2 讓使用者各點一次下載（避免手機只放行一次下載）
                 const exportExpensesChartImages = async () => {
-                  // 1) 確保匯率更新（THB->TWD）；TWD 支出視為 1.0000
+                  // 0) 確保匯率更新（THB->TWD）；TWD 支出視為 1.0000
                   if (!EXCHANGE_RATE.value || isNaN(Number(EXCHANGE_RATE.value)) || isRatesLoading.value) {
-                    try { await fetchExchangeRate(); } catch (e) {}
+                    try {
+                      await fetchExchangeRate();
+                    } catch (e) {
+                      // ignore
+                    }
                   }
                 
                   const memberNames = members.value.filter((m) => m.active).map((m) => m.name);
                 
-                  // 2) 彙總：每人總花費（TWD）、分類總花費（TWD）
+                  // 1) 彙總：每人總花費（TWD）、分類總花費（TWD）
                   const perMemberTWD = Object.fromEntries(memberNames.map((n) => [n, 0]));
-                  const byCategoryTWD = {}; // {food: 123, ...}
+                  const byCategoryTWD = {};
                   let grandTotalTWD = 0;
                 
                   expenses.value.forEach((exp) => {
@@ -3709,70 +3719,99 @@
                     const totalTWD = Math.round(totalSrc * rateUsed);
                 
                     grandTotalTWD += totalTWD;
-                    byCategoryTWD[exp.category || "other"] = (byCategoryTWD[exp.category || "other"] || 0) + totalTWD;
+                    byCategoryTWD[exp.category || "other"] =
+                      (byCategoryTWD[exp.category || "other"] || 0) + totalTWD;
                 
+                    // 依賴你已存在的 calcExpenseSharesTWD(exp, memberNames)
                     const sharesTWD = calcExpenseSharesTWD(exp, memberNames);
-                    memberNames.forEach((n) => (perMemberTWD[n] += Number(sharesTWD[n] || 0)));
+                    memberNames.forEach((n) => {
+                      perMemberTWD[n] += Number(sharesTWD[n] || 0);
+                    });
                   });
                 
-                  // 3) 用 Chart.js 在「離屏 canvas」畫兩張圖：bar + pie
+                  // 2) 準備 Chart.js 的離屏 canvas
                   const barCanvas = document.createElement("canvas");
-                  barCanvas.width = 1000; barCanvas.height = 520;
+                  barCanvas.width = 1000;
+                  barCanvas.height = 520;
                 
                   const pieCanvas = document.createElement("canvas");
-                  pieCanvas.width = 520; pieCanvas.height = 520;
+                  pieCanvas.width = 520;
+                  pieCanvas.height = 520;
                 
-                  // bar
+                  // bar chart：每人總花費
                   const barChart = new Chart(barCanvas.getContext("2d"), {
                     type: "bar",
                     data: {
                       labels: memberNames,
-                      datasets: [{
-                        label: "每人總花費 (TWD)",
-                        data: memberNames.map((n) => Math.round(perMemberTWD[n] || 0)),
-                        backgroundColor: "rgba(230, 81, 0, 0.85)",
-                        borderRadius: 12,
-                      }],
+                      datasets: [
+                        {
+                          label: "每人總花費 (TWD)",
+                          data: memberNames.map((n) => Math.round(perMemberTWD[n] || 0)),
+                          backgroundColor: "rgba(230, 81, 0, 0.85)",
+                          borderRadius: 12,
+                        },
+                      ],
                     },
                     options: {
                       responsive: false,
+                      animation: false, // 避免還在動畫時就匯出
                       plugins: {
                         legend: { display: false },
                         tooltip: { enabled: true },
                       },
                       scales: {
                         x: { ticks: { color: "#111827" } },
-                        y: { ticks: { color: "#111827" }, grid: { color: "rgba(17,24,39,0.08)" } },
+                        y: {
+                          ticks: { color: "#111827" },
+                          grid: { color: "rgba(17,24,39,0.08)" },
+                        },
                       },
                     },
                   });
                 
-                  // pie
+                  // pie chart：分類占比
                   const catEntries = Object.entries(byCategoryTWD).sort((a, b) => b[1] - a[1]);
                   const pieChart = new Chart(pieCanvas.getContext("2d"), {
                     type: "doughnut",
                     data: {
                       labels: catEntries.map(([k]) => k),
-                      datasets: [{
-                        data: catEntries.map(([, v]) => Math.round(v)),
-                        backgroundColor: [
-                          "#E65100", "#4DB6AC", "#AB47BC", "#FFB300", "#78909C", "#5C6BC0", "#8D6E63", "#9E9E9E",
-                        ],
-                        borderWidth: 0,
-                      }],
+                      datasets: [
+                        {
+                          data: catEntries.map(([, v]) => Math.round(v)),
+                          backgroundColor: [
+                            "#E65100",
+                            "#4DB6AC",
+                            "#AB47BC",
+                            "#FFB300",
+                            "#78909C",
+                            "#5C6BC0",
+                            "#8D6E63",
+                            "#9E9E9E",
+                          ],
+                          borderWidth: 0,
+                        },
+                      ],
                     },
                     options: {
                       responsive: false,
+                      animation: false,
                       cutout: "60%",
                       plugins: {
-                        legend: { position: "bottom", labels: { color: "#111827" } },
+                        legend: {
+                          position: "bottom",
+                          labels: { color: "#111827" },
+                        },
                       },
                     },
                   });
                 
-                  // 4) 合成「報表大圖」：背景 + 標題 + bar + pie + 轉帳建議文字
+                  // 等 Chart.js 確實把圖畫完（有些裝置不等會抓到空白）
+                  await waitNextPaint();
+                
+                  // 3) 合成「報表大圖」
                   const out = document.createElement("canvas");
-                  out.width = 1200; out.height = 1600;
+                  out.width = 1200;
+                  out.height = 1600;
                   const ctx = out.getContext("2d");
                 
                   const bg = ctx.createLinearGradient(0, 0, out.width, out.height);
@@ -3792,35 +3831,44 @@
                   ctx.fillStyle = "#374151";
                   ctx.font = "26px 'Noto Sans TC', sans-serif";
                   ctx.fillText(`總花費：NT$ ${Math.round(grandTotalTWD).toLocaleString()}`, 110, 205);
-                  ctx.fillText(`THB→TWD：${Number(EXCHANGE_RATE.value || 0).toFixed(4)}（TWD=1.0000）`, 110, 245);
+                  ctx.fillText(
+                    `THB→TWD：${Number(EXCHANGE_RATE.value || 0).toFixed(4)}（TWD=1.0000）`,
+                    110,
+                    245
+                  );
                 
-                  // 貼 bar / pie
+                  // Bar / Pie 貼上去
                   ctx.drawImage(barCanvas, 110, 300);
-                  ctx.drawImage(pieCanvas, 570, 860);
+                  ctx.drawImage(pieCanvas, 650, 820);
                 
-                  // 轉帳建議（用你現有 transferSuggestions）[file:13]
+                  // 轉帳建議（你現有 transferSuggestions computed）
                   ctx.fillStyle = "#111827";
                   ctx.font = "bold 30px 'Noto Sans TC', sans-serif";
-                  ctx.fillText("轉帳建議", 110, 900);
+                  ctx.fillText("轉帳建議", 110, 820);
                 
                   ctx.fillStyle = "#374151";
                   ctx.font = "26px 'Noto Sans TC', sans-serif";
                   const tx = transferSuggestions.value || [];
                   if (tx.length === 0) {
-                    ctx.fillText("帳務已平衡，無需轉帳", 110, 940);
+                    ctx.fillText("帳務已平衡，無需轉帳", 110, 860);
                   } else {
-                    tx.slice(0, 9).forEach((t, i) => {
-                      ctx.fillText(`${t.from} → ${t.to}：NT$ ${Number(t.amount).toLocaleString()}`, 110, 940 + i * 36);
+                    tx.slice(0, 10).forEach((t, i) => {
+                      ctx.fillText(
+                        `${t.from} → ${t.to}：NT$ ${Number(t.amount).toLocaleString()}`,
+                        110,
+                        860 + i * 36
+                      );
                     });
                   }
                 
-                  // 下載報表圖
-                  downloadDataUrl(out.toDataURL("image/png"), `expenses_report_${new Date().toLocaleDateString("sv-SE")}.png`);
+                  const reportDataUrl = out.toDataURL("image/png");
                 
-                  // 5) 第二張：主題封面（純 Canvas 生成，適合分享）
+                  // 4) 合成「分享封面圖」(16:9)
                   const cover = document.createElement("canvas");
-                  cover.width = 1200; cover.height = 675; // 16:9
+                  cover.width = 1200;
+                  cover.height = 675;
                   const c2 = cover.getContext("2d");
+                
                   const cg = c2.createLinearGradient(0, 0, cover.width, cover.height);
                   cg.addColorStop(0, "#FFF3E0");
                   cg.addColorStop(0.55, "#FF7043");
@@ -3828,26 +3876,80 @@
                   c2.fillStyle = cg;
                   c2.fillRect(0, 0, cover.width, cover.height);
                 
+                  // skyline（簡化剪影）
+                  c2.fillStyle = "rgba(17,24,39,0.28)";
+                  const baseY = 590;
+                  const blocks = [
+                    [60, 0, 90, 210],
+                    [160, 0, 70, 260],
+                    [240, 0, 100, 320],
+                    [350, 0, 80, 240],
+                    [450, 0, 140, 300],
+                    [610, 0, 100, 250],
+                    [720, 0, 160, 340],
+                    [900, 0, 120, 220],
+                    [1040, 0, 120, 280],
+                  ];
+                  blocks.forEach(([x, _y, w, h]) => c2.fillRect(x, baseY - h, w, h));
+                
+                  // 左側卡片
                   c2.fillStyle = "rgba(255,255,255,0.86)";
-                  drawRoundRect(c2, 90, 120, 520, 420, 28);
+                  drawRoundRect(c2, 90, 120, 560, 420, 28);
                   c2.fill();
                 
                   c2.fillStyle = "#111827";
-                  c2.font = "bold 48px 'Noto Sans TC', sans-serif";
-                  c2.fillText("旅遊花費報表", 130, 200);
+                  c2.font = "bold 50px 'Noto Sans TC', sans-serif";
+                  c2.fillText("旅遊花費報表", 130, 205);
+                
                   c2.fillStyle = "#374151";
                   c2.font = "28px 'Noto Sans TC', sans-serif";
-                  c2.fillText("手機友善 · 一鍵生成圖表", 130, 250);
+                  c2.fillText("手機友善 · 一鍵生成圖表", 130, 255);
                 
-                  // 把 pie 的圖貼到封面上（更有「報表」感）
-                  c2.drawImage(pieCanvas, 760, 160, 340, 340);
+                  c2.fillStyle = "#111827";
+                  c2.font = "bold 34px 'Noto Sans TC', sans-serif";
+                  c2.fillText(`Total：NT$ ${Math.round(grandTotalTWD).toLocaleString()}`, 130, 320);
                 
-                  downloadDataUrl(cover.toDataURL("image/png"), `expenses_cover_${new Date().toLocaleDateString("sv-SE")}.png`);
+                  // 把 pie 貼上（看起來更像「報表封面」）
+                  c2.drawImage(pieCanvas, 760, 160, 360, 360);
                 
-                  // 清掉 chart instance（避免記憶體累積）
+                  const coverDataUrl = cover.toDataURL("image/png");
+                
+                  // 5) 清掉 chart instance（避免記憶體累積）
                   barChart.destroy();
                   pieChart.destroy();
+                
+                  // 6) 用 SweetAlert2 讓使用者分開點兩次下載（避免手機只放行一次自動下載）
+                  const dateTag = new Date().toLocaleDateString("sv-SE");
+                  await Swal.fire({
+                    title: "匯出圖片",
+                    html: `
+                      <div style="display:flex; flex-direction:column; gap:12px;">
+                        <button id="btn-dl-report"
+                          style="width:100%; padding:12px; border-radius:16px; background:#E65100; color:white; font-weight:700; border:0;">
+                          下載花費報表（PNG）
+                        </button>
+                        <button id="btn-dl-cover"
+                          style="width:100%; padding:12px; border-radius:16px; background:#111827; color:white; font-weight:700; border:0;">
+                          下載分享封面（PNG）
+                        </button>
+                        <div style="font-size:12px; color:#6b7280; text-align:center;">
+                          手機瀏覽器通常一次只允許自動下載一個檔案，因此改成分開點擊下載
+                        </div>
+                      </div>
+                    `,
+                    showConfirmButton: false,
+                    showCloseButton: true,
+                    didOpen: () => {
+                      document.getElementById("btn-dl-report").onclick = () => {
+                        downloadDataUrl(reportDataUrl, `expenses_report_${dateTag}.png`);
+                      };
+                      document.getElementById("btn-dl-cover").onclick = () => {
+                        downloadDataUrl(coverDataUrl, `expenses_cover_${dateTag}.png`);
+                      };
+                    },
+                  });
                 };
+
 
                 
                 resetNewExpense();
