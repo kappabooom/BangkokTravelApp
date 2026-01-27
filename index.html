@@ -380,8 +380,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.3.10 -->
-        <p class="text-xs text-slate-400 mt-3">v1.3.10</p>
+        <!-- 版本號 v1.4.0 -->
+        <p class="text-xs text-slate-400 mt-3">v1.4.0</p>
     </div>
 
     <div id="app" class="app-container">
@@ -3681,6 +3681,23 @@
                   a.click();
                   document.body.removeChild(a);
                 };
+
+                const dataUrlToFile = async (dataUrl, filename) => {
+                  const blob = await (await fetch(dataUrl)).blob();
+                  return new File([blob], filename, { type: "image/png" });
+                };
+                
+                const shareToIOSPhotos = async (dataUrl, filename) => {
+                  const file = await dataUrlToFile(dataUrl, filename);
+                  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    await navigator.share({ files: [file], title: filename });
+                    return true;
+                  }
+                  // fallback：開新視窗，讓使用者用分享/長按存圖
+                  window.open(dataUrl, "_blank");
+                  return false;
+                };
+
                 
                 const drawRoundRect = (ctx, x, y, w, h, r) => {
                   const rr = Math.min(r, w / 2, h / 2);
@@ -3692,6 +3709,45 @@
                   ctx.arcTo(x, y, x + w, y, rr);
                   ctx.closePath();
                 };
+
+                const categoryNameZh = (k) => {
+                  const map = {
+                    food: "餐飲",
+                    transport: "交通",
+                    shopping: "購物",
+                    sightseeing: "景點",
+                    accommodation: "住宿",
+                    ticket: "門票",
+                    other: "其他",
+                    flight: "機票",
+                  };
+                  return map[k] || k;
+                };
+                
+                const drawLegendRows = (ctx, x, y, w, rows) => {
+                  const lineH = 30;
+                  rows.forEach((r, i) => {
+                    const yy = y + i * lineH;
+                
+                    // color dot
+                    ctx.fillStyle = r.color;
+                    ctx.beginPath();
+                    ctx.arc(x + 10, yy - 8, 7, 0, Math.PI * 2);
+                    ctx.fill();
+                
+                    // name
+                    ctx.fillStyle = "#111827";
+                    ctx.font = "24px 'Noto Sans TC', sans-serif";
+                    ctx.fillText(r.name, x + 26, yy);
+                
+                    // amount + percent (right align)
+                    const rightText = `NT$ ${Math.round(r.amount).toLocaleString()}  (${Math.round(r.pct)}%)`;
+                    ctx.font = "24px 'Noto Sans TC', sans-serif";
+                    const tw = ctx.measureText(rightText).width;
+                    ctx.fillText(rightText, x + w - tw, yy);
+                  });
+                };
+
                 
                 // ===== main export =====
                 // 會產生兩張 PNG：report + cover，並用 SweetAlert2 讓使用者各點一次下載（避免手機只放行一次下載）
@@ -3871,53 +3927,92 @@
                     const barImgH = barPanelH - 130;
                     ctx.drawImage(barCanvas, barImgX, barImgY, barImgW, barImgH);
                     
-                    // 右上：Pie 面板
+                    // 右上：Pie 面板（更清楚：pie + 自畫 legend）
                     const piePanelX = contentX + leftW + gap;
                     const piePanelY = contentY;
                     const piePanelW = rightW;
-                    const piePanelH = 470;
+                    const piePanelH = 560; // 拉高，留 legend 空間
                     
                     ctx.fillStyle = "#FFFFFF";
                     drawRoundRect(ctx, piePanelX, piePanelY, piePanelW, piePanelH, 34);
                     ctx.fill();
                     
+                    // 邊框讓卡片更清楚
+                    ctx.strokeStyle = "rgba(17,24,39,0.06)";
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                    
                     ctx.fillStyle = "#111827";
                     ctx.font = "bold 34px 'Noto Sans TC', sans-serif";
                     ctx.fillText("分類占比", piePanelX + 28, piePanelY + 60);
                     
-                    // Pie（置中縮放）
-                    const pieSize = 330;
-                    const pieX = piePanelX + Math.round((piePanelW - pieSize) / 2);
+                    // Pie（置中）
+                    const pieSize = 300;
+                    const pieX = piePanelX + 28;
                     const pieY = piePanelY + 95;
                     ctx.drawImage(pieCanvas, pieX, pieY, pieSize, pieSize);
                     
-                    // 右上面板下方顯示 Total（避免 legend 佔位）
+                    // 右側 legend（Top 5 + 其他合併）
+                    const total = Math.max(1, grandTotalTWD);
+                    const palette = ["#E65100","#4DB6AC","#AB47BC","#FFB300","#78909C","#5C6BC0","#8D6E63","#9E9E9E"];
+                    
+                    const sorted = Object.entries(byCategoryTWD)
+                      .map(([k, v], idx) => ({ key:k, amount:v, color: palette[idx % palette.length] }))
+                      .sort((a,b) => b.amount - a.amount);
+                    
+                    const top = sorted.slice(0, 5);
+                    const rest = sorted.slice(5);
+                    const restSum = rest.reduce((s, r) => s + r.amount, 0);
+                    
+                    const rows = [
+                      ...top.map(r => ({
+                        name: categoryNameZh(r.key),
+                        amount: r.amount,
+                        pct: (r.amount / total) * 100,
+                        color: r.color
+                      })),
+                      ...(restSum > 0 ? [{
+                        name: "其他",
+                        amount: restSum,
+                        pct: (restSum / total) * 100,
+                        color: "#9CA3AF"
+                      }] : [])
+                    ];
+                    
+                    const legendX = piePanelX + 28 + pieSize + 30;
+                    const legendY = piePanelY + 140;
+                    const legendW = piePanelW - (legendX - piePanelX) - 28;
+                    drawLegendRows(ctx, legendX, legendY, legendW, rows);
+                    
+                    // Total（固定放底部，不跟 legend 擠）
                     ctx.fillStyle = "#6b7280";
                     ctx.font = "24px 'Noto Sans TC', sans-serif";
                     ctx.fillText("Total", piePanelX + 28, piePanelY + piePanelH - 70);
                     
                     ctx.fillStyle = "#111827";
-                    ctx.font = "bold 34px 'Noto Sans TC', sans-serif";
-                    ctx.fillText(`NT$ ${Math.round(grandTotalTWD).toLocaleString()}`, piePanelX + 28, piePanelY + piePanelH - 30);
+                    ctx.font = "bold 36px 'Noto Sans TC', sans-serif";
+                    ctx.fillText(`NT$ ${Math.round(grandTotalTWD).toLocaleString()}`, piePanelX + 28, piePanelY + piePanelH - 28);
+
                     
-                    // 右下：轉帳建議面板
                     const txPanelX = piePanelX;
-                    const txPanelY = piePanelY + piePanelH + 40;
+                    const txPanelY = piePanelY + piePanelH + 60; // 間距加大：60
                     const txPanelW = piePanelW;
                     const txPanelH = contentY + contentH - txPanelY;
                     
                     ctx.fillStyle = "#FFFFFF";
                     drawRoundRect(ctx, txPanelX, txPanelY, txPanelW, txPanelH, 34);
                     ctx.fill();
+                    ctx.strokeStyle = "rgba(17,24,39,0.06)";
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
                     
                     ctx.fillStyle = "#111827";
                     ctx.font = "bold 34px 'Noto Sans TC', sans-serif";
                     ctx.fillText("轉帳建議", txPanelX + 28, txPanelY + 60);
                     
-                    // 轉帳列表：clip 避免畫出框外
                     ctx.save();
                     ctx.beginPath();
-                    ctx.rect(txPanelX + 28, txPanelY + 85, txPanelW - 56, txPanelH - 110);
+                    ctx.rect(txPanelX + 28, txPanelY + 85, txPanelW - 56, txPanelH - 130);
                     ctx.clip();
                     
                     ctx.fillStyle = "#374151";
@@ -3925,22 +4020,25 @@
                     
                     const tx = transferSuggestions.value || [];
                     if (tx.length === 0) {
-                      ctx.fillText("帳務已平衡，無需轉帳", txPanelX + 28, txPanelY + 125);
+                      ctx.fillText("帳務已平衡，無需轉帳", txPanelX + 28, txPanelY + 130);
                     } else {
-                      const lineH = 34;
-                      const maxLines = Math.floor((txPanelH - 120) / lineH);
-                      tx.slice(0, maxLines).forEach((t, i) => {
+                      const lineH = 38;
+                      const showN = Math.min(6, tx.length);
+                      for (let i = 0; i < showN; i++) {
+                        const t = tx[i];
                         ctx.fillText(
                           `${t.from} → ${t.to}：NT$ ${Number(t.amount).toLocaleString()}`,
                           txPanelX + 28,
-                          txPanelY + 125 + i * lineH
+                          txPanelY + 130 + i * lineH
                         );
-                      });
-                      if (tx.length > maxLines) {
-                        ctx.fillText(`…其餘 ${tx.length - maxLines} 筆請看 App 內`, txPanelX + 28, txPanelY + 125 + maxLines * lineH);
                       }
                     }
                     ctx.restore();
+                    
+                    ctx.fillStyle = "#6b7280";
+                    ctx.font = "22px 'Noto Sans TC', sans-serif";
+                    ctx.fillText(`共 ${tx.length} 筆（完整清單請看 App 內）`, txPanelX + 28, txPanelY + txPanelH - 28);
+
                     
                     const reportDataUrl = out.toDataURL("image/png");
 
@@ -4003,33 +4101,43 @@
                   // 6) 用 SweetAlert2 讓使用者分開點兩次下載（避免手機只放行一次自動下載）
                   const dateTag = new Date().toLocaleDateString("sv-SE");
                   await Swal.fire({
-                    title: "匯出圖片",
-                    html: `
-                      <div style="display:flex; flex-direction:column; gap:12px;">
-                        <button id="btn-dl-report"
-                          style="width:100%; padding:12px; border-radius:16px; background:#E65100; color:white; font-weight:700; border:0;">
-                          下載花費報表（PNG）
-                        </button>
-                        <button id="btn-dl-cover"
-                          style="width:100%; padding:12px; border-radius:16px; background:#111827; color:white; font-weight:700; border:0;">
-                          下載分享封面（PNG）
-                        </button>
-                        <div style="font-size:12px; color:#6b7280; text-align:center;">
-                          手機瀏覽器通常一次只允許自動下載一個檔案，因此改成分開點擊下載
+                      title: "匯出圖片",
+                      html: `
+                        <div style="display:flex; flex-direction:column; gap:12px;">
+                          <button id="btn-dl-report" style="width:100%; padding:12px; border-radius:16px; background:#E65100; color:white; font-weight:700; border:0;">
+                            下載花費報表（PNG）
+                          </button>
+                          <button id="btn-share-report" style="width:100%; padding:12px; border-radius:16px; background:#0f766e; color:white; font-weight:700; border:0;">
+                            儲存花費報表到相簿
+                          </button>
+                    
+                          <button id="btn-dl-cover" style="width:100%; padding:12px; border-radius:16px; background:#111827; color:white; font-weight:700; border:0;">
+                            下載分享封面（PNG）
+                          </button>
+                          <button id="btn-share-cover" style="width:100%; padding:12px; border-radius:16px; background:#0f766e; color:white; font-weight:700; border:0;">
+                            儲存分享封面到相簿
+                          </button>
+                    
+                          <div style="font-size:12px; color:#6b7280; text-align:center;">
+                            iPhone 桌面 App 建議用「儲存到相簿」（分享面板）最穩
+                          </div>
                         </div>
-                      </div>
-                    `,
-                    showConfirmButton: false,
-                    showCloseButton: true,
-                    didOpen: () => {
-                      document.getElementById("btn-dl-report").onclick = () => {
-                        downloadDataUrl(reportDataUrl, `expenses_report_${dateTag}.png`);
-                      };
-                      document.getElementById("btn-dl-cover").onclick = () => {
-                        downloadDataUrl(coverDataUrl, `expenses_cover_${dateTag}.png`);
-                      };
-                    },
-                  });
+                      `,
+                      showConfirmButton: false,
+                      showCloseButton: true,
+                      didOpen: () => {
+                        document.getElementById("btn-dl-report").onclick = () =>
+                          downloadDataUrl(reportDataUrl, `expenses_report_${dateTag}.png`);
+                        document.getElementById("btn-share-report").onclick = async () =>
+                          await shareToIOSPhotos(reportDataUrl, `expenses_report_${dateTag}.png`);
+                    
+                        document.getElementById("btn-dl-cover").onclick = () =>
+                          downloadDataUrl(coverDataUrl, `expenses_cover_${dateTag}.png`);
+                        document.getElementById("btn-share-cover").onclick = async () =>
+                          await shareToIOSPhotos(coverDataUrl, `expenses_cover_${dateTag}.png`);
+                      },
+                    });
+
                 };
 
 
