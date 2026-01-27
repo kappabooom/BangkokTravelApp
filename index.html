@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.3.3 -->
-        <p class="text-xs text-slate-400 mt-3">v1.3.3</p>
+        <!-- 版本號 v1.3.4 -->
+        <p class="text-xs text-slate-400 mt-3">v1.3.4</p>
     </div>
 
     <div id="app" class="app-container">
@@ -1599,6 +1599,15 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- 匯出 CSV -->
+                <button
+                  @click="exportExpensesCsv"
+                  class="w-full py-3 rounded-2xl bg-deep-sea-blue text-white font-bold shadow-lg shadow-deep-sea-blue/20 hover:opacity-95 transition"
+                >
+                  <i class="fa-solid fa-file-csv mr-2"></i>
+                  輸出支出項目
+                </button>
 
                 <!-- 浮動新增按鈕 -->
                 <button
@@ -3428,6 +3437,133 @@
                     }
                 }
 
+                // --- CSV 工具：轉義欄位（含逗號/引號/換行的安全處理） ---
+                const csvEscape = (v) => {
+                  const s = v == null ? "" : String(v);
+                  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+                  return s;
+                };
+                
+                // --- 算某一筆支出，每個人應分攤多少（回傳金額單位=該筆支出的 currency） ---
+                const calcExpenseShares = (exp, memberNames) => {
+                  const total = Number(exp.amount) || 0;
+                  const shares = Object.fromEntries(memberNames.map((n) => [n, 0]));
+                
+                  if (exp.splitMethod === "personal") {
+                    if (shares[exp.payer] != null) shares[exp.payer] = total;
+                    return shares;
+                  }
+                
+                  // 參與者名單：新資料用 selectedSplitMembers；舊資料退回用目前 active members
+                  const participants =
+                    exp.selectedSplitMembers && exp.selectedSplitMembers.length > 0
+                      ? exp.selectedSplitMembers
+                      : memberNames;
+                
+                  // equal：若你已在 saveExpense() 把最終結果寫進 splitDetails，優先用它
+                  if (exp.splitMethod === "equal") {
+                    if (exp.splitDetails && Object.keys(exp.splitDetails).length > 0) {
+                      for (const name of participants) {
+                        if (shares[name] != null) shares[name] = Number(exp.splitDetails[name]) || 0;
+                      }
+                      return shares;
+                    }
+                
+                    // 舊資料：沒有 splitDetails → 固定規則整數分配（避免每次重算跳動）
+                    const count = participants.length || 1;
+                    const per = Math.floor(total / count);
+                    const rem = total - per * count;
+                    participants.forEach((name, idx) => {
+                      if (shares[name] != null) shares[name] = per + (idx < rem ? 1 : 0);
+                    });
+                    return shares;
+                  }
+                
+                  // amount：splitDetails 直接就是金額
+                  if (exp.splitMethod === "amount") {
+                    for (const name of participants) {
+                      if (shares[name] != null) shares[name] = Number(exp.splitDetails?.[name]) || 0;
+                    }
+                    return shares;
+                  }
+                
+                  // ratio：splitDetails 是比例，計算後用「最大餘數法」補齊總額（確保加總=total）
+                  if (exp.splitMethod === "ratio") {
+                    const ratios = participants.map((name) => ({
+                      name,
+                      ratio: Number(exp.splitDetails?.[name]) || 0,
+                    }));
+                    const sumRatio = ratios.reduce((s, r) => s + r.ratio, 0);
+                
+                    if (sumRatio <= 0) return shares;
+                
+                    const raw = ratios.map((r) => {
+                      const x = (total * r.ratio) / sumRatio;
+                      return { ...r, raw: x, base: Math.floor(x), frac: x - Math.floor(x) };
+                    });
+                
+                    let used = raw.reduce((s, r) => s + r.base, 0);
+                    let rem = total - used;
+                
+                    raw.sort((a, b) => b.frac - a.frac);
+                    for (let i = 0; i < raw.length && rem > 0; i++, rem--) raw[i].base += 1;
+                
+                    raw.forEach((r) => {
+                      if (shares[r.name] != null) shares[r.name] = r.base;
+                    });
+                    return shares;
+                  }
+                
+                  return shares;
+                };
+                
+                const exportExpensesCsv = async () => {
+                  // 若匯率還沒抓到或正在載入，先嘗試更新一次（失敗就用目前值）
+                  if (!EXCHANGE_RATE.value || isNaN(Number(EXCHANGE_RATE.value)) || isRatesLoading.value) {
+                    try { await fetchExchangeRate(); } catch (e) {}
+                  }
+                
+                  const memberNames = members.value.filter((m) => m.active).map((m) => m.name);
+                
+                  const header = [
+                    `花費項目(墊付者/日期/原幣別) [金額: TWD] (1 THB = ${Number(EXCHANGE_RATE.value || 0).toFixed(4)} TWD)`,
+                    ...memberNames,
+                  ];
+                
+                  const rows = expenses.value
+                    .slice()
+                    .sort((a, b) => new Date(a.date) - new Date(b.date))
+                    .map((exp) => {
+                      const sharesTWD = calcExpenseSharesTWD(exp, memberNames);
+                
+                      const itemLabel =
+                        `${exp.name || "(未命名)"} ` +
+                        `(墊付:${exp.payer || ""}) ` +
+                        `${exp.date || ""} ` +
+                        `[原幣別:${exp.currency || ""}]`;
+                
+                      return [
+                        itemLabel,
+                        ...memberNames.map((n) => (sharesTWD[n] ? sharesTWD[n] : "")),
+                      ];
+                    });
+                
+                  const csv = [header, ...rows]
+                    .map((row) => row.map(csvEscape).join(","))
+                    .join("\n");
+                
+                  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+                  const url = URL.createObjectURL(blob);
+                
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `expenses_TWD_${new Date().toLocaleDateString("sv-SE")}.csv`;
+                  document.body.appendChild(a);
+                  a.click();
+                  document.body.removeChild(a);
+                  URL.revokeObjectURL(url);
+                };
+
                 
                 resetNewExpense();
 
@@ -3524,6 +3660,7 @@
                     customSplitValid,
                     previewSplits,    
                     resetNewExpense,
+                    exportExpensesCsv,
                 };
             },
         });
