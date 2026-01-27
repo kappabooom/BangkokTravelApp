@@ -379,8 +379,8 @@
         <p class="text-deep-sea-blue font-bold tracking-widest text-sm">
             Loading...
         </p>
-        <!-- 版本號 v1.3.5 -->
-        <p class="text-xs text-slate-400 mt-3">v1.3.5</p>
+        <!-- 版本號 v1.3.6 -->
+        <p class="text-xs text-slate-400 mt-3">v1.3.6</p>
     </div>
 
     <div id="app" class="app-container">
@@ -3564,17 +3564,21 @@
                 
                   const memberNames = members.value.filter((m) => m.active).map((m) => m.name);
                 
+                  // 第一張表：支出明細（雙欄：原幣別 + TWD）
                   const header = [
                     "花費項目",
                     "墊付者",
                     "日期",
                     "原幣別",
                     "原幣別總額",
-                    `THB->TWD匯率(當下)`,
+                    "匯率(=TWD/原幣別)",        // TWD 支出固定 1.0000
                     "換算後TWD總額",
                     ...memberNames.map((n) => `${n}(原幣別)`),
                     ...memberNames.map((n) => `${n}(TWD)`),
                   ];
+                
+                  const totalPerMemberTWD = Object.fromEntries(memberNames.map((n) => [n, 0]));
+                  let grandTotalTWD = 0;
                 
                   const rows = expenses.value
                     .slice()
@@ -3582,15 +3586,21 @@
                     .map((exp) => {
                       const currency = exp.currency || "THB";
                       const totalSrc = Number(exp.amount) || 0;
-                      const rate = Number(EXCHANGE_RATE.value) || 0;
                 
-                      // 每人原幣別分攤（由你的 splitMethod + splitDetails 算出）
+                      const rateUsed = currency === "TWD" ? 1 : Number(EXCHANGE_RATE.value) || 0;
+                      const totalTWD = Math.round(totalSrc * rateUsed);
+                
+                      // 每人原幣別分攤
                       const sharesSrc = calcExpenseShares(exp, memberNames);
                 
-                      // 每人換算後 TWD 分攤（確保加總=round(總額*匯率)）
+                      // 每人 TWD 分攤（確保加總 = totalTWD）
                       const sharesTWD = calcExpenseSharesTWD(exp, memberNames);
                 
-                      const totalTWD = currency === "TWD" ? Math.round(totalSrc) : Math.round(totalSrc * rate);
+                      // 累加總計（以 TWD 為準）
+                      grandTotalTWD += totalTWD;
+                      memberNames.forEach((n) => {
+                        totalPerMemberTWD[n] += Number(sharesTWD[n] || 0);
+                      });
                 
                       return [
                         exp.name || "(未命名)",
@@ -3598,16 +3608,45 @@
                         exp.date || "",
                         currency,
                         totalSrc,
-                        currency === "TWD" ? "" : rate.toFixed(4),
+                        Number(rateUsed).toFixed(4),
                         totalTWD,
                         ...memberNames.map((n) => (sharesSrc[n] ? sharesSrc[n] : "")),
                         ...memberNames.map((n) => (sharesTWD[n] ? sharesTWD[n] : "")),
                       ];
                     });
                 
-                  const csv = [header, ...rows]
+                  // 第一張表底部：總花費列（每人總花費：TWD）
+                  const totalRow = [
+                    "總花費(每人合計)",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    grandTotalTWD,
+                    ...memberNames.map(() => ""), // 原幣別不跨幣別加總，留空
+                    ...memberNames.map((n) => Math.round(totalPerMemberTWD[n] || 0)),
+                  ];
+                
+                  const csvMain = [header, ...rows, totalRow]
                     .map((row) => row.map(csvEscape).join(","))
                     .join("\n");
+                
+                  // 第二張表：轉帳建議（直接沿用你現有的 transferSuggestions computed）
+                  const transferHeader = ["轉出", "轉入", "金額(TWD)"];
+                  const transferRows =
+                    (transferSuggestions.value || []).length > 0
+                      ? transferSuggestions.value.map((t) => [t.from, t.to, t.amount])
+                      : [["(無需轉帳)", "", ""]];
+                
+                  const csvTransfer =
+                    "轉帳建議(TWD)\n" +
+                    [transferHeader, ...transferRows]
+                      .map((row) => row.map(csvEscape).join(","))
+                      .join("\n");
+                
+                  // 合併兩張表：中間空一行
+                  const csv = csvMain + "\n\n" + csvTransfer;
                 
                   const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
                   const url = URL.createObjectURL(blob);
@@ -3620,6 +3659,7 @@
                   document.body.removeChild(a);
                   URL.revokeObjectURL(url);
                 };
+
 
                 
                 resetNewExpense();
